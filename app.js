@@ -6,6 +6,7 @@
   const REASONS_KEY = 'nayami-reasons-v1';
   const POSITIONS_KEY = 'nayami-positions-v1';
   const SESSIONS_KEY = 'nayami-sessions-v1';
+  const ACTIONS_KEY = 'nayami-actions-v1';
 
   const BUILTIN_AXES = [
     { key: 'attribution', label: '帰属' },
@@ -49,7 +50,10 @@
     reasons: load(REASONS_KEY, []),
     positions: load(POSITIONS_KEY, {}),
     sessions: load(SESSIONS_KEY, []),
+    actions: load(ACTIONS_KEY, []),
     editingId: null,
+    editingActionId: null,
+    actionPathFilter: 'all',
     formReasons: [], // reasons being edited in the current form session
     selectedNodeId: null,
     selectedSessionId: null,
@@ -83,6 +87,7 @@
       if (name === 'input') { renderCustomAxesInForm(); renderReasonsInForm(); }
       if (name === 'graph') renderGraph();
       if (name === 'sessions') renderSessions();
+      if (name === 'actions') renderActions();
     });
   });
 
@@ -327,6 +332,7 @@
       reasons: state.reasons,
       positions: state.positions,
       sessions: state.sessions,
+      actions: state.actions,
     }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -366,12 +372,17 @@
         state.sessions = data.sessions;
         save(SESSIONS_KEY, state.sessions);
       }
+      if (Array.isArray(data.actions)) {
+        state.actions = data.actions;
+        save(ACTIONS_KEY, state.actions);
+      }
       flash('インポートしました');
       renderList();
       renderAxesSettings();
       renderCustomAxesInForm();
       renderReasonsInForm();
       renderSessions();
+      renderActions();
     } catch (err) {
       alert('インポートに失敗しました: ' + err.message);
     }
@@ -468,21 +479,24 @@
   });
 
   document.getElementById('clear-btn').addEventListener('click', () => {
-    if (!confirm('すべての記録・理由・分析履歴・位置情報・セッションを削除します。よろしいですか？')) return;
+    if (!confirm('すべてのデータ（記録・理由・分析履歴・位置情報・セッション・アクション）を削除します。よろしいですか？')) return;
     state.seeds = [];
     state.history = [];
     state.reasons = [];
     state.positions = {};
     state.sessions = [];
+    state.actions = [];
     save(STORE_KEY, state.seeds);
     save(HISTORY_KEY, state.history);
     save(REASONS_KEY, state.reasons);
     save(POSITIONS_KEY, state.positions);
     save(SESSIONS_KEY, state.sessions);
+    save(ACTIONS_KEY, state.actions);
     renderList();
     renderHistory();
     renderReasonsInForm();
     renderSessions();
+    renderActions();
     flash('削除しました');
   });
 
@@ -1872,6 +1886,120 @@
     });
   }
 
+  // ---------- Actions ----------
+  const actionForm = document.getElementById('action-form');
+  const actionsList = document.getElementById('actions-list');
+
+  document.querySelectorAll('.path-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.path-tab').forEach(b => b.classList.toggle('active', b === btn));
+      state.actionPathFilter = btn.dataset.path;
+      renderActionsList();
+    });
+  });
+
+  actionForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(actionForm));
+    const seedIds = Array.from(actionForm.elements.seedIds.selectedOptions).map(o => o.value);
+    const a = {
+      id: state.editingActionId || 'a_' + uid(),
+      path: data.path,
+      date: data.date || new Date().toISOString().slice(0, 10),
+      description: data.description.trim(),
+      notes: (data.notes || '').trim(),
+      effectRating: Number(data.effectRating) || 3,
+      status: data.status || 'trying',
+      seedIds,
+      createdAt: state.editingActionId
+        ? state.actions.find(x => x.id === state.editingActionId)?.createdAt || new Date().toISOString()
+        : new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    if (!a.description) return;
+    if (state.editingActionId) {
+      state.actions = state.actions.map(x => x.id === state.editingActionId ? a : x);
+      state.editingActionId = null;
+    } else {
+      state.actions.unshift(a);
+    }
+    save(ACTIONS_KEY, state.actions);
+    actionForm.reset();
+    actionForm.elements.effectRating.value = 3;
+    renderActionsList();
+    flash('保存しました');
+  });
+
+  function renderActions() {
+    const seedSel = document.getElementById('action-seed-select');
+    seedSel.innerHTML = state.seeds.map(s =>
+      `<option value="${s.id}">${escapeHtml(truncate(s.title, 40))}</option>`
+    ).join('');
+    renderActionsList();
+  }
+
+  function renderActionsList() {
+    let items = state.actions.slice();
+    if (state.actionPathFilter !== 'all') items = items.filter(a => a.path === state.actionPathFilter);
+    items.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    if (!items.length) {
+      actionsList.innerHTML = '<li class="muted">まだログはありません。</li>';
+      return;
+    }
+    actionsList.innerHTML = items.map(a => {
+      const linkedTitles = (a.seedIds || [])
+        .map(id => state.seeds.find(s => s.id === id))
+        .filter(Boolean)
+        .map(s => `<span class="link-chip seed">📌 ${escapeHtml(truncate(s.title, 20))}</span>`).join('');
+      const stars = '★'.repeat(a.effectRating) + '☆'.repeat(5 - a.effectRating);
+      const statusLabel = { trying: '試行中', continue: '続ける', stop: 'やめる' }[a.status] || a.status;
+      return `<li class="action-item" data-id="${a.id}">
+        <div class="action-head">
+          <span class="path-badge path-${a.path}">${escapeHtml(a.path)}経路</span>
+          <span class="muted">${escapeHtml(a.date || '')}</span>
+          <span class="action-rating" title="効果">${stars}</span>
+          <span class="status-badge status-${a.status}">${escapeHtml(statusLabel)}</span>
+        </div>
+        <div class="action-desc">${escapeHtml(a.description)}</div>
+        ${a.notes ? `<div class="action-notes">${escapeHtml(a.notes)}</div>` : ''}
+        ${linkedTitles ? `<div class="link-chips">${linkedTitles}</div>` : ''}
+        <div class="action-buttons">
+          <button class="act-edit" data-id="${a.id}">編集</button>
+          <button class="act-del danger" data-id="${a.id}">削除</button>
+        </div>
+      </li>`;
+    }).join('');
+
+    actionsList.querySelectorAll('.act-edit').forEach(b => {
+      b.addEventListener('click', () => editAction(b.dataset.id));
+    });
+    actionsList.querySelectorAll('.act-del').forEach(b => {
+      b.addEventListener('click', () => deleteAction(b.dataset.id));
+    });
+  }
+
+  function editAction(id) {
+    const a = state.actions.find(x => x.id === id);
+    if (!a) return;
+    state.editingActionId = id;
+    actionForm.elements.path.value = a.path;
+    actionForm.elements.date.value = a.date || '';
+    actionForm.elements.description.value = a.description;
+    actionForm.elements.notes.value = a.notes || '';
+    actionForm.elements.effectRating.value = a.effectRating || 3;
+    actionForm.elements.status.value = a.status || 'trying';
+    const seedSel = actionForm.elements.seedIds;
+    Array.from(seedSel.options).forEach(o => { o.selected = (a.seedIds || []).includes(o.value); });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function deleteAction(id) {
+    if (!confirm('このアクションを削除しますか？')) return;
+    state.actions = state.actions.filter(x => x.id !== id);
+    save(ACTIONS_KEY, state.actions);
+    renderActionsList();
+  }
+
   renderList();
   renderStats();
   renderHistory();
@@ -1879,4 +2007,5 @@
   renderCustomAxesInForm();
   renderReasonsInForm();
   renderSessions();
+  renderActions();
 })();

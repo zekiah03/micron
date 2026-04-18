@@ -16,6 +16,7 @@
       <button class="tab" data-tab="ai">AI分析</button>
       <button class="tab" data-tab="graph">図解</button>
       <button class="tab" data-tab="sessions">セッション</button>
+      <button class="tab" data-tab="actions">アクション</button>
       <button class="tab" data-tab="axes">軸の設定</button>
       <button class="tab" data-tab="settings">設定</button>
     </nav>
@@ -265,6 +266,77 @@
           <p class="muted">左のリストからセッションを選択するか、「＋ 新規セッション」を押してください。</p>
         </main>
       </div>
+    </section>
+
+    <section id="tab-actions" class="panel">
+      <h2>アクション（存在実感の3経路）</h2>
+      <p class="muted">「存在していい」→「存在している」への転換を、3つの経路で試行します。何をやって、どう効いたか、続けるかを記録します。</p>
+
+      <details class="axis-group">
+        <summary>3つの存在経路の説明</summary>
+        <ul class="axis-list builtin">
+          <li><b>身体経路</b>: 感覚の名指し、身体を動かす、五感の強化（今ここを身体で感じる）</li>
+          <li><b>痕跡経路</b>: 行動記録、物理的痕跡、空間の個人化（自分の存在を物理世界に残す）</li>
+          <li><b>関係経路</b>: 応答のある関係、応答する側に立つ、植物やペット（他者に応答される／する体験）</li>
+        </ul>
+      </details>
+
+      <div class="path-tabs">
+        <button class="path-tab active" data-path="all">すべて</button>
+        <button class="path-tab" data-path="身体">身体経路</button>
+        <button class="path-tab" data-path="痕跡">痕跡経路</button>
+        <button class="path-tab" data-path="関係">関係経路</button>
+      </div>
+
+      <form id="action-form">
+        <div class="row">
+          <label>
+            経路
+            <select name="path" required>
+              <option value="身体">身体経路</option>
+              <option value="痕跡">痕跡経路</option>
+              <option value="関係">関係経路</option>
+            </select>
+          </label>
+          <label>
+            日付
+            <input type="date" name="date" />
+          </label>
+        </div>
+        <label>
+          試したこと
+          <input type="text" name="description" required maxlength="120" placeholder="例: 朝の散歩で5感を1つずつ名指しする" />
+        </label>
+        <label>
+          メモ（やってみてどうだったか）
+          <textarea name="notes" rows="2"></textarea>
+        </label>
+        <div class="row">
+          <label>
+            効果（1=効かない〜5=はっきり効く）
+            <input type="number" name="effectRating" min="1" max="5" value="3" />
+          </label>
+          <label>
+            状態
+            <select name="status">
+              <option value="trying">試行中</option>
+              <option value="continue">続ける</option>
+              <option value="stop">やめる</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          紐付ける悩み（任意）
+          <select name="seedIds" multiple size="4" id="action-seed-select"></select>
+        </label>
+        <div class="actions">
+          <button type="submit" class="primary">保存</button>
+          <button type="reset">クリア</button>
+        </div>
+      </form>
+
+      <h3>ログ</h3>
+      <ul id="actions-list" class="actions-list"></ul>
     </section>
 
     <section id="tab-axes" class="panel">
