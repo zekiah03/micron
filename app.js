@@ -9,6 +9,7 @@
   const ACTIONS_KEY = 'nayami-actions-v1';
   const WORKS_KEY = 'nayami-works-v1';
   const SOCIAL_KEY = 'nayami-social-v1';
+  const EFFORT_KEY = 'nayami-effort-v1';
 
   const SOCIAL_DIMENSIONS = [
     { key: 'communication', label: 'コミュニケーション', color: '#3b82f6' },
@@ -16,6 +17,47 @@
     { key: 'cooperation',   label: '協調性',             color: '#10b981' },
     { key: 'assertion',     label: '自己主張力',         color: '#f59e0b' },
     { key: 'adaptation',    label: '社会的適応力',       color: '#8b5cf6' },
+  ];
+
+  const EFFORT_DIMENSIONS = [
+    { key: 'volume',   label: '量',     color: '#ef4444', description: '時間・回数・労力を投下する基礎力' },
+    { key: 'quality',  label: '質',     color: '#f59e0b', description: '工夫・フィードバックを取り込む力' },
+    { key: 'design',   label: '設計',   color: '#10b981', description: 'ゴールから逆算する計画力' },
+    { key: 'choice',   label: '選択',   color: '#3b82f6', description: '何に努力するかを選ぶ力' },
+    { key: 'endurance',label: '持続',   color: '#8b5cf6', description: '燃え尽きず長期間続ける力' },
+  ];
+
+  const EFFORT_QUESTIONS = [
+    // volume
+    { dim: 'volume', text: '毎日一定時間、目標に向けて取り組んでいる' },
+    { dim: 'volume', text: '決めた回数・量を守って続けられる' },
+    { dim: 'volume', text: '気分に左右されず、最低ラインの量は確保できる' },
+    { dim: 'volume', text: '「今日はやらない」と決めた日以外は、短時間でも着手する' },
+    { dim: 'volume', text: '記録を取って量を可視化している' },
+    // quality
+    { dim: 'quality', text: '集中できる時間帯や環境を意識して選んでいる' },
+    { dim: 'quality', text: '人からのフィードバックを積極的に求めている' },
+    { dim: 'quality', text: '同じミスを繰り返さないよう、やり方を改善している' },
+    { dim: 'quality', text: '成果が出にくい時、原因を分析して修正している' },
+    { dim: 'quality', text: '「なんとなく」ではなく、今日の課題を明確にして取り組む' },
+    // design
+    { dim: 'design', text: 'ゴールから逆算して計画を立てている' },
+    { dim: 'design', text: '優先順位を決めてから動いている' },
+    { dim: 'design', text: '週単位・月単位で進捗を見直している' },
+    { dim: 'design', text: '大きな目標を小さなステップに分解できる' },
+    { dim: 'design', text: 'リソース（時間・体力）の配分を意識している' },
+    // choice
+    { dim: 'choice', text: '「何に努力するか」を選ぶことに時間をかけている' },
+    { dim: 'choice', text: '自分の強みや市場に合った分野を選んでいる' },
+    { dim: 'choice', text: 'やらないことを明確に決めている' },
+    { dim: 'choice', text: '筋が悪いと気づいたら撤退・方向転換できる' },
+    { dim: 'choice', text: '努力の方向が自分の価値観と合っているか定期的に確認している' },
+    // endurance
+    { dim: 'endurance', text: '始めたことを数ヶ月以上続けた経験が何度もある' },
+    { dim: 'endurance', text: '困難にぶつかっても、すぐには諦めない' },
+    { dim: 'endurance', text: '情熱を持てる分野がある' },
+    { dim: 'endurance', text: '燃え尽きにくいペースで進められている' },
+    { dim: 'endurance', text: '長期目標を忘れずに持ち続けている' },
   ];
 
   const SOCIAL_QUESTIONS = [
@@ -96,7 +138,9 @@
     actions: load(ACTIONS_KEY, []),
     works: load(WORKS_KEY, []),
     socialAssessments: load(SOCIAL_KEY, []),
+    effortAssessments: load(EFFORT_KEY, []),
     quiz: null,
+    effortQuiz: null,
     editingId: null,
     editingActionId: null,
     actionPathFilter: 'all',
@@ -138,6 +182,7 @@
       if (name === 'actions') renderActions();
       if (name === 'works') renderWorks();
       if (name === 'social') renderSocialHistory();
+      if (name === 'effort') renderEffortHistory();
     });
   });
 
@@ -385,6 +430,7 @@
       actions: state.actions,
       works: state.works,
       socialAssessments: state.socialAssessments,
+      effortAssessments: state.effortAssessments,
     }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -436,6 +482,10 @@
         state.socialAssessments = data.socialAssessments;
         save(SOCIAL_KEY, state.socialAssessments);
       }
+      if (Array.isArray(data.effortAssessments)) {
+        state.effortAssessments = data.effortAssessments;
+        save(EFFORT_KEY, state.effortAssessments);
+      }
       flash('インポートしました');
       renderList();
       renderAxesSettings();
@@ -445,6 +495,7 @@
       renderActions();
       renderWorks();
       renderSocialHistory();
+      renderEffortHistory();
     } catch (err) {
       alert('インポートに失敗しました: ' + err.message);
     }
@@ -572,6 +623,7 @@
     state.actions = [];
     state.works = [];
     state.socialAssessments = [];
+    state.effortAssessments = [];
     save(STORE_KEY, state.seeds);
     save(HISTORY_KEY, state.history);
     save(REASONS_KEY, state.reasons);
@@ -580,6 +632,7 @@
     save(ACTIONS_KEY, state.actions);
     save(WORKS_KEY, state.works);
     save(SOCIAL_KEY, state.socialAssessments);
+    save(EFFORT_KEY, state.effortAssessments);
     renderList();
     renderHistory();
     renderReasonsInForm();
@@ -587,6 +640,7 @@
     renderActions();
     renderWorks();
     renderSocialHistory();
+    renderEffortHistory();
     flash('削除しました');
   });
 
@@ -2418,22 +2472,24 @@
     return parts.join(' ');
   }
 
-  function renderSocialRadar(scores) {
+  function renderSocialRadar(scores) { return renderRadarSvg(scores, SOCIAL_DIMENSIONS); }
+
+  function renderRadarSvg(scores, dims) {
     const cx = 130, cy = 130, R = 100;
-    const n = SOCIAL_DIMENSIONS.length;
-    const pts = SOCIAL_DIMENSIONS.map((d, i) => {
+    const n = dims.length;
+    const pts = dims.map((d, i) => {
       const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
       const r = (scores[d.key] / 100) * R;
       return [cx + Math.cos(ang) * r, cy + Math.sin(ang) * r];
     });
     const gridRings = [0.25, 0.5, 0.75, 1].map(f => {
-      const p = SOCIAL_DIMENSIONS.map((d, i) => {
+      const p = dims.map((d, i) => {
         const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
         return `${cx + Math.cos(ang) * R * f},${cy + Math.sin(ang) * R * f}`;
       }).join(' ');
       return `<polygon points="${p}" fill="none" stroke="#e5e7eb" stroke-width="1"/>`;
     }).join('');
-    const axes = SOCIAL_DIMENSIONS.map((d, i) => {
+    const axes = dims.map((d, i) => {
       const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
       const x = cx + Math.cos(ang) * R, y = cy + Math.sin(ang) * R;
       const lx = cx + Math.cos(ang) * (R + 22), ly = cy + Math.sin(ang) * (R + 18);
@@ -2443,6 +2499,23 @@
     const shape = `<polygon points="${pts.map(p => p.join(',')).join(' ')}" fill="#6366f1" fill-opacity="0.25" stroke="#6366f1" stroke-width="2"/>`;
     const dots = pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="#6366f1"/>`).join('');
     return `<svg class="radar-svg" viewBox="0 0 260 260">${gridRings}${axes}${shape}${dots}</svg>`;
+  }
+
+  function computeDimensionScores(answers, questions, dims) {
+    const sums = {}, counts = {};
+    for (const d of dims) { sums[d.key] = 0; counts[d.key] = 0; }
+    for (let i = 0; i < questions.length; i++) {
+      const a = answers[i];
+      if (a == null) continue;
+      sums[questions[i].dim] += a;
+      counts[questions[i].dim]++;
+    }
+    const out = {};
+    for (const d of dims) {
+      const max = counts[d.key] * 4, min = counts[d.key];
+      out[d.key] = max > min ? Math.round(((sums[d.key] - min) / (max - min)) * 100) : 0;
+    }
+    return out;
   }
 
   async function runSocialAICommentary(record) {
@@ -2510,6 +2583,225 @@
     });
   }
 
+  // ---------- Effort assessment ----------
+  const effortIntro = document.getElementById('effort-intro');
+  const effortQuizEl = document.getElementById('effort-quiz');
+  const effortResult = document.getElementById('effort-result');
+  const effortQuestionEl = document.getElementById('effort-question');
+  const effortProgressFill = document.getElementById('effort-progress-fill');
+  const effortProgressText = document.getElementById('effort-progress-text');
+
+  document.getElementById('effort-start').addEventListener('click', () => {
+    state.effortQuiz = { idx: 0, answers: new Array(EFFORT_QUESTIONS.length).fill(null) };
+    effortIntro.classList.add('hidden');
+    effortResult.classList.add('hidden');
+    effortQuizEl.classList.remove('hidden');
+    renderEffortQuestion();
+  });
+
+  document.querySelectorAll('.effort-choice').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!state.effortQuiz) return;
+      state.effortQuiz.answers[state.effortQuiz.idx] = Number(btn.dataset.val);
+      if (state.effortQuiz.idx < EFFORT_QUESTIONS.length - 1) {
+        state.effortQuiz.idx++;
+        renderEffortQuestion();
+      } else {
+        finishEffortQuiz();
+      }
+    });
+  });
+
+  document.getElementById('effort-back').addEventListener('click', () => {
+    if (!state.effortQuiz || state.effortQuiz.idx === 0) return;
+    state.effortQuiz.idx--;
+    renderEffortQuestion();
+  });
+
+  document.getElementById('effort-cancel').addEventListener('click', () => {
+    if (!confirm('診断を中断しますか？（回答は保存されません）')) return;
+    state.effortQuiz = null;
+    effortQuizEl.classList.add('hidden');
+    effortIntro.classList.remove('hidden');
+  });
+
+  function renderEffortQuestion() {
+    const { idx, answers } = state.effortQuiz;
+    const q = EFFORT_QUESTIONS[idx];
+    const dim = EFFORT_DIMENSIONS.find(d => d.key === q.dim);
+    effortQuestionEl.innerHTML = `
+      <div class="q-dim" style="color:${dim.color}">${escapeHtml(dim.label)}の努力</div>
+      <div class="q-text">${escapeHtml(q.text)}</div>`;
+    effortProgressFill.style.width = `${((idx + 1) / EFFORT_QUESTIONS.length) * 100}%`;
+    effortProgressText.textContent = `${idx + 1} / ${EFFORT_QUESTIONS.length}`;
+    document.querySelectorAll('.effort-choice').forEach(b => {
+      b.classList.toggle('selected', Number(b.dataset.val) === answers[idx]);
+    });
+    document.getElementById('effort-back').disabled = idx === 0;
+  }
+
+  function finishEffortQuiz() {
+    const scores = computeDimensionScores(state.effortQuiz.answers, EFFORT_QUESTIONS, EFFORT_DIMENSIONS);
+    const record = {
+      id: 'ea_' + uid(),
+      date: new Date().toISOString(),
+      answers: state.effortQuiz.answers.slice(),
+      scores,
+      notes: '',
+      aiCommentary: '',
+    };
+    state.effortAssessments.unshift(record);
+    save(EFFORT_KEY, state.effortAssessments);
+    state.effortQuiz = null;
+    effortQuizEl.classList.add('hidden');
+    effortIntro.classList.remove('hidden');
+    showEffortResult(record);
+    renderEffortHistory();
+  }
+
+  function showEffortResult(record) {
+    effortResult.classList.remove('hidden');
+    const scores = record.scores;
+    const sorted = EFFORT_DIMENSIONS.slice().sort((a, b) => scores[b.key] - scores[a.key]);
+    const high = sorted[0], low = sorted[sorted.length - 1];
+    const avg = Math.round(EFFORT_DIMENSIONS.reduce((s, d) => s + scores[d.key], 0) / EFFORT_DIMENSIONS.length);
+    const type = effortType(scores);
+
+    effortResult.innerHTML = `
+      <div class="result-card">
+        <div class="result-head">
+          <h3>努力プロファイル: <span style="color:${high.color}">${escapeHtml(type.name)}</span></h3>
+          <span class="muted">${escapeHtml(formatDate(record.date))}</span>
+        </div>
+        <div class="result-grid">
+          ${renderRadarSvg(scores, EFFORT_DIMENSIONS)}
+          <div class="result-scores">
+            ${EFFORT_DIMENSIONS.map(d => `
+              <div class="score-row">
+                <span class="score-label" style="color:${d.color}">${escapeHtml(d.label)}</span>
+                <div class="score-bar-wrap"><div class="score-bar" style="width:${scores[d.key]}%;background:${d.color}"></div></div>
+                <span class="score-val">${scores[d.key]}</span>
+              </div>
+            `).join('')}
+            <div class="score-summary">
+              <div>平均: <b>${avg}</b></div>
+              <div>最高: <b style="color:${high.color}">${escapeHtml(high.label)} (${scores[high.key]})</b></div>
+              <div>最低: <b style="color:${low.color}">${escapeHtml(low.label)} (${scores[low.key]})</b></div>
+            </div>
+          </div>
+        </div>
+        <div class="result-interpret">${escapeHtml(type.description)} ${escapeHtml(interpretEffort(high, low))}</div>
+        <div class="actions">
+          <button id="effort-ai-comment">AIで深掘りコメント</button>
+          <button id="effort-retry">もう一度受ける</button>
+        </div>
+        <div id="effort-ai-output" class="ai-output" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
+      </div>
+    `;
+    document.getElementById('effort-retry').addEventListener('click', () => {
+      document.getElementById('effort-start').click();
+    });
+    document.getElementById('effort-ai-comment').addEventListener('click', () => runEffortAICommentary(record));
+  }
+
+  function effortType(scores) {
+    // Name the profile by the highest dimension (tie -> first)
+    const sorted = EFFORT_DIMENSIONS.slice().sort((a, b) => scores[b.key] - scores[a.key]);
+    const top = sorted[0].key;
+    const map = {
+      volume:    { name: '地道型',   description: '投下量で押し切るタイプ。土台は強いが、質や設計を伸ばすと結果が加速します。' },
+      quality:   { name: '熟達型',   description: '同じ時間でも中身を濃くできるタイプ。方向性の選択まで意識すると最大化されます。' },
+      design:    { name: '戦略家型', description: '計画と優先順位付けが得意。実行量を確保できているか確認するとバランスが取れます。' },
+      choice:    { name: '選択家型', description: '何に努力するかを選べるタイプ。選んだ後の量・質・持続を意識的に補強すると結果に繋がります。' },
+      endurance: { name: '恒毅型',   description: '長く続ける力が突出。方向転換や設計の見直しを定期的に入れると、続ける力が結果に直結します。' },
+    };
+    return map[top] || { name: 'バランス型', description: '各次元がバランスよく育っています。' };
+  }
+
+  function interpretEffort(high, low) {
+    const pair = high.key + '_' + low.key;
+    const hints = {
+      volume_quality:    '量はあるが、やり方の改善・フィードバックで効率が大きく伸びる余地あり。',
+      volume_choice:     '量で走れているが、「そもそも何に努力するか」を見直すと結果のインパクトが変わる。',
+      volume_design:     '量は出せるが、計画なしで走りがち。週次レビューで方向修正を入れると無駄打ちが減る。',
+      quality_volume:    '工夫できているが、最低限の投下量が足りないこともある。ベース量の確保を意識。',
+      quality_endurance: '質高く取り組めるが、燃え尽きやすいペース配分になっていないか要注意。',
+      design_volume:     '計画はあるが実行量が追いつかない典型。最初の一歩を小さくすると動き出しやすい。',
+      design_endurance:  '設計力は高いが、計画疲れで続かないパターン。計画の精度より実行の続行を優先。',
+      choice_volume:     '選ぶ力はあるが、選んだあとの量が足りていない可能性。ベースラインの確保を。',
+      choice_endurance:  '方向選びはできるが、続ける前に次を選んでしまいがち。短期で成果判定するルールを持つ。',
+      endurance_choice:  '続ける力は強いが、そもそも続けている対象が正しいか定期的に問い直す必要がある（サンクコストに注意）。',
+      endurance_design:  '粘り強いが、無計画に突き進む傾向。月次で設計を見直すと、粘りが結果に変わる。',
+      endurance_quality: '長く続けているが、やり方がアップデートされていない可能性。フィードバックを取り入れる。',
+    };
+    return hints[pair] || '';
+  }
+
+  async function runEffortAICommentary(record) {
+    if (!state.settings.apiKey) {
+      alert('設定タブでAPIキーを登録してください。');
+      return;
+    }
+    const out = document.getElementById('effort-ai-output');
+    out.style.display = 'block';
+    out.textContent = '分析中...';
+    const payload = EFFORT_DIMENSIONS.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join('\n');
+    const system = 'あなたは思慮深いコーチです。努力の5次元（量/質/設計/選択/持続）スコアを読み、本人が次の一手を決められるよう日本語で解説します。';
+    const user = [
+      '以下は努力の5次元スコア（0〜100）です。',
+      '全体のプロファイル、強みと弱み、どの次元を次に伸ばすと効果が大きいか、',
+      '今週から試せる具体アクションを1〜2つ、合わせて400字程度で示してください。',
+      '',
+      payload,
+    ].join('\n');
+    try {
+      const text = await callClaude(system, user);
+      out.textContent = text;
+      record.aiCommentary = text;
+      save(EFFORT_KEY, state.effortAssessments);
+    } catch (err) {
+      out.textContent = 'エラー: ' + err.message;
+    }
+  }
+
+  function renderEffortHistory() {
+    const ul = document.getElementById('effort-history');
+    if (!ul) return;
+    if (!state.effortAssessments.length) {
+      ul.innerHTML = '<li class="muted">まだ診断履歴はありません。</li>';
+      return;
+    }
+    ul.innerHTML = state.effortAssessments.map(r => {
+      const avg = Math.round(EFFORT_DIMENSIONS.reduce((s, d) => s + r.scores[d.key], 0) / EFFORT_DIMENSIONS.length);
+      const bars = EFFORT_DIMENSIONS.map(d => `
+        <span class="mini-bar" title="${escapeAttr(d.label)}: ${r.scores[d.key]}">
+          <span class="mini-bar-fill" style="height:${r.scores[d.key]}%;background:${d.color}"></span>
+        </span>`).join('');
+      return `<li data-id="${r.id}">
+        <div class="h-meta">${formatDate(r.date)} · 平均 ${avg}</div>
+        <div class="mini-bars">${bars}</div>
+        <div class="actions" style="margin-top:6px">
+          <button class="ea-view" data-id="${r.id}">結果を表示</button>
+          <button class="ea-del danger" data-id="${r.id}">削除</button>
+        </div>
+      </li>`;
+    }).join('');
+    ul.querySelectorAll('.ea-view').forEach(b => {
+      b.addEventListener('click', () => {
+        const r = state.effortAssessments.find(x => x.id === b.dataset.id);
+        if (r) showEffortResult(r);
+      });
+    });
+    ul.querySelectorAll('.ea-del').forEach(b => {
+      b.addEventListener('click', () => {
+        if (!confirm('この診断履歴を削除しますか？')) return;
+        state.effortAssessments = state.effortAssessments.filter(x => x.id !== b.dataset.id);
+        save(EFFORT_KEY, state.effortAssessments);
+        renderEffortHistory();
+      });
+    });
+  }
+
   renderList();
   renderStats();
   renderHistory();
@@ -2520,4 +2812,5 @@
   renderActions();
   renderWorks();
   renderSocialHistory();
+  renderEffortHistory();
 })();

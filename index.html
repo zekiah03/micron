@@ -19,6 +19,7 @@
       <button class="tab" data-tab="actions">アクション</button>
       <button class="tab" data-tab="works">ワーク</button>
       <button class="tab" data-tab="social">社会性診断</button>
+      <button class="tab" data-tab="effort">努力診断</button>
       <button class="tab" data-tab="axes">軸の設定</button>
       <button class="tab" data-tab="settings">設定</button>
     </nav>
@@ -404,6 +405,51 @@
 
       <h3>診断履歴</h3>
       <ul id="social-history" class="social-history"></ul>
+    </section>
+
+    <section id="tab-effort" class="panel">
+      <h2>努力診断</h2>
+      <p class="muted">「量／質／設計／選択／持続」の5次元で努力スタイルをプロファイルします（全25問・4択）。</p>
+
+      <details class="axis-group">
+        <summary>5つの次元の説明</summary>
+        <ul class="axis-list builtin">
+          <li><b>量</b>: 時間・回数・労力を投下する基礎力</li>
+          <li><b>質</b>: やり方を工夫する・フィードバックを取り込む力（deliberate practice）</li>
+          <li><b>設計</b>: ゴールから逆算して計画を立てる力</li>
+          <li><b>選択</b>: 「何に努力するか」を選び、筋の悪い努力を降りる判断力</li>
+          <li><b>持続</b>: 恒毅力（grit）。燃え尽きず長期間続ける力</li>
+        </ul>
+      </details>
+
+      <div id="effort-intro">
+        <div class="actions">
+          <button id="effort-start" class="primary">診断を開始する</button>
+        </div>
+      </div>
+
+      <div id="effort-quiz" class="hidden">
+        <div class="quiz-progress">
+          <div class="quiz-progress-bar"><div id="effort-progress-fill"></div></div>
+          <span id="effort-progress-text"></span>
+        </div>
+        <div class="quiz-question" id="effort-question"></div>
+        <div class="quiz-choices">
+          <button class="effort-choice" data-val="4">はい</button>
+          <button class="effort-choice" data-val="3">どちらかといえばはい</button>
+          <button class="effort-choice" data-val="2">どちらかといえばいいえ</button>
+          <button class="effort-choice" data-val="1">いいえ</button>
+        </div>
+        <div class="actions">
+          <button id="effort-back">← 前の質問</button>
+          <button id="effort-cancel">中断</button>
+        </div>
+      </div>
+
+      <div id="effort-result" class="hidden"></div>
+
+      <h3>診断履歴</h3>
+      <ul id="effort-history" class="social-history"></ul>
     </section>
 
     <section id="tab-axes" class="panel">
