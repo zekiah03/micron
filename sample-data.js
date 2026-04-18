@@ -407,4 +407,54 @@ window.SAMPLE_SESSIONS = [
   },
 ];
 
+// サンプルワーク（設計課題）— 議事録 §16〜17 の内容を元にした未解決の課題
+window.SAMPLE_WORKS = [
+  {
+    title: '彼を手段化しないための区別',
+    question: '動機Aと動機Bを分けると、自分が彼に何を求めているかが見えるはず。手段化しない関わり方はどう設計できるか？',
+    exploration: '動機A: 彼個人への愛情・関心（彼だから一緒にいたい理由）\n動機B: 彼を通じて得られる経験への欲求（彼の環境だから欲しい理由）\nそれぞれ3つずつ書き出してみる。',
+    status: 'in_progress',
+    priority: 5,
+    subWorks: [
+      { text: '動機A（彼個人への愛情・関心）を3つ書き出す', done: false },
+      { text: '動機B（彼を通じて得たい経験）を3つ書き出す', done: false },
+      { text: 'Bの欲求を彼以外の経路で満たす方法を検討', done: false },
+      { text: 'Aが残ることを確認してから関係を続ける判断', done: false },
+    ],
+  },
+  {
+    title: '彼の家族との関わり方の設計',
+    question: '温かい家族環境に触れる機会をどう設計するか。頻度、距離感、自分のフラット化の程度は？',
+    exploration: '',
+    status: 'open',
+    priority: 4,
+    subWorks: [],
+  },
+  {
+    title: '治癒経路の複数化',
+    question: '彼一人に治癒経路を集中させないために、他の経路（関係・身体・痕跡）をどう増やすか？',
+    exploration: '',
+    status: 'open',
+    priority: 4,
+    subWorks: [
+      { text: '関係経路: 応答のある関係を彼以外に作る', done: false },
+      { text: '身体経路: 日々のルーティンに組み込む', done: false },
+      { text: '痕跡経路: 空間の個人化を一つ実行', done: false },
+    ],
+  },
+  {
+    title: '一時的距離のルール設計',
+    question: '距離を取るべき時、どういう基準・期間・終了条件にするか？',
+    exploration: '',
+    status: 'open',
+    priority: 3,
+    subWorks: [
+      { text: '距離を取る判断基準を3つ書く', done: false },
+      { text: '距離の期間（数日/数週間）のガイドラインを決める', done: false },
+      { text: '再接続の条件を明確にする', done: false },
+    ],
+  },
+];
+
+
 

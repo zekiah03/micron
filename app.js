@@ -7,6 +7,7 @@
   const POSITIONS_KEY = 'nayami-positions-v1';
   const SESSIONS_KEY = 'nayami-sessions-v1';
   const ACTIONS_KEY = 'nayami-actions-v1';
+  const WORKS_KEY = 'nayami-works-v1';
 
   const BUILTIN_AXES = [
     { key: 'attribution', label: '帰属' },
@@ -51,9 +52,12 @@
     positions: load(POSITIONS_KEY, {}),
     sessions: load(SESSIONS_KEY, []),
     actions: load(ACTIONS_KEY, []),
+    works: load(WORKS_KEY, []),
     editingId: null,
     editingActionId: null,
     actionPathFilter: 'all',
+    selectedWorkId: null,
+    workStatusFilter: 'all',
     formReasons: [], // reasons being edited in the current form session
     selectedNodeId: null,
     selectedSessionId: null,
@@ -88,6 +92,7 @@
       if (name === 'graph') renderGraph();
       if (name === 'sessions') renderSessions();
       if (name === 'actions') renderActions();
+      if (name === 'works') renderWorks();
     });
   });
 
@@ -333,6 +338,7 @@
       positions: state.positions,
       sessions: state.sessions,
       actions: state.actions,
+      works: state.works,
     }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -376,6 +382,10 @@
         state.actions = data.actions;
         save(ACTIONS_KEY, state.actions);
       }
+      if (Array.isArray(data.works)) {
+        state.works = data.works;
+        save(WORKS_KEY, state.works);
+      }
       flash('インポートしました');
       renderList();
       renderAxesSettings();
@@ -383,6 +393,7 @@
       renderReasonsInForm();
       renderSessions();
       renderActions();
+      renderWorks();
     } catch (err) {
       alert('インポートに失敗しました: ' + err.message);
     }
@@ -449,6 +460,26 @@
       save(REASONS_KEY, state.reasons);
     }
 
+    // サンプルワーク
+    if (Array.isArray(window.SAMPLE_WORKS) && window.SAMPLE_WORKS.length) {
+      for (const t of window.SAMPLE_WORKS) {
+        state.works.unshift({
+          id: 'w_' + uid(),
+          title: t.title,
+          question: t.question || '',
+          exploration: t.exploration || '',
+          status: t.status || 'open',
+          priority: Number(t.priority) || 3,
+          seedIds: [],
+          reasonIds: [],
+          subWorks: (t.subWorks || []).map(sw => ({ id: 'sw_' + uid(), text: sw.text, done: !!sw.done })),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+      save(WORKS_KEY, state.works);
+    }
+
     // サンプルセッション
     if (Array.isArray(window.SAMPLE_SESSIONS) && window.SAMPLE_SESSIONS.length) {
       for (const t of window.SAMPLE_SESSIONS) {
@@ -476,27 +507,32 @@
     renderList();
     renderStats();
     renderReasonsInForm();
+    renderSessions();
+    renderWorks();
   });
 
   document.getElementById('clear-btn').addEventListener('click', () => {
-    if (!confirm('すべてのデータ（記録・理由・分析履歴・位置情報・セッション・アクション）を削除します。よろしいですか？')) return;
+    if (!confirm('すべてのデータ（記録・理由・分析履歴・位置情報・セッション・アクション・ワーク）を削除します。よろしいですか？')) return;
     state.seeds = [];
     state.history = [];
     state.reasons = [];
     state.positions = {};
     state.sessions = [];
     state.actions = [];
+    state.works = [];
     save(STORE_KEY, state.seeds);
     save(HISTORY_KEY, state.history);
     save(REASONS_KEY, state.reasons);
     save(POSITIONS_KEY, state.positions);
     save(SESSIONS_KEY, state.sessions);
     save(ACTIONS_KEY, state.actions);
+    save(WORKS_KEY, state.works);
     renderList();
     renderHistory();
     renderReasonsInForm();
     renderSessions();
     renderActions();
+    renderWorks();
     flash('削除しました');
   });
 
@@ -2000,6 +2036,172 @@
     renderActionsList();
   }
 
+  // ---------- Works ----------
+  document.querySelectorAll('.work-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.work-tab').forEach(b => b.classList.toggle('active', b === btn));
+      state.workStatusFilter = btn.dataset.status;
+      renderWorksList();
+    });
+  });
+
+  document.getElementById('new-work-btn').addEventListener('click', () => {
+    const w = {
+      id: 'w_' + uid(),
+      title: '新しいワーク',
+      question: '',
+      exploration: '',
+      status: 'open',
+      priority: 3,
+      seedIds: [],
+      reasonIds: [],
+      subWorks: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    state.works.unshift(w);
+    save(WORKS_KEY, state.works);
+    state.selectedWorkId = w.id;
+    renderWorks();
+  });
+
+  function renderWorks() {
+    renderWorksList();
+    const w = state.works.find(x => x.id === state.selectedWorkId);
+    renderWorkDetail(w || null);
+  }
+
+  function renderWorksList() {
+    const list = document.getElementById('works-list');
+    if (!list) return;
+    let items = state.works.slice();
+    if (state.workStatusFilter !== 'all') items = items.filter(w => w.status === state.workStatusFilter);
+    items.sort((a, b) => (b.priority || 0) - (a.priority || 0) || (b.createdAt || '').localeCompare(a.createdAt || ''));
+    if (!items.length) {
+      list.innerHTML = '<li class="muted">ワークはありません。「＋ 新しいワーク」から追加できます。</li>';
+      return;
+    }
+    list.innerHTML = items.map(w => {
+      const statusLabel = { open: '未着手', in_progress: '進行中', done: '完了' }[w.status] || w.status;
+      const doneCount = (w.subWorks || []).filter(s => s.done).length;
+      const total = (w.subWorks || []).length;
+      return `<li class="work-item ${state.selectedWorkId === w.id ? 'active' : ''}" data-id="${w.id}">
+        <div class="work-head">
+          <span class="status-badge status-work-${w.status}">${escapeHtml(statusLabel)}</span>
+          <span class="priority">優先度 ${w.priority}</span>
+          <span class="work-title">${escapeHtml(w.title)}</span>
+        </div>
+        ${w.question ? `<div class="work-question">${escapeHtml(truncate(w.question, 80))}</div>` : ''}
+        ${total > 0 ? `<div class="work-progress">サブタスク ${doneCount}/${total}</div>` : ''}
+      </li>`;
+    }).join('');
+    list.querySelectorAll('.work-item').forEach(li => {
+      li.addEventListener('click', () => {
+        state.selectedWorkId = li.dataset.id;
+        renderWorks();
+      });
+    });
+  }
+
+  function renderWorkDetail(w) {
+    const el = document.getElementById('work-detail');
+    if (!w) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+    el.classList.remove('hidden');
+    const seedOpts = state.seeds.map(x =>
+      `<option value="${x.id}" ${(w.seedIds || []).includes(x.id) ? 'selected' : ''}>${escapeHtml(truncate(x.title, 40))}</option>`
+    ).join('');
+    const reasonOpts = state.reasons.map(r =>
+      `<option value="${r.id}" ${(w.reasonIds || []).includes(r.id) ? 'selected' : ''}>${escapeHtml(truncate(r.text, 40))}</option>`
+    ).join('');
+    el.innerHTML = `
+      <div class="work-detail-head">
+        <input class="w-title-input" value="${escapeAttr(w.title)}" />
+        <button class="danger w-delete">削除</button>
+      </div>
+      <div class="row">
+        <label>
+          状態
+          <select class="w-status">
+            <option value="open" ${w.status === 'open' ? 'selected' : ''}>未着手</option>
+            <option value="in_progress" ${w.status === 'in_progress' ? 'selected' : ''}>進行中</option>
+            <option value="done" ${w.status === 'done' ? 'selected' : ''}>完了</option>
+          </select>
+        </label>
+        <label>
+          優先度（1〜5）
+          <input class="w-priority" type="number" min="1" max="5" value="${w.priority || 3}" />
+        </label>
+      </div>
+      <label>
+        中心となる問い
+        <textarea class="w-question" rows="2" placeholder="例: 彼を手段化しないための区別は何か">${escapeHtml(w.question || '')}</textarea>
+      </label>
+      <label>
+        探求ノート（自由に書き出す）
+        <textarea class="w-exploration" rows="6" placeholder="この問いへの現在の考え、出てきたアイデア、保留中の疑問など">${escapeHtml(w.exploration || '')}</textarea>
+      </label>
+
+      <h4>サブタスク</h4>
+      <ul class="subworks-list">
+        ${(w.subWorks || []).map((sw, i) => `
+          <li>
+            <label>
+              <input type="checkbox" class="sw-done" data-i="${i}" ${sw.done ? 'checked' : ''} />
+              <input type="text" class="sw-text" data-i="${i}" value="${escapeAttr(sw.text)}" />
+              <button class="sw-del" data-i="${i}">削除</button>
+            </label>
+          </li>
+        `).join('')}
+      </ul>
+      <div class="actions"><button class="w-add-sub">＋ サブタスク追加</button></div>
+
+      <h4>紐付け</h4>
+      <details>
+        <summary>悩みの種 (${(w.seedIds || []).length}) / 理由 (${(w.reasonIds || []).length})</summary>
+        <label>悩みの種<select class="w-seeds" multiple size="4">${seedOpts}</select></label>
+        <label>理由<select class="w-reasons" multiple size="4">${reasonOpts}</select></label>
+      </details>
+    `;
+
+    const save_ = () => { w.updatedAt = new Date().toISOString(); save(WORKS_KEY, state.works); renderWorksList(); };
+
+    el.querySelector('.w-title-input').addEventListener('change', e => { w.title = e.target.value.trim() || '(無題)'; save_(); });
+    el.querySelector('.w-delete').addEventListener('click', () => {
+      if (!confirm('このワークを削除しますか？')) return;
+      state.works = state.works.filter(x => x.id !== w.id);
+      state.selectedWorkId = null;
+      save(WORKS_KEY, state.works);
+      renderWorks();
+    });
+    el.querySelector('.w-status').addEventListener('change', e => { w.status = e.target.value; save_(); });
+    el.querySelector('.w-priority').addEventListener('change', e => { w.priority = Number(e.target.value) || 3; save_(); });
+    el.querySelector('.w-question').addEventListener('change', e => { w.question = e.target.value; save_(); });
+    el.querySelector('.w-exploration').addEventListener('change', e => { w.exploration = e.target.value; save_(); });
+    el.querySelector('.w-seeds').addEventListener('change', e => {
+      w.seedIds = Array.from(e.target.selectedOptions).map(o => o.value);
+      save_();
+    });
+    el.querySelector('.w-reasons').addEventListener('change', e => {
+      w.reasonIds = Array.from(e.target.selectedOptions).map(o => o.value);
+      save_();
+    });
+    el.querySelectorAll('.sw-done').forEach(c => c.addEventListener('change', () => {
+      w.subWorks[+c.dataset.i].done = c.checked; save_(); renderWorkDetail(w);
+    }));
+    el.querySelectorAll('.sw-text').forEach(t => t.addEventListener('change', () => {
+      w.subWorks[+t.dataset.i].text = t.value; save_();
+    }));
+    el.querySelectorAll('.sw-del').forEach(b => b.addEventListener('click', () => {
+      w.subWorks.splice(+b.dataset.i, 1); save_(); renderWorkDetail(w);
+    }));
+    el.querySelector('.w-add-sub').addEventListener('click', () => {
+      w.subWorks = w.subWorks || [];
+      w.subWorks.push({ id: 'sw_' + uid(), text: '新しいサブタスク', done: false });
+      save_();
+      renderWorkDetail(w);
+    });
+  }
+
   renderList();
   renderStats();
   renderHistory();
@@ -2008,4 +2210,5 @@
   renderReasonsInForm();
   renderSessions();
   renderActions();
+  renderWorks();
 })();

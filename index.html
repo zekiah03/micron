@@ -17,6 +17,7 @@
       <button class="tab" data-tab="graph">図解</button>
       <button class="tab" data-tab="sessions">セッション</button>
       <button class="tab" data-tab="actions">アクション</button>
+      <button class="tab" data-tab="works">ワーク</button>
       <button class="tab" data-tab="axes">軸の設定</button>
       <button class="tab" data-tab="settings">設定</button>
     </nav>
@@ -337,6 +338,26 @@
 
       <h3>ログ</h3>
       <ul id="actions-list" class="actions-list"></ul>
+    </section>
+
+    <section id="tab-works" class="panel">
+      <h2>ワーク（設計課題）</h2>
+      <p class="muted">未解決の問い・設計課題を「ワーク」として立てて、探求ノートとサブタスクで進めます。セッション議事録の §16〜17 のような内容をここに置けます。</p>
+
+      <div class="path-tabs">
+        <button class="work-tab active" data-status="all">すべて</button>
+        <button class="work-tab" data-status="open">未着手</button>
+        <button class="work-tab" data-status="in_progress">進行中</button>
+        <button class="work-tab" data-status="done">完了</button>
+      </div>
+
+      <div class="actions">
+        <button id="new-work-btn" class="primary">＋ 新しいワーク</button>
+      </div>
+
+      <ul id="works-list" class="works-list"></ul>
+
+      <article id="work-detail" class="work-detail hidden"></article>
     </section>
 
     <section id="tab-axes" class="panel">
