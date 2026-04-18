@@ -1,5 +1,9 @@
 // このファイルは「設定」タブの「サンプルを読み込む」で使用する初期データ。
 // ユーザー本人の記述をそのまま構造化したもの。不要になったら自由に編集・削除してください。
+// attribution: 本人 / 他者 / 環境 / 複合
+// controllability: 可 / 部分的 / 不可
+// timeFrame: 過去 / 現在 / 未来
+// depth: 表層 / 中層 / 核心
 window.SAMPLE_SEEDS = [
   {
     title: '人の幸せを喜べない',
@@ -8,6 +12,10 @@ window.SAMPLE_SEEDS = [
     tags: ['嫉妬', '比較', '自己'],
     description: '人の幸せを喜べない。\nそれは、本当は自分もやりたいのにできていない、やっていないから。できていない自分を本当は気にしているから。',
     insight: 'それは今、できないこともある。できるけど意地を張っていることもある。できるけど余裕がないこともある。',
+    attribution: '本人',
+    controllability: '部分的',
+    timeFrame: '現在',
+    depth: '中層',
   },
 
   // --- 年齢と経験に関する苦しみ ---
@@ -18,6 +26,10 @@ window.SAMPLE_SEEDS = [
     tags: ['嫉妬', '憎しみ', '時間'],
     description: '私が苦しみの中過ごした時間を、ほしいもの手に入れながら過ごしてる人は憎い、いつか不幸になれ。\n情報もお金も友達も。',
     insight: '',
+    attribution: '複合',
+    controllability: '不可',
+    timeFrame: '過去',
+    depth: '中層',
   },
   {
     title: '努力しない人への軽蔑と、そう思う自分への嫌悪',
@@ -26,6 +38,10 @@ window.SAMPLE_SEEDS = [
     tags: ['軽蔑', '自己嫌悪', '正当化'],
     description: '努力できない遊んでるやつは中身が空っぽ、人の真似しかできない、可哀想にね。\nそう思う自分は醜い、けれど、そうしなければ私のこれまでは正当化されない。',
     insight: '',
+    attribution: '本人',
+    controllability: '部分的',
+    timeFrame: '現在',
+    depth: '中層',
   },
   {
     title: '比較構造の中で「勝つ」と言いながら疲れている',
@@ -34,6 +50,10 @@ window.SAMPLE_SEEDS = [
     tags: ['比較', '勝負', '疲労'],
     description: '本当は因果関係はない、でも君が比較構造を作った、私は勝つ。\nでももう勝負に疲れてる、正直面倒、何度も言うけど因果関係はない、別れれば全て消える話なの。\n絶縁なんてしてくれないでしょう。',
     insight: '人間関係に関する苦しみも含んでる。',
+    attribution: '複合',
+    controllability: '部分的',
+    timeFrame: '現在',
+    depth: '中層',
   },
   {
     title: '「いい人」でいる努力と、一瞬で湧き上がる憎悪',
@@ -42,6 +62,10 @@ window.SAMPLE_SEEDS = [
     tags: ['二面性', '憎悪', '葛藤'],
     description: '私なりに、いい人になる努力はしてる。\n死んで？\nものの瞬間で気持ちを踏みにじってくる憎悪、一方、それだけの覚悟とも言えるね。\nなんで？憎い、なんで消えてくれないの？\n大人しく遠くに行ってよ。',
     insight: '',
+    attribution: '本人',
+    controllability: '部分的',
+    timeFrame: '現在',
+    depth: '核心',
   },
   {
     title: 'さっきまで祝っていたのに、もう別れたい',
@@ -50,6 +74,10 @@ window.SAMPLE_SEEDS = [
     tags: ['関係', '抜け道', '後悔'],
     description: 'さっきまで祝ってたのに、もう別れたい、克服できる気がしない、私が悪いんでしょ、なんで世の中は抜け道を作るの、ずるい、話を聞かなければよかった。',
     insight: '',
+    attribution: '複合',
+    controllability: '部分的',
+    timeFrame: '現在',
+    depth: '中層',
   },
 
   // --- 人間関係に関する苦しみ ---
@@ -60,6 +88,10 @@ window.SAMPLE_SEEDS = [
     tags: ['孤独', '不信', '自己否定'],
     description: '人に心を開ききれない、常に嫌われてると思ってる、周囲で話をしている人達はみんな私の悪口を言っていると思っている。',
     insight: '本当のことは分からない。',
+    attribution: '本人',
+    controllability: '部分的',
+    timeFrame: '現在',
+    depth: '中層',
   },
   {
     title: '家族からの扱いが私を形成した',
@@ -68,6 +100,10 @@ window.SAMPLE_SEEDS = [
     tags: ['家族', '幼少期', 'ルーツ'],
     description: '家族からの扱いが私を形成した。\n他の子供との比較構造、話を最後まで聞いて貰えない、欲しいものを言うことは許されない、否定。',
     insight: '',
+    attribution: '他者',
+    controllability: '不可',
+    timeFrame: '過去',
+    depth: '核心',
   },
 
   // --- 外見に関する苦しみ ---
@@ -78,6 +114,10 @@ window.SAMPLE_SEEDS = [
     tags: ['自己満', 'モテ'],
     description: '完全に自己満。\n「モテたい」でないのは確か。だって現状の私でも、君は受け止めてくれてる。',
     insight: '',
+    attribution: '本人',
+    controllability: '可',
+    timeFrame: '現在',
+    depth: '表層',
   },
   {
     title: 'できない理由1: 人目／相手でキャラを変える',
@@ -86,6 +126,10 @@ window.SAMPLE_SEEDS = [
     tags: ['人目', 'キャラ使い分け'],
     description: 'できない理由1：人目を気にしているから。\n私は相手によって見せるキャラを変えてる。相手に見せられないキャラは隠してる。',
     insight: '',
+    attribution: '本人',
+    controllability: '部分的',
+    timeFrame: '現在',
+    depth: '中層',
   },
   {
     title: 'できない理由2: キャラ被り回避／先をゆく',
@@ -94,6 +138,10 @@ window.SAMPLE_SEEDS = [
     tags: ['キャラ', '差別化'],
     description: 'できない理由2：キャラ被りしたくないから。意識的に。もしくは、先をゆく。',
     insight: '',
+    attribution: '本人',
+    controllability: '可',
+    timeFrame: '現在',
+    depth: '中層',
   },
   {
     title: '圧倒的になるための準備中（本当の私は知られていない）',
@@ -102,6 +150,10 @@ window.SAMPLE_SEEDS = [
     tags: ['準備', '自己変革', '秘密'],
     description: '今から私は圧倒的になるの。その為に準備してるの。みんな、本当の私の事を知らなくて残念ね。',
     insight: '',
+    attribution: '本人',
+    controllability: '可',
+    timeFrame: '未来',
+    depth: '中層',
   },
 
   // --- 解決に向かうため ---
@@ -112,6 +164,10 @@ window.SAMPLE_SEEDS = [
     tags: ['行動', '自己一致'],
     description: '本当はやりたかったことをやればいい。',
     insight: '',
+    attribution: '本人',
+    controllability: '可',
+    timeFrame: '未来',
+    depth: '表層',
   },
   {
     title: '強がっていた・けれど苦しんでいた自分を受け止める・許す',
@@ -120,6 +176,10 @@ window.SAMPLE_SEEDS = [
     tags: ['自己受容', '許し'],
     description: 'ずっと強がっていた、でも確かに苦しんでいた自分を受け止める。許す。',
     insight: '',
+    attribution: '本人',
+    controllability: '可',
+    timeFrame: '現在',
+    depth: '核心',
   },
   {
     title: '比較ではない場所／別レイヤーへ',
@@ -128,5 +188,9 @@ window.SAMPLE_SEEDS = [
     tags: ['別レイヤー', '脱比較'],
     description: '比較ではない場所に行く。別レイヤー。',
     insight: '',
+    attribution: '本人',
+    controllability: '可',
+    timeFrame: '未来',
+    depth: '中層',
   },
 ];

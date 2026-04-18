@@ -14,6 +14,7 @@
       <button class="tab" data-tab="list">一覧</button>
       <button class="tab" data-tab="stats">統計</button>
       <button class="tab" data-tab="ai">AI分析</button>
+      <button class="tab" data-tab="axes">軸の設定</button>
       <button class="tab" data-tab="settings">設定</button>
     </nav>
   </header>
@@ -61,6 +62,56 @@
           気づき・リフレーミング（任意）
           <textarea name="insight" rows="3" placeholder="後から見返して気づいたこと、自分への問い直し、別の捉え方など"></textarea>
         </label>
+
+        <details class="axis-group" open>
+          <summary>構造軸（任意）</summary>
+          <div class="axis-grid">
+            <label>
+              帰属（誰の問題か）
+              <select name="attribution">
+                <option value="">—</option>
+                <option value="本人">本人</option>
+                <option value="他者">他者</option>
+                <option value="環境">環境（制度・時代・運）</option>
+                <option value="複合">複合</option>
+              </select>
+            </label>
+            <label>
+              コントロール可能性
+              <select name="controllability">
+                <option value="">—</option>
+                <option value="可">可（自分で変えられる）</option>
+                <option value="部分的">部分的</option>
+                <option value="不可">不可（他人次第・変えられない）</option>
+              </select>
+            </label>
+            <label>
+              時間軸
+              <select name="timeFrame">
+                <option value="">—</option>
+                <option value="過去">過去（反芻）</option>
+                <option value="現在">現在進行</option>
+                <option value="未来">未来（予期不安）</option>
+              </select>
+            </label>
+            <label>
+              深さ層
+              <select name="depth">
+                <option value="">—</option>
+                <option value="表層">表層（出来事・感情）</option>
+                <option value="中層">中層（欲求・信念）</option>
+                <option value="核心">核心（起源・価値観）</option>
+              </select>
+            </label>
+          </div>
+        </details>
+
+        <details class="axis-group" id="custom-axes-details">
+          <summary>カスタム軸（<span id="custom-axes-count">0</span>）</summary>
+          <div id="custom-axes-fields"></div>
+          <p class="muted">軸は「軸の設定」タブで追加・編集できます。</p>
+        </details>
+
         <div class="actions">
           <button type="submit" class="primary">保存</button>
           <button type="reset">クリア</button>
@@ -137,6 +188,72 @@
       <article id="ai-output" class="ai-output"></article>
       <h3>過去の分析履歴</h3>
       <ul id="ai-history"></ul>
+    </section>
+
+    <section id="tab-axes" class="panel">
+      <h2>軸の設定</h2>
+      <p class="muted">悩みを点数化・図解するための観点を自分で追加できます。数値（スライダー）、選択肢、自由入力から選べます。</p>
+
+      <h3>組み込み軸</h3>
+      <ul class="axis-list builtin">
+        <li><b>熱量</b>（数値 1〜10）: いまの強さ・エネルギー</li>
+        <li><b>帰属</b>（選択）: 本人 / 他者 / 環境 / 複合</li>
+        <li><b>コントロール可能性</b>（選択）: 可 / 部分的 / 不可</li>
+        <li><b>時間軸</b>（選択）: 過去 / 現在 / 未来</li>
+        <li><b>深さ層</b>（選択）: 表層 / 中層 / 核心</li>
+      </ul>
+
+      <h3>カスタム軸</h3>
+      <ul id="custom-axes-list" class="axis-list"></ul>
+
+      <details class="axis-group">
+        <summary>新しい軸を追加</summary>
+        <form id="axis-form">
+          <label>
+            軸の名前
+            <input type="text" name="name" required maxlength="40" placeholder="例: 身体症状 / 価値観衝突 / 慢性度" />
+          </label>
+          <label>
+            種類
+            <select name="type">
+              <option value="select">選択肢</option>
+              <option value="number">数値（範囲）</option>
+              <option value="text">自由入力</option>
+            </select>
+          </label>
+          <div id="axis-options-wrap">
+            <label>
+              選択肢（カンマ区切り）
+              <input type="text" name="options" placeholder="例: あり, なし" />
+            </label>
+          </div>
+          <div id="axis-number-wrap" class="hidden">
+            <div class="row">
+              <label>最小値<input type="number" name="min" value="1" /></label>
+              <label>最大値<input type="number" name="max" value="10" /></label>
+            </div>
+          </div>
+          <label>
+            説明（任意）
+            <input type="text" name="description" placeholder="この軸が何を測るか、後から思い出せるメモ" />
+          </label>
+          <div class="actions">
+            <button type="submit" class="primary">追加</button>
+            <button type="reset">クリア</button>
+          </div>
+        </form>
+      </details>
+
+      <h3>よく使う軸のプリセット</h3>
+      <div class="actions preset-btns">
+        <button data-preset="direction">方向（外向き↔内向き）</button>
+        <button data-preset="emotion">感情の色（怒り↔悲しみ）</button>
+        <button data-preset="polarity">極性（+→- / -→- / -→+ / +→+）</button>
+        <button data-preset="chronicity">慢性度</button>
+        <button data-preset="valueConflict">価値観の衝突</button>
+        <button data-preset="body">身体への影響</button>
+        <button data-preset="meta">メタ感情</button>
+      </div>
     </section>
 
     <section id="tab-settings" class="panel">

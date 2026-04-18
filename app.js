@@ -2,11 +2,30 @@
   const STORE_KEY = 'nayami-seeds-v1';
   const SETTINGS_KEY = 'nayami-settings-v1';
   const HISTORY_KEY = 'nayami-ai-history-v1';
+  const AXES_KEY = 'nayami-custom-axes-v1';
+
+  const BUILTIN_AXES = [
+    { key: 'attribution', label: '帰属' },
+    { key: 'controllability', label: 'コントロール' },
+    { key: 'timeFrame', label: '時間軸' },
+    { key: 'depth', label: '深さ' },
+  ];
+
+  const AXIS_PRESETS = {
+    direction:     { name: '方向',       type: 'number', min: -5, max: 5, description: '外向き(-5) ↔ 内向き(+5)' },
+    emotion:       { name: '感情の色',   type: 'number', min: -5, max: 5, description: '怒り(-5) ↔ 悲しみ(+5)' },
+    polarity:      { name: '極性',       type: 'select', options: ['+→-', '-→-', '-→+', '+→+'], description: '入力感情 → 出力感情' },
+    chronicity:    { name: '慢性度',     type: 'select', options: ['数日', '数週間', '数ヶ月', '数年', 'ずっと'] },
+    valueConflict: { name: '価値観の衝突', type: 'select', options: ['なし', '軽い', '強い'] },
+    body:          { name: '身体への影響', type: 'select', options: ['なし', '軽い', '強い'] },
+    meta:          { name: 'メタ感情',   type: 'text', description: 'この悩みに対する二次感情（例: 悩んでいる自分が嫌）' },
+  };
 
   const state = {
     seeds: load(STORE_KEY, []),
     settings: load(SETTINGS_KEY, { apiKey: '', model: 'claude-sonnet-4-6' }),
     history: load(HISTORY_KEY, []),
+    customAxes: load(AXES_KEY, []),
     editingId: null,
   };
 
@@ -34,6 +53,8 @@
       if (name === 'list') renderList();
       if (name === 'stats') renderStats();
       if (name === 'ai') renderHistory();
+      if (name === 'axes') renderAxesSettings();
+      if (name === 'input') renderCustomAxesInForm();
     });
   });
 
@@ -42,6 +63,13 @@
   form.addEventListener('submit', e => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(form));
+    const customAxes = {};
+    for (const ax of state.customAxes) {
+      const raw = form.elements['custom_' + ax.id]?.value;
+      if (raw !== undefined && raw !== '') {
+        customAxes[ax.id] = ax.type === 'number' ? Number(raw) : String(raw);
+      }
+    }
     const seed = {
       id: state.editingId || uid(),
       title: data.title.trim(),
@@ -50,6 +78,11 @@
       category: data.category,
       intensity: Number(data.intensity),
       tags: (data.tags || '').split(',').map(s => s.trim()).filter(Boolean),
+      attribution: data.attribution || '',
+      controllability: data.controllability || '',
+      timeFrame: data.timeFrame || '',
+      depth: data.depth || '',
+      customAxes,
       createdAt: state.editingId
         ? state.seeds.find(s => s.id === state.editingId)?.createdAt || new Date().toISOString()
         : new Date().toISOString(),
@@ -65,6 +98,7 @@
     save(STORE_KEY, state.seeds);
     form.reset();
     form.querySelector('[name=intensity]').value = 5;
+    renderCustomAxesInForm();
     document.querySelector('.tab[data-tab=list]').click();
   });
 
@@ -117,8 +151,9 @@
       } else {
         insightEl.remove();
       }
+      const axisChips = renderAxisChips(s);
       li.querySelector('.seed-tags').innerHTML =
-        s.tags.map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join('');
+        axisChips + s.tags.map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join('');
       li.querySelector('.edit-btn').addEventListener('click', () => editSeed(s.id));
       li.querySelector('.del-btn').addEventListener('click', () => deleteSeed(s.id));
       listEl.appendChild(node);
@@ -128,6 +163,23 @@
   function intensityPill(n) {
     const cls = n <= 3 ? 'intensity-low' : n <= 6 ? 'intensity-mid' : 'intensity-high';
     return `<span class="intensity-pill ${cls}">${n}</span>`;
+  }
+
+  function renderAxisChips(s) {
+    const chips = [];
+    for (const ax of BUILTIN_AXES) {
+      const v = s[ax.key];
+      if (v) chips.push(`<span class="axis-chip" data-axis="${ax.key}">${escapeHtml(ax.label)}: ${escapeHtml(String(v))}</span>`);
+    }
+    if (s.customAxes) {
+      for (const ax of state.customAxes) {
+        const v = s.customAxes[ax.id];
+        if (v !== undefined && v !== '') {
+          chips.push(`<span class="axis-chip custom">${escapeHtml(ax.name)}: ${escapeHtml(String(v))}</span>`);
+        }
+      }
+    }
+    return chips.join('');
   }
 
   function editSeed(id) {
@@ -140,6 +192,11 @@
     form.category.value = s.category;
     form.intensity.value = s.intensity;
     form.tags.value = s.tags.join(', ');
+    form.elements.attribution.value = s.attribution || '';
+    form.elements.controllability.value = s.controllability || '';
+    form.elements.timeFrame.value = s.timeFrame || '';
+    form.elements.depth.value = s.depth || '';
+    renderCustomAxesInForm(s.customAxes || {});
     document.querySelector('.tab[data-tab=input]').click();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -269,6 +326,11 @@
         category: t.category || 'その他',
         intensity: Number(t.intensity) || 5,
         tags: Array.isArray(t.tags) ? t.tags.slice() : [],
+        attribution: t.attribution || '',
+        controllability: t.controllability || '',
+        timeFrame: t.timeFrame || '',
+        depth: t.depth || '',
+        customAxes: t.customAxes ? { ...t.customAxes } : {},
         createdAt: d.toISOString(),
         updatedAt: d.toISOString(),
       };
@@ -337,6 +399,17 @@
         `タグ: ${s.tags.join(', ') || 'なし'}`,
         `詳細: ${s.description || '(なし)'}`,
       ];
+      const axisBits = [];
+      for (const ax of BUILTIN_AXES) {
+        if (s[ax.key]) axisBits.push(`${ax.label}=${s[ax.key]}`);
+      }
+      if (s.customAxes) {
+        for (const ax of state.customAxes) {
+          const v = s.customAxes[ax.id];
+          if (v !== undefined && v !== '') axisBits.push(`${ax.name}=${v}`);
+        }
+      }
+      if (axisBits.length) parts.push('軸: ' + axisBits.join(' / '));
       if (s.insight) parts.push(`気づき: ${s.insight}`);
       return parts.join('\n');
     }).join('\n\n---\n\n');
@@ -478,7 +551,129 @@
     flashTimer = setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 2500);
   }
 
+  // ---------- Custom Axes ----------
+  const axisForm = document.getElementById('axis-form');
+  const axisTypeSel = axisForm?.elements?.type;
+  const axisOptionsWrap = document.getElementById('axis-options-wrap');
+  const axisNumberWrap = document.getElementById('axis-number-wrap');
+
+  axisTypeSel?.addEventListener('change', () => {
+    const t = axisTypeSel.value;
+    axisOptionsWrap.classList.toggle('hidden', t !== 'select');
+    axisNumberWrap.classList.toggle('hidden', t !== 'number');
+  });
+
+  axisForm?.addEventListener('submit', e => {
+    e.preventDefault();
+    const d = Object.fromEntries(new FormData(axisForm));
+    if (!d.name.trim()) return;
+    const axis = {
+      id: uid(),
+      name: d.name.trim(),
+      type: d.type,
+      description: (d.description || '').trim(),
+    };
+    if (d.type === 'select') {
+      axis.options = (d.options || '').split(',').map(s => s.trim()).filter(Boolean);
+      if (!axis.options.length) { alert('選択肢を入力してください。'); return; }
+    } else if (d.type === 'number') {
+      axis.min = Number(d.min);
+      axis.max = Number(d.max);
+      if (!(axis.max > axis.min)) { alert('最大値は最小値より大きくしてください。'); return; }
+    }
+    state.customAxes.push(axis);
+    save(AXES_KEY, state.customAxes);
+    axisForm.reset();
+    axisTypeSel.dispatchEvent(new Event('change'));
+    renderAxesSettings();
+    renderCustomAxesInForm();
+    flash('軸を追加しました');
+  });
+
+  document.querySelectorAll('.preset-btns button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = AXIS_PRESETS[btn.dataset.preset];
+      if (!p) return;
+      if (state.customAxes.some(a => a.name === p.name)) {
+        flash(`「${p.name}」は既に追加されています`);
+        return;
+      }
+      state.customAxes.push({ id: uid(), ...p, options: p.options ? p.options.slice() : undefined });
+      save(AXES_KEY, state.customAxes);
+      renderAxesSettings();
+      renderCustomAxesInForm();
+      flash(`「${p.name}」を追加しました`);
+    });
+  });
+
+  function renderAxesSettings() {
+    const ul = document.getElementById('custom-axes-list');
+    if (!ul) return;
+    if (!state.customAxes.length) {
+      ul.innerHTML = '<li class="muted">カスタム軸はまだありません。下のプリセットや「新しい軸を追加」から作れます。</li>';
+      return;
+    }
+    ul.innerHTML = state.customAxes.map(ax => {
+      const spec = ax.type === 'select'
+        ? `選択: ${(ax.options || []).join(' / ')}`
+        : ax.type === 'number'
+          ? `数値: ${ax.min}〜${ax.max}`
+          : '自由入力';
+      const desc = ax.description ? ` — ${escapeHtml(ax.description)}` : '';
+      return `<li data-id="${ax.id}">
+        <div>
+          <b>${escapeHtml(ax.name)}</b> <span class="muted">(${escapeHtml(spec)})</span>${desc}
+        </div>
+        <div><button class="del-axis" data-id="${ax.id}">削除</button></div>
+      </li>`;
+    }).join('');
+    ul.querySelectorAll('.del-axis').forEach(b => {
+      b.addEventListener('click', () => {
+        const id = b.dataset.id;
+        const ax = state.customAxes.find(a => a.id === id);
+        if (!ax) return;
+        if (!confirm(`軸「${ax.name}」を削除しますか？（各記録の値も表示されなくなりますが、データ自体は残ります）`)) return;
+        state.customAxes = state.customAxes.filter(a => a.id !== id);
+        save(AXES_KEY, state.customAxes);
+        renderAxesSettings();
+        renderCustomAxesInForm();
+      });
+    });
+  }
+
+  function renderCustomAxesInForm(values = {}) {
+    const wrap = document.getElementById('custom-axes-fields');
+    const countEl = document.getElementById('custom-axes-count');
+    const details = document.getElementById('custom-axes-details');
+    if (!wrap) return;
+    countEl.textContent = state.customAxes.length;
+    if (!state.customAxes.length) {
+      wrap.innerHTML = '';
+      details.style.display = 'none';
+      return;
+    }
+    details.style.display = '';
+    wrap.innerHTML = state.customAxes.map(ax => {
+      const v = values[ax.id] ?? '';
+      const name = 'custom_' + ax.id;
+      if (ax.type === 'select') {
+        const opts = ['<option value="">—</option>'].concat(
+          (ax.options || []).map(o => `<option value="${escapeAttr(o)}" ${String(o) === String(v) ? 'selected' : ''}>${escapeHtml(o)}</option>`)
+        ).join('');
+        return `<label>${escapeHtml(ax.name)}<select name="${name}">${opts}</select></label>`;
+      }
+      if (ax.type === 'number') {
+        return `<label>${escapeHtml(ax.name)} (${ax.min}〜${ax.max})
+          <input type="number" name="${name}" min="${ax.min}" max="${ax.max}" value="${escapeAttr(v)}" />
+        </label>`;
+      }
+      return `<label>${escapeHtml(ax.name)}<input type="text" name="${name}" value="${escapeAttr(v)}" /></label>`;
+    }).join('');
+  }
+
   renderList();
   renderStats();
   renderHistory();
+  renderAxesSettings();
+  renderCustomAxesInForm();
 })();
