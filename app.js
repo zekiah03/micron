@@ -3,6 +3,8 @@
   const SETTINGS_KEY = 'nayami-settings-v1';
   const HISTORY_KEY = 'nayami-ai-history-v1';
   const AXES_KEY = 'nayami-custom-axes-v1';
+  const REASONS_KEY = 'nayami-reasons-v1';
+  const POSITIONS_KEY = 'nayami-positions-v1';
 
   const BUILTIN_AXES = [
     { key: 'attribution', label: '帰属' },
@@ -10,6 +12,22 @@
     { key: 'timeFrame', label: '時間軸' },
     { key: 'depth', label: '深さ' },
   ];
+
+  const CATEGORY_COLORS = {
+    '幸せ・比較':    '#ef4444',
+    '年齢と経験':    '#f97316',
+    '人間関係':      '#eab308',
+    '外見':          '#22c55e',
+    '家族':          '#06b6d4',
+    '仕事':          '#3b82f6',
+    '健康':          '#8b5cf6',
+    'お金':          '#ec4899',
+    '学び':          '#14b8a6',
+    '将来':          '#a855f7',
+    '解決に向けて':  '#10b981',
+    'その他':        '#6b7280',
+  };
+  function categoryColor(cat) { return CATEGORY_COLORS[cat] || '#6b7280'; }
 
   const AXIS_PRESETS = {
     direction:     { name: '方向',       type: 'number', min: -5, max: 5, description: '外向き(-5) ↔ 内向き(+5)' },
@@ -26,7 +44,11 @@
     settings: load(SETTINGS_KEY, { apiKey: '', model: 'claude-sonnet-4-6' }),
     history: load(HISTORY_KEY, []),
     customAxes: load(AXES_KEY, []),
+    reasons: load(REASONS_KEY, []),
+    positions: load(POSITIONS_KEY, {}),
     editingId: null,
+    formReasons: [], // reasons being edited in the current form session
+    selectedNodeId: null,
   };
 
   function load(key, fallback) {
@@ -54,7 +76,8 @@
       if (name === 'stats') renderStats();
       if (name === 'ai') renderHistory();
       if (name === 'axes') renderAxesSettings();
-      if (name === 'input') renderCustomAxesInForm();
+      if (name === 'input') { renderCustomAxesInForm(); renderReasonsInForm(); }
+      if (name === 'graph') renderGraph();
     });
   });
 
@@ -96,9 +119,12 @@
       state.seeds.unshift(seed);
     }
     save(STORE_KEY, state.seeds);
+    commitFormReasonsToSeed(seed.id);
     form.reset();
     form.querySelector('[name=intensity]').value = 5;
+    state.formReasons = [];
     renderCustomAxesInForm();
+    renderReasonsInForm();
     document.querySelector('.tab[data-tab=list]').click();
   });
 
@@ -197,6 +223,15 @@
     form.elements.timeFrame.value = s.timeFrame || '';
     form.elements.depth.value = s.depth || '';
     renderCustomAxesInForm(s.customAxes || {});
+    state.formReasons = state.reasons
+      .filter(r => (r.anchors || []).some(a => a.seedId === id))
+      .map(r => ({
+        ref: r.id,
+        text: r.text,
+        axisKey: (r.anchors.find(a => a.seedId === id) || {}).axisKey || '',
+        parentIds: (r.parentIds || []).slice(),
+      }));
+    renderReasonsInForm();
     document.querySelector('.tab[data-tab=input]').click();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -204,7 +239,11 @@
   function deleteSeed(id) {
     if (!confirm('この記録を削除しますか？')) return;
     state.seeds = state.seeds.filter(s => s.id !== id);
+    for (const r of state.reasons) {
+      r.anchors = (r.anchors || []).filter(a => a.seedId !== id);
+    }
     save(STORE_KEY, state.seeds);
+    save(REASONS_KEY, state.reasons);
     renderList();
   }
 
@@ -274,8 +313,13 @@
   });
 
   document.getElementById('export-btn').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify({ seeds: state.seeds, history: state.history }, null, 2)],
-      { type: 'application/json' });
+    const blob = new Blob([JSON.stringify({
+      seeds: state.seeds,
+      history: state.history,
+      customAxes: state.customAxes,
+      reasons: state.reasons,
+      positions: state.positions,
+    }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -298,8 +342,23 @@
         state.history = data.history;
         save(HISTORY_KEY, state.history);
       }
+      if (Array.isArray(data.customAxes)) {
+        state.customAxes = data.customAxes;
+        save(AXES_KEY, state.customAxes);
+      }
+      if (Array.isArray(data.reasons)) {
+        state.reasons = data.reasons;
+        save(REASONS_KEY, state.reasons);
+      }
+      if (data.positions && typeof data.positions === 'object') {
+        state.positions = data.positions;
+        save(POSITIONS_KEY, state.positions);
+      }
       flash('インポートしました');
       renderList();
+      renderAxesSettings();
+      renderCustomAxesInForm();
+      renderReasonsInForm();
     } catch (err) {
       alert('インポートに失敗しました: ' + err.message);
     }
@@ -337,19 +396,53 @@
     });
     state.seeds = added.concat(state.seeds);
     save(STORE_KEY, state.seeds);
+
+    // サンプル理由ネットワーク
+    if (Array.isArray(window.SAMPLE_REASONS) && window.SAMPLE_REASONS.length) {
+      const byTitle = new Map(added.map(s => [s.title, s.id]));
+      const byKey = new Map();
+      const newReasons = [];
+      // 1st pass: create reasons without parents
+      for (const t of window.SAMPLE_REASONS) {
+        const r = {
+          id: 'r_' + uid(),
+          text: t.text,
+          parentIds: [],
+          anchors: [],
+        };
+        if (t.seedTitle && byTitle.has(t.seedTitle)) {
+          r.anchors.push({ seedId: byTitle.get(t.seedTitle), axisKey: t.axisKey || null });
+        }
+        if (t.key) byKey.set(t.key, r.id);
+        newReasons.push({ r, parentKeys: t.parents || [] });
+      }
+      // 2nd pass: resolve parent ids
+      for (const { r, parentKeys } of newReasons) {
+        r.parentIds = parentKeys.map(k => byKey.get(k)).filter(Boolean);
+        state.reasons.push(r);
+      }
+      save(REASONS_KEY, state.reasons);
+    }
+
     flash(`${added.length}件読み込みました`);
     renderList();
     renderStats();
+    renderReasonsInForm();
   });
 
   document.getElementById('clear-btn').addEventListener('click', () => {
-    if (!confirm('すべての記録と分析履歴を削除します。よろしいですか？')) return;
+    if (!confirm('すべての記録・理由・分析履歴・位置情報を削除します。よろしいですか？')) return;
     state.seeds = [];
     state.history = [];
+    state.reasons = [];
+    state.positions = {};
     save(STORE_KEY, state.seeds);
     save(HISTORY_KEY, state.history);
+    save(REASONS_KEY, state.reasons);
+    save(POSITIONS_KEY, state.positions);
     renderList();
     renderHistory();
+    renderReasonsInForm();
     flash('削除しました');
   });
 
@@ -671,9 +764,495 @@
     }).join('');
   }
 
+  // ---------- Reasons (form) ----------
+  function axisOptionsForForm() {
+    const opts = [{ value: '', label: '悩み全体' }];
+    for (const ax of BUILTIN_AXES) opts.push({ value: ax.key, label: ax.label });
+    opts.push({ value: 'intensity', label: '強さ' });
+    for (const ax of state.customAxes) opts.push({ value: 'custom_' + ax.id, label: ax.name });
+    return opts;
+  }
+
+  function renderReasonsInForm() {
+    const wrap = document.getElementById('reasons-in-form');
+    const countEl = document.getElementById('reasons-count');
+    if (!wrap) return;
+    countEl.textContent = state.formReasons.length;
+    if (!state.formReasons.length) {
+      wrap.innerHTML = '<p class="muted">まだ理由はありません。「＋ 理由を追加」で書き足せます。</p>';
+      return;
+    }
+    const axisOpts = axisOptionsForForm();
+    wrap.innerHTML = state.formReasons.map((fr, i) => {
+      const parentOpts = state.reasons
+        .filter(r => r.id !== fr.ref)
+        .map(r => `<option value="${r.id}" ${fr.parentIds.includes(r.id) ? 'selected' : ''}>${escapeHtml(truncate(r.text, 40))}</option>`)
+        .join('');
+      const axisOptsHtml = axisOpts
+        .map(o => `<option value="${escapeAttr(o.value)}" ${o.value === fr.axisKey ? 'selected' : ''}>${escapeHtml(o.label)}</option>`)
+        .join('');
+      return `<div class="reason-row" data-i="${i}">
+        <div class="reason-row-head">
+          <select class="reason-axis" data-i="${i}">${axisOptsHtml}</select>
+          <button type="button" class="reason-del" data-i="${i}">削除</button>
+        </div>
+        <textarea class="reason-text" data-i="${i}" rows="2" placeholder="なぜそう感じる／思う？">${escapeHtml(fr.text)}</textarea>
+        <label class="reason-parents-label">より深い理由（根底にあるもの）
+          <select class="reason-parents" data-i="${i}" multiple size="${Math.min(4, Math.max(2, state.reasons.length))}">${parentOpts || '<option disabled>（他の理由を書くと選べます）</option>'}</select>
+        </label>
+      </div>`;
+    }).join('');
+
+    wrap.querySelectorAll('.reason-text').forEach(t => {
+      t.addEventListener('input', e => {
+        state.formReasons[+e.target.dataset.i].text = e.target.value;
+        countEl.textContent = state.formReasons.length;
+      });
+    });
+    wrap.querySelectorAll('.reason-axis').forEach(s => {
+      s.addEventListener('change', e => {
+        state.formReasons[+e.target.dataset.i].axisKey = e.target.value;
+      });
+    });
+    wrap.querySelectorAll('.reason-parents').forEach(s => {
+      s.addEventListener('change', e => {
+        const i = +e.target.dataset.i;
+        state.formReasons[i].parentIds = Array.from(e.target.selectedOptions).map(o => o.value);
+      });
+    });
+    wrap.querySelectorAll('.reason-del').forEach(b => {
+      b.addEventListener('click', () => {
+        state.formReasons.splice(+b.dataset.i, 1);
+        renderReasonsInForm();
+      });
+    });
+  }
+
+  document.getElementById('add-reason-btn').addEventListener('click', () => {
+    state.formReasons.push({ ref: null, text: '', axisKey: '', parentIds: [] });
+    renderReasonsInForm();
+  });
+
+  function commitFormReasonsToSeed(seedId) {
+    // remove stale anchors to this seed
+    for (const r of state.reasons) {
+      r.anchors = (r.anchors || []).filter(a => a.seedId !== seedId);
+    }
+    for (const fr of state.formReasons) {
+      const text = (fr.text || '').trim();
+      if (!text) continue;
+      let r = fr.ref ? state.reasons.find(x => x.id === fr.ref) : null;
+      if (r) {
+        r.text = text;
+        r.parentIds = (fr.parentIds || []).filter(pid => pid !== r.id);
+      } else {
+        r = { id: 'r_' + uid(), text, parentIds: (fr.parentIds || []).slice(), anchors: [] };
+        state.reasons.push(r);
+      }
+      r.anchors = r.anchors || [];
+      if (!r.anchors.some(a => a.seedId === seedId && (a.axisKey || '') === (fr.axisKey || ''))) {
+        r.anchors.push({ seedId, axisKey: fr.axisKey || null });
+      }
+    }
+    // drop reasons that have no anchors and no children pointing to them
+    const referencedAsParent = new Set();
+    for (const r of state.reasons) for (const p of (r.parentIds || [])) referencedAsParent.add(p);
+    state.reasons = state.reasons.filter(r => (r.anchors && r.anchors.length) || referencedAsParent.has(r.id));
+    save(REASONS_KEY, state.reasons);
+  }
+
+  function truncate(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+  // ---------- Graph (SVG force-directed) ----------
+  const graphSvg = document.getElementById('graph-svg');
+  const graphPanel = document.getElementById('graph-panel');
+  const graphFilter = document.getElementById('graph-filter');
+  const graphCat = document.getElementById('graph-cat');
+  const graphInfo = document.getElementById('graph-info');
+  let graphNodes = [];
+  let graphLinks = [];
+  let simRaf = null;
+  let simIter = 0;
+
+  document.getElementById('graph-relayout').addEventListener('click', () => {
+    for (const n of graphNodes) {
+      if (!n.fixed) {
+        n.x = 450 + (Math.random() - 0.5) * 300;
+        n.y = 300 + (Math.random() - 0.5) * 200;
+        n.vx = 0; n.vy = 0;
+      }
+    }
+    simIter = 0;
+    runSim();
+  });
+
+  document.getElementById('graph-reset-positions').addEventListener('click', () => {
+    if (!confirm('保存された位置情報を削除して再配置します。よろしいですか？')) return;
+    state.positions = {};
+    save(POSITIONS_KEY, state.positions);
+    renderGraph();
+  });
+
+  [graphFilter, graphCat].forEach(el => el.addEventListener('change', renderGraph));
+
+  function renderGraph() {
+    // Populate categories
+    const cats = Array.from(new Set(state.seeds.map(s => s.category))).sort();
+    const currentCat = graphCat.value;
+    graphCat.innerHTML = '<option value="">全カテゴリ</option>' +
+      cats.map(c => `<option value="${escapeAttr(c)}" ${c === currentCat ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('');
+
+    const filter = graphFilter.value;
+    const catSel = graphCat.value;
+
+    let seeds = state.seeds.slice();
+    if (catSel) seeds = seeds.filter(s => s.category === catSel);
+    if (filter === 'high') seeds = seeds.filter(s => s.intensity >= 7);
+
+    const seedIds = new Set(seeds.map(s => s.id));
+    let reasons = state.reasons.slice();
+    // Only keep reasons that anchor on visible seeds (or are parents reachable from them)
+    if (filter === 'reasons') {
+      // show all reasons, drop seeds entirely
+      seeds = [];
+    } else {
+      const kept = new Set();
+      for (const r of reasons) {
+        if ((r.anchors || []).some(a => seedIds.has(a.seedId))) kept.add(r.id);
+      }
+      // include ancestor reasons transitively
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const r of reasons) {
+          if (kept.has(r.id)) {
+            for (const p of (r.parentIds || [])) {
+              if (!kept.has(p)) { kept.add(p); changed = true; }
+            }
+          }
+        }
+      }
+      reasons = reasons.filter(r => kept.has(r.id));
+    }
+
+    // Build nodes
+    const nodes = [];
+    const pos = state.positions;
+    for (const s of seeds) {
+      const p = pos['s_' + s.id];
+      nodes.push({
+        id: 's_' + s.id,
+        type: 'seed',
+        ref: s.id,
+        label: s.title,
+        color: categoryColor(s.category),
+        r: 10 + (Number(s.intensity) || 5) * 1.2,
+        x: p ? p.x : 450 + (Math.random() - 0.5) * 300,
+        y: p ? p.y : 300 + (Math.random() - 0.5) * 200,
+        vx: 0, vy: 0, fixed: !!p,
+      });
+    }
+    for (const r of reasons) {
+      const p = pos['r_' + r.id];
+      nodes.push({
+        id: 'n_' + r.id,
+        type: 'reason',
+        ref: r.id,
+        label: r.text,
+        color: '#fef3c7',
+        w: Math.max(90, Math.min(220, r.text.length * 8)),
+        h: 30,
+        x: p ? p.x : 450 + (Math.random() - 0.5) * 300,
+        y: p ? p.y : 300 + (Math.random() - 0.5) * 200,
+        vx: 0, vy: 0, fixed: !!p,
+      });
+    }
+
+    const nodeById = {};
+    for (const n of nodes) nodeById[n.id] = n;
+
+    // Build links
+    const links = [];
+    for (const r of reasons) {
+      for (const a of (r.anchors || [])) {
+        const src = nodeById['s_' + a.seedId];
+        const dst = nodeById['n_' + r.id];
+        if (src && dst) links.push({ source: src, target: dst, kind: 'seed-reason', axisKey: a.axisKey || '' });
+      }
+      for (const pid of (r.parentIds || [])) {
+        const src = nodeById['n_' + r.id];
+        const dst = nodeById['n_' + pid];
+        if (src && dst) links.push({ source: src, target: dst, kind: 'reason-parent' });
+      }
+    }
+
+    graphNodes = nodes;
+    graphLinks = links;
+    graphInfo.textContent = `ノード ${nodes.length} / エッジ ${links.length}`;
+
+    simIter = 0;
+    runSim();
+  }
+
+  function runSim() {
+    if (simRaf) cancelAnimationFrame(simRaf);
+    const step = () => {
+      tickSim();
+      drawGraph();
+      simIter++;
+      if (simIter < 300) simRaf = requestAnimationFrame(step);
+      else simRaf = null;
+    };
+    step();
+  }
+
+  function tickSim() {
+    const nodes = graphNodes;
+    const links = graphLinks;
+    const W = 900, H = 600, cx = W / 2, cy = H / 2;
+    const repulse = 1400;
+    const centerPull = 0.004;
+    const springK = 0.04;
+    const damping = 0.85;
+
+    // Repulsion
+    for (let i = 0; i < nodes.length; i++) {
+      const a = nodes[i];
+      for (let j = i + 1; j < nodes.length; j++) {
+        const b = nodes[j];
+        let dx = a.x - b.x, dy = a.y - b.y;
+        const d2 = dx * dx + dy * dy + 0.01;
+        const d = Math.sqrt(d2);
+        const force = repulse / d2;
+        const fx = (dx / d) * force;
+        const fy = (dy / d) * force;
+        a.vx += fx; a.vy += fy;
+        b.vx -= fx; b.vy -= fy;
+      }
+    }
+    // Attraction along edges
+    for (const link of links) {
+      const a = link.source, b = link.target;
+      const ideal = link.kind === 'reason-parent' ? 110 : 90;
+      let dx = b.x - a.x, dy = b.y - a.y;
+      const d = Math.sqrt(dx * dx + dy * dy) + 0.01;
+      const f = (d - ideal) * springK;
+      const fx = (dx / d) * f;
+      const fy = (dy / d) * f;
+      a.vx += fx; a.vy += fy;
+      b.vx -= fx; b.vy -= fy;
+    }
+    // Center gravity
+    for (const n of nodes) {
+      n.vx += (cx - n.x) * centerPull;
+      n.vy += (cy - n.y) * centerPull;
+    }
+    // Integrate
+    for (const n of nodes) {
+      if (n.fixed) { n.vx = 0; n.vy = 0; continue; }
+      n.vx *= damping; n.vy *= damping;
+      n.x += n.vx; n.y += n.vy;
+      if (n.x < 20) n.x = 20; if (n.x > W - 20) n.x = W - 20;
+      if (n.y < 20) n.y = 20; if (n.y > H - 20) n.y = H - 20;
+    }
+  }
+
+  function drawGraph() {
+    const parts = [];
+    parts.push('<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#9ca3af"/></marker></defs>');
+    for (const l of graphLinks) {
+      const a = l.source, b = l.target;
+      const isDashed = l.kind === 'reason-parent';
+      parts.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="edge ${isDashed ? 'edge-parent' : 'edge-anchor'}" ${isDashed ? 'stroke-dasharray="4 3" marker-end="url(#arrow)"' : ''}/>`);
+    }
+    for (const n of graphNodes) {
+      const sel = state.selectedNodeId === n.id ? ' selected' : '';
+      if (n.type === 'seed') {
+        parts.push(`<g class="node node-seed${sel}" data-id="${n.id}" transform="translate(${n.x},${n.y})">
+          <circle r="${n.r}" fill="${n.color}" stroke="#fff" stroke-width="2"></circle>
+          <text y="${n.r + 14}" text-anchor="middle" class="node-label">${escapeHtml(truncate(n.label, 18))}</text>
+        </g>`);
+      } else {
+        const hw = n.w / 2, hh = n.h / 2;
+        parts.push(`<g class="node node-reason${sel}" data-id="${n.id}" transform="translate(${n.x},${n.y})">
+          <rect x="${-hw}" y="${-hh}" width="${n.w}" height="${n.h}" rx="6" ry="6" fill="${n.color}" stroke="#f59e0b" stroke-width="1.5"></rect>
+          <text text-anchor="middle" dy="5" class="node-label reason-label">${escapeHtml(truncate(n.label, Math.floor(n.w / 8)))}</text>
+        </g>`);
+      }
+    }
+    graphSvg.innerHTML = parts.join('');
+    attachGraphInteractions();
+  }
+
+  function attachGraphInteractions() {
+    graphSvg.querySelectorAll('.node').forEach(g => {
+      g.addEventListener('pointerdown', e => startDrag(e, g));
+      g.addEventListener('click', e => { if (!g._moved) selectNode(g.dataset.id); });
+    });
+  }
+
+  function startDrag(e, g) {
+    e.preventDefault();
+    const id = g.dataset.id;
+    const node = graphNodes.find(n => n.id === id);
+    if (!node) return;
+    const pt = svgPoint(e);
+    const offset = { x: pt.x - node.x, y: pt.y - node.y };
+    node.fixed = true;
+    g._moved = false;
+    const move = ev => {
+      const p = svgPoint(ev);
+      node.x = p.x - offset.x;
+      node.y = p.y - offset.y;
+      node.vx = 0; node.vy = 0;
+      g._moved = true;
+      drawGraph();
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      state.positions[node.id] = { x: node.x, y: node.y };
+      save(POSITIONS_KEY, state.positions);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+
+  function svgPoint(evt) {
+    const rect = graphSvg.getBoundingClientRect();
+    const vb = graphSvg.viewBox.baseVal;
+    return {
+      x: ((evt.clientX - rect.left) / rect.width) * vb.width,
+      y: ((evt.clientY - rect.top) / rect.height) * vb.height,
+    };
+  }
+
+  function selectNode(id) {
+    state.selectedNodeId = id;
+    const node = graphNodes.find(n => n.id === id);
+    if (!node) return;
+    drawGraph();
+    if (node.type === 'seed') {
+      const s = state.seeds.find(x => x.id === node.ref);
+      if (!s) return;
+      const axisBits = BUILTIN_AXES
+        .filter(a => s[a.key])
+        .map(a => `<span class="axis-chip" data-axis="${a.key}">${a.label}: ${escapeHtml(s[a.key])}</span>`)
+        .join('');
+      const attachedReasons = state.reasons.filter(r => (r.anchors || []).some(a => a.seedId === s.id));
+      const rlist = attachedReasons.length
+        ? '<ul class="panel-reasons">' + attachedReasons.map(r => {
+            const ak = (r.anchors.find(a => a.seedId === s.id) || {}).axisKey || '';
+            const axisLabel = ak ? axisLabelFor(ak) : '全体';
+            return `<li><span class="muted">[${escapeHtml(axisLabel)}]</span> ${escapeHtml(r.text)}</li>`;
+          }).join('') + '</ul>'
+        : '<p class="muted">この悩みに紐づく理由はまだありません。</p>';
+      graphPanel.innerHTML = `
+        <h3 style="margin-top:0">${escapeHtml(s.title)}</h3>
+        <p class="muted">${escapeHtml(s.category)} · 強さ ${s.intensity} · ${formatDate(s.createdAt)}</p>
+        <div>${axisBits || '<span class="muted">構造軸は未設定</span>'}</div>
+        <p style="white-space:pre-wrap;margin-top:8px">${escapeHtml(s.description || '')}</p>
+        ${s.insight ? `<div class="seed-insight">💡 ${escapeHtml(s.insight)}</div>` : ''}
+        <h4>紐づく理由</h4>
+        ${rlist}
+        <div class="actions"><button data-act="edit-seed" data-id="${s.id}">この悩みを編集</button></div>`;
+      graphPanel.querySelector('[data-act="edit-seed"]')?.addEventListener('click', () => {
+        editSeed(s.id);
+      });
+    } else {
+      const r = state.reasons.find(x => x.id === node.ref);
+      if (!r) return;
+      const parents = (r.parentIds || []).map(pid => state.reasons.find(x => x.id === pid)).filter(Boolean);
+      const children = state.reasons.filter(x => (x.parentIds || []).includes(r.id));
+      const anchoredSeeds = (r.anchors || []).map(a => {
+        const s = state.seeds.find(x => x.id === a.seedId);
+        if (!s) return null;
+        const axisLabel = a.axisKey ? axisLabelFor(a.axisKey) : '全体';
+        return `<li><b>[${escapeHtml(axisLabel)}]</b> ${escapeHtml(s.title)}</li>`;
+      }).filter(Boolean).join('');
+      graphPanel.innerHTML = `
+        <h3 style="margin-top:0">理由</h3>
+        <textarea id="panel-reason-text" rows="3">${escapeHtml(r.text)}</textarea>
+        <h4>紐づいている悩み</h4>
+        <ul class="panel-reasons">${anchoredSeeds || '<li class="muted">なし</li>'}</ul>
+        <h4>より深い理由（この理由の根底）</h4>
+        <ul class="panel-reasons">${parents.map(p => `<li>${escapeHtml(p.text)} <button class="mini" data-unlink="${p.id}">解除</button></li>`).join('') || '<li class="muted">なし</li>'}</ul>
+        <label>深い理由を追加
+          <select id="panel-add-parent">
+            <option value="">—</option>
+            ${state.reasons.filter(x => x.id !== r.id && !r.parentIds.includes(x.id)).map(x => `<option value="${x.id}">${escapeHtml(truncate(x.text, 40))}</option>`).join('')}
+          </select>
+        </label>
+        <h4>この理由から派生している理由</h4>
+        <ul class="panel-reasons">${children.map(c => `<li>${escapeHtml(c.text)}</li>`).join('') || '<li class="muted">なし</li>'}</ul>
+        <div class="actions">
+          <button id="panel-save-reason" class="primary">保存</button>
+          <button id="panel-delete-reason" class="danger">削除</button>
+        </div>`;
+      graphPanel.querySelector('#panel-save-reason').addEventListener('click', () => {
+        r.text = graphPanel.querySelector('#panel-reason-text').value.trim();
+        save(REASONS_KEY, state.reasons);
+        flash('保存しました');
+        renderGraph();
+      });
+      graphPanel.querySelector('#panel-delete-reason').addEventListener('click', () => {
+        if (!confirm('この理由を削除しますか？（紐づけていた悩みからも外れます）')) return;
+        state.reasons = state.reasons.filter(x => x.id !== r.id);
+        for (const x of state.reasons) x.parentIds = (x.parentIds || []).filter(pid => pid !== r.id);
+        save(REASONS_KEY, state.reasons);
+        state.selectedNodeId = null;
+        graphPanel.innerHTML = '<p class="muted">削除しました。</p>';
+        renderGraph();
+      });
+      graphPanel.querySelector('#panel-add-parent').addEventListener('change', e => {
+        const pid = e.target.value;
+        if (!pid) return;
+        if (wouldCreateCycle(r.id, pid)) { alert('循環参照になるため追加できません。'); return; }
+        r.parentIds = (r.parentIds || []).concat(pid);
+        save(REASONS_KEY, state.reasons);
+        renderGraph();
+        selectNode(node.id);
+      });
+      graphPanel.querySelectorAll('[data-unlink]').forEach(b => {
+        b.addEventListener('click', () => {
+          r.parentIds = (r.parentIds || []).filter(pid => pid !== b.dataset.unlink);
+          save(REASONS_KEY, state.reasons);
+          renderGraph();
+          selectNode(node.id);
+        });
+      });
+    }
+  }
+
+  function wouldCreateCycle(reasonId, candidateParentId) {
+    // adding candidateParent as parent of reasonId would create cycle if reasonId is already ancestor of candidate
+    const visited = new Set();
+    const walk = (id) => {
+      if (id === reasonId) return true;
+      if (visited.has(id)) return false;
+      visited.add(id);
+      const node = state.reasons.find(x => x.id === id);
+      if (!node) return false;
+      return (node.parentIds || []).some(walk);
+    };
+    return walk(candidateParentId);
+  }
+
+  function axisLabelFor(key) {
+    if (key === 'intensity') return '強さ';
+    const b = BUILTIN_AXES.find(a => a.key === key);
+    if (b) return b.label;
+    if (key.startsWith('custom_')) {
+      const ax = state.customAxes.find(a => 'custom_' + a.id === key);
+      if (ax) return ax.name;
+    }
+    return key;
+  }
+
   renderList();
   renderStats();
   renderHistory();
   renderAxesSettings();
   renderCustomAxesInForm();
+  renderReasonsInForm();
 })();

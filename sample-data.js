@@ -194,3 +194,102 @@ window.SAMPLE_SEEDS = [
     depth: '中層',
   },
 ];
+
+// 理由ネットワークのサンプル。
+// seedTitle: 上のサンプル記録の title と一致していると、その記録に紐付く。
+// parents: 他の理由の key を指定すると「より深い理由」として繋がる（図解で破線）。
+window.SAMPLE_REASONS = [
+  {
+    key: 'R_root_family',
+    text: '家族との比較構造・否定の中で育ったから',
+  },
+  {
+    key: 'R_self_worth_by_effort',
+    text: '努力した分だけ価値がある、という信念',
+    parents: ['R_root_family'],
+  },
+  {
+    key: 'R_past_justification',
+    text: '苦しんできた過去を意味あるものにしたい',
+    parents: ['R_self_worth_by_effort'],
+  },
+  {
+    key: 'R_fear_rejected',
+    text: '本当の自分を出すと嫌われる／拒絶される恐れ',
+    parents: ['R_root_family'],
+  },
+  {
+    key: 'R_char_switch',
+    text: '相手によって見せるキャラを変える習慣',
+    parents: ['R_fear_rejected'],
+  },
+
+  // 紐付け
+  {
+    seedTitle: '人の幸せを喜べない',
+    axisKey: '',
+    text: '自分もやりたいのに、できていない／やっていないことを気にしているから',
+    parents: ['R_self_worth_by_effort'],
+  },
+  {
+    seedTitle: '苦しんだ時間 vs 手に入れてきた人への憎しみ',
+    axisKey: 'attribution',
+    text: '同じ時間を過ごしたのに、得ているものが違いすぎるのが不公平に感じる',
+    parents: ['R_past_justification'],
+  },
+  {
+    seedTitle: '努力しない人への軽蔑と、そう思う自分への嫌悪',
+    axisKey: '',
+    text: 'そう思わないと、これまでの自分の選択が無価値に見えてしまう',
+    parents: ['R_past_justification', 'R_self_worth_by_effort'],
+  },
+  {
+    seedTitle: '比較構造の中で「勝つ」と言いながら疲れている',
+    axisKey: '',
+    text: '本当は勝負に意味はないと分かっているが、降りる許可が自分に出せない',
+    parents: ['R_self_worth_by_effort'],
+  },
+  {
+    seedTitle: '人に心を開ききれない／悪口を言われている気がする',
+    axisKey: 'depth',
+    text: '人は私を見たら否定するはず、という前提が染み付いている',
+    parents: ['R_fear_rejected', 'R_root_family'],
+  },
+  {
+    seedTitle: '家族からの扱いが私を形成した',
+    axisKey: 'depth',
+    text: '比較・否定・聞いてもらえなかった経験が基盤になっている',
+    parents: ['R_root_family'],
+  },
+  {
+    seedTitle: 'できない理由1: 人目／相手でキャラを変える',
+    axisKey: '',
+    text: '本当の自分を見せると嫌われるかもしれない',
+    parents: ['R_fear_rejected', 'R_char_switch'],
+  },
+  {
+    seedTitle: 'できない理由2: キャラ被り回避／先をゆく',
+    axisKey: '',
+    text: '人と同じでは埋もれる／価値が無い、という不安',
+    parents: ['R_self_worth_by_effort', 'R_char_switch'],
+  },
+  {
+    seedTitle: '圧倒的になるための準備中（本当の私は知られていない）',
+    axisKey: '',
+    text: '今の自分では不十分で、圧倒的にならないと肯定されないという信念',
+    parents: ['R_self_worth_by_effort', 'R_fear_rejected'],
+  },
+  {
+    seedTitle: '強がっていた・けれど苦しんでいた自分を受け止める・許す',
+    axisKey: 'depth',
+    text: '強がらなくてもここにいていい、という許可を自分に出す',
+    parents: [],
+  },
+  {
+    seedTitle: '比較ではない場所／別レイヤーへ',
+    axisKey: '',
+    text: '同じ土俵にいる限り終わらない。別の評価軸の場所に移ることで勝負そのものから降りられる',
+    parents: [],
+  },
+];
+

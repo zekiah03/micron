@@ -14,6 +14,7 @@
       <button class="tab" data-tab="list">一覧</button>
       <button class="tab" data-tab="stats">統計</button>
       <button class="tab" data-tab="ai">AI分析</button>
+      <button class="tab" data-tab="graph">図解</button>
       <button class="tab" data-tab="axes">軸の設定</button>
       <button class="tab" data-tab="settings">設定</button>
     </nav>
@@ -112,6 +113,15 @@
           <p class="muted">軸は「軸の設定」タブで追加・編集できます。</p>
         </details>
 
+        <details class="axis-group" id="reasons-details" open>
+          <summary>理由・つながり（<span id="reasons-count">0</span>）</summary>
+          <p class="muted">この悩みや各要素に「なぜ？」を書き足していきます。書いた理由は他の理由と紐付けでき、「図解」タブで繋がりを確認できます。</p>
+          <div id="reasons-in-form"></div>
+          <div class="actions">
+            <button type="button" id="add-reason-btn">＋ 理由を追加</button>
+          </div>
+        </details>
+
         <div class="actions">
           <button type="submit" class="primary">保存</button>
           <button type="reset">クリア</button>
@@ -188,6 +198,34 @@
       <article id="ai-output" class="ai-output"></article>
       <h3>過去の分析履歴</h3>
       <ul id="ai-history"></ul>
+    </section>
+
+    <section id="tab-graph" class="panel">
+      <h2>図解</h2>
+      <div class="graph-controls">
+        <label>
+          表示
+          <select id="graph-filter">
+            <option value="all">すべて</option>
+            <option value="high">強さ7以上の悩みのみ</option>
+            <option value="reasons">理由ネットワークのみ</option>
+          </select>
+        </label>
+        <label>
+          カテゴリ
+          <select id="graph-cat"><option value="">全カテゴリ</option></select>
+        </label>
+        <button id="graph-relayout">再配置</button>
+        <button id="graph-reset-positions">位置リセット</button>
+        <span class="muted" id="graph-info"></span>
+      </div>
+      <div class="graph-wrap">
+        <svg id="graph-svg" viewBox="0 0 900 600"></svg>
+        <aside id="graph-panel">
+          <p class="muted">ノードをクリックすると詳細が表示されます。ドラッグで位置を変更できます。</p>
+        </aside>
+      </div>
+      <p class="muted">● 悩み（大きさ=強さ、色=カテゴリ） ／ ▭ 理由 ／ 実線=悩み→理由 ／ 破線=理由→より深い理由</p>
     </section>
 
     <section id="tab-axes" class="panel">
