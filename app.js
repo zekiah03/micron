@@ -13,6 +13,14 @@
   const KOLB_KEY = 'nayami-kolb-v1';
   const VALUES_KEY = 'nayami-values-v1';
   const THINKING_KEY = 'nayami-thinking-v1';
+  const JOHARI_KEY = 'nayami-johari-v1';
+
+  const JOHARI_TRAITS = [
+    '明るい', '静か', '親切', '几帳面', '大胆', '慎重', '創造的', '論理的', '共感的', '独立心が強い',
+    '協調的', 'リーダーシップがある', '聞き上手', '話し上手', '表現豊か', '内省的', '外向的', '真面目', '遊び心がある', '計画的',
+    '即興的', '完璧主義', '楽観的', '行動力がある', '信頼できる', '思いやりがある', 'ユーモアがある', '集中力がある', '適応力がある', '寛大',
+    '直感的', '分析的', '情熱的', '冷静', '親しみやすい', '謙虚', '頑固', '柔軟', '神経質', 'おおらか',
+  ];
 
   const SOCIAL_DIMENSIONS = [
     { key: 'communication', label: 'コミュニケーション', color: '#3b82f6' },
@@ -261,11 +269,14 @@
     kolbAssessments: load(KOLB_KEY, []),
     valuesAssessments: load(VALUES_KEY, []),
     thinkingAssessments: load(THINKING_KEY, []),
+    johariSessions: load(JOHARI_KEY, []),
     quiz: null,
     effortQuiz: null,
     kolbQuiz: null,
     valuesQuiz: null,
     thinkingQuiz: null,
+    johariDraft: { selfTraits: [], othersTraits: [], extraSelf: [], extraOthers: [] },
+    johariEditingId: null,
     editingId: null,
     editingActionId: null,
     actionPathFilter: 'all',
@@ -311,6 +322,7 @@
       if (name === 'kolb') renderKolbHistory();
       if (name === 'values') renderValuesHistory();
       if (name === 'thinking') renderThinkingHistory();
+      if (name === 'johari') renderJohari();
     });
   });
 
@@ -562,6 +574,7 @@
       kolbAssessments: state.kolbAssessments,
       valuesAssessments: state.valuesAssessments,
       thinkingAssessments: state.thinkingAssessments,
+      johariSessions: state.johariSessions,
     }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -629,6 +642,10 @@
         state.thinkingAssessments = data.thinkingAssessments;
         save(THINKING_KEY, state.thinkingAssessments);
       }
+      if (Array.isArray(data.johariSessions)) {
+        state.johariSessions = data.johariSessions;
+        save(JOHARI_KEY, state.johariSessions);
+      }
       flash('インポートしました');
       renderList();
       renderAxesSettings();
@@ -642,6 +659,7 @@
       renderKolbHistory();
       renderValuesHistory();
       renderThinkingHistory();
+      renderJohari();
     } catch (err) {
       alert('インポートに失敗しました: ' + err.message);
     }
@@ -773,6 +791,9 @@
     state.kolbAssessments = [];
     state.valuesAssessments = [];
     state.thinkingAssessments = [];
+    state.johariSessions = [];
+    state.johariDraft = { selfTraits: [], othersTraits: [], extraSelf: [], extraOthers: [] };
+    state.johariEditingId = null;
     save(STORE_KEY, state.seeds);
     save(HISTORY_KEY, state.history);
     save(REASONS_KEY, state.reasons);
@@ -785,6 +806,7 @@
     save(KOLB_KEY, state.kolbAssessments);
     save(VALUES_KEY, state.valuesAssessments);
     save(THINKING_KEY, state.thinkingAssessments);
+    save(JOHARI_KEY, state.johariSessions);
     renderList();
     renderHistory();
     renderReasonsInForm();
@@ -796,6 +818,7 @@
     renderKolbHistory();
     renderValuesHistory();
     renderThinkingHistory();
+    renderJohari();
     flash('削除しました');
   });
 
@@ -2973,6 +2996,13 @@
       if (!latest) continue;
       parts.push(`## 直近の${s.label}スコア\n` + s.dims.map(d => `${d.label}: ${latest.scores[d.key]}`).join(' / '));
     }
+    if (except !== 'johari' && state.johariSessions[0]) {
+      const j = state.johariSessions[0];
+      const w = computeJohariWindows(j);
+      parts.push(`## 直近のジョハリの窓\n開放: ${w.open.length}個 / 盲点: ${w.blind.length}個 / 秘密: ${w.hidden.length}個 / 未知の余地: ${w.unknown.length}個` +
+        (w.blind.length ? `\n盲点のトレイト例: ${w.blind.slice(0, 5).join(', ')}` : '') +
+        (w.hidden.length ? `\n秘密のトレイト例: ${w.hidden.slice(0, 5).join(', ')}` : ''));
+    }
     return parts.length ? parts.join('\n\n') : '（他の診断はまだ受けていません）';
   }
 
@@ -3439,6 +3469,288 @@
   function renderValuesHistory() { window.__renderValuesHistory && window.__renderValuesHistory(); }
   function renderThinkingHistory() { window.__renderThinkingHistory && window.__renderThinkingHistory(); }
 
+  // ---------- Johari Window ----------
+  function getAllJohariTraits(draft = state.johariDraft) {
+    const extra = new Set([...(draft.extraSelf || []), ...(draft.extraOthers || [])]);
+    return [...JOHARI_TRAITS, ...extra];
+  }
+
+  function computeJohariWindows(session) {
+    const self = new Set(session.selfTraits || []);
+    const others = new Set(session.othersTraits || []);
+    const all = new Set([
+      ...JOHARI_TRAITS,
+      ...(session.extraSelf || []),
+      ...(session.extraOthers || []),
+    ]);
+    const open = [], blind = [], hidden = [], unknown = [];
+    for (const t of all) {
+      if (self.has(t) && others.has(t)) open.push(t);
+      else if (!self.has(t) && others.has(t)) blind.push(t);
+      else if (self.has(t) && !others.has(t)) hidden.push(t);
+      else unknown.push(t);
+    }
+    return { open, blind, hidden, unknown };
+  }
+
+  function renderJohari() {
+    const selfWrap = document.getElementById('johari-self-traits');
+    const othersWrap = document.getElementById('johari-others-traits');
+    const draft = state.johariDraft;
+    const allTraits = getAllJohariTraits(draft);
+    const renderTrait = (which) => {
+      const wrap = which === 'self' ? selfWrap : othersWrap;
+      const set = new Set(which === 'self' ? draft.selfTraits : draft.othersTraits);
+      const extras = new Set(which === 'self' ? draft.extraSelf : draft.extraOthers);
+      wrap.innerHTML = allTraits.map(t => {
+        const on = set.has(t);
+        const isExtra = extras.has(t);
+        return `<button class="trait-chip ${on ? 'on' : ''} ${isExtra ? 'extra' : ''}" data-which="${which}" data-trait="${escapeAttr(t)}">${escapeHtml(t)}${isExtra ? ` <span class="x">×</span>` : ''}</button>`;
+      }).join('');
+      wrap.querySelectorAll('.trait-chip').forEach(b => {
+        b.addEventListener('click', e => {
+          const t = b.dataset.trait;
+          const list = which === 'self' ? draft.selfTraits : draft.othersTraits;
+          const i = list.indexOf(t);
+          if (i >= 0) list.splice(i, 1); else list.push(t);
+          renderJohari();
+        });
+        const x = b.querySelector('.x');
+        if (x) {
+          x.addEventListener('click', e => {
+            e.stopPropagation();
+            if (!confirm(`カスタムトレイト「${t}」を削除しますか？`)) return;
+            const exList = which === 'self' ? draft.extraSelf : draft.extraOthers;
+            const sel = which === 'self' ? draft.selfTraits : draft.othersTraits;
+            exList.splice(exList.indexOf(t), 1);
+            const si = sel.indexOf(t);
+            if (si >= 0) sel.splice(si, 1);
+            renderJohari();
+          });
+        }
+      });
+    };
+    renderTrait('self');
+    renderTrait('others');
+
+    if (state.johariEditingId) {
+      const s = state.johariSessions.find(x => x.id === state.johariEditingId);
+      if (s) {
+        document.getElementById('johari-scope').value = s.scope || '';
+        document.getElementById('johari-notes').value = s.notes || '';
+      }
+    }
+
+    renderJohariHistory();
+  }
+
+  document.getElementById('johari-self-add-btn').addEventListener('click', () => addJohariTrait('self'));
+  document.getElementById('johari-others-add-btn').addEventListener('click', () => addJohariTrait('others'));
+  document.getElementById('johari-self-add').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addJohariTrait('self'); } });
+  document.getElementById('johari-others-add').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addJohariTrait('others'); } });
+
+  function addJohariTrait(which) {
+    const inp = document.getElementById(which === 'self' ? 'johari-self-add' : 'johari-others-add');
+    const t = inp.value.trim();
+    if (!t) return;
+    const draft = state.johariDraft;
+    const exList = which === 'self' ? draft.extraSelf : draft.extraOthers;
+    if (!JOHARI_TRAITS.includes(t) && !exList.includes(t)) exList.push(t);
+    const sel = which === 'self' ? draft.selfTraits : draft.othersTraits;
+    if (!sel.includes(t)) sel.push(t);
+    inp.value = '';
+    renderJohari();
+  }
+
+  document.getElementById('johari-reset').addEventListener('click', () => {
+    if (!confirm('入力中の内容をクリアしますか？')) return;
+    state.johariDraft = { selfTraits: [], othersTraits: [], extraSelf: [], extraOthers: [] };
+    state.johariEditingId = null;
+    document.getElementById('johari-scope').value = '';
+    document.getElementById('johari-notes').value = '';
+    document.getElementById('johari-result').classList.add('hidden');
+    renderJohari();
+  });
+
+  document.getElementById('johari-save').addEventListener('click', () => {
+    const draft = state.johariDraft;
+    if (!draft.selfTraits.length && !draft.othersTraits.length) {
+      alert('少なくとも片方のリストを選んでください。');
+      return;
+    }
+    const session = {
+      id: state.johariEditingId || 'jo_' + uid(),
+      date: new Date().toISOString(),
+      scope: document.getElementById('johari-scope').value.trim() || '全体',
+      notes: document.getElementById('johari-notes').value.trim(),
+      selfTraits: draft.selfTraits.slice(),
+      othersTraits: draft.othersTraits.slice(),
+      extraSelf: draft.extraSelf.slice(),
+      extraOthers: draft.extraOthers.slice(),
+      aiCommentary: state.johariEditingId
+        ? state.johariSessions.find(x => x.id === state.johariEditingId)?.aiCommentary || ''
+        : '',
+      updatedAt: new Date().toISOString(),
+    };
+    if (state.johariEditingId) {
+      state.johariSessions = state.johariSessions.map(s => s.id === state.johariEditingId ? session : s);
+    } else {
+      state.johariSessions.unshift(session);
+    }
+    save(JOHARI_KEY, state.johariSessions);
+    state.johariEditingId = session.id;
+    showJohariResult(session);
+    renderJohariHistory();
+    flash('保存しました');
+  });
+
+  function showJohariResult(session) {
+    const resEl = document.getElementById('johari-result');
+    resEl.classList.remove('hidden');
+    const w = computeJohariWindows(session);
+    const total = w.open.length + w.blind.length + w.hidden.length;
+    const totalAll = total + w.unknown.length;
+    const pct = (n) => totalAll ? Math.round((n / totalAll) * 100) : 0;
+    const interpret = interpretJohari(w);
+
+    resEl.innerHTML = `
+      <div class="result-card">
+        <div class="result-head">
+          <h3>ジョハリの窓: ${escapeHtml(session.scope || '全体')}</h3>
+          <span class="muted">${escapeHtml(formatDate(session.date))}</span>
+        </div>
+        <div class="johari-grid">
+          <div class="johari-quad q-open">
+            <div class="quad-head"><b>開放</b><span class="muted">${w.open.length}（${pct(w.open.length)}%）</span></div>
+            <div class="quad-traits">${w.open.map(t => `<span class="trait-chip on small">${escapeHtml(t)}</span>`).join('') || '<span class="muted">なし</span>'}</div>
+          </div>
+          <div class="johari-quad q-blind">
+            <div class="quad-head"><b>盲点</b><span class="muted">${w.blind.length}（${pct(w.blind.length)}%）</span></div>
+            <div class="quad-traits">${w.blind.map(t => `<span class="trait-chip blind small">${escapeHtml(t)}</span>`).join('') || '<span class="muted">なし</span>'}</div>
+          </div>
+          <div class="johari-quad q-hidden">
+            <div class="quad-head"><b>秘密</b><span class="muted">${w.hidden.length}（${pct(w.hidden.length)}%）</span></div>
+            <div class="quad-traits">${w.hidden.map(t => `<span class="trait-chip hidden-trait small">${escapeHtml(t)}</span>`).join('') || '<span class="muted">なし</span>'}</div>
+          </div>
+          <div class="johari-quad q-unknown">
+            <div class="quad-head"><b>未知の余地</b><span class="muted">${w.unknown.length}</span></div>
+            <div class="quad-traits muted">${w.unknown.length}個のトレイトがどちらの側でも選ばれていません。新しい挑戦・自己探求で気づきが増えます。</div>
+          </div>
+        </div>
+        <div class="result-interpret">${escapeHtml(interpret)}</div>
+        <div class="actions">
+          <button id="johari-ai-comment">AIで深掘りコメント（他診断との関連も）</button>
+          <button id="johari-edit">この内容を編集する</button>
+        </div>
+        <div id="johari-ai-output" class="ai-output" style="${session.aiCommentary ? '' : 'display:none'}">${escapeHtml(session.aiCommentary || '')}</div>
+      </div>`;
+
+    document.getElementById('johari-edit').addEventListener('click', () => {
+      state.johariEditingId = session.id;
+      state.johariDraft = {
+        selfTraits: session.selfTraits.slice(),
+        othersTraits: session.othersTraits.slice(),
+        extraSelf: (session.extraSelf || []).slice(),
+        extraOthers: (session.extraOthers || []).slice(),
+      };
+      document.getElementById('johari-scope').value = session.scope || '';
+      document.getElementById('johari-notes').value = session.notes || '';
+      renderJohari();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    document.getElementById('johari-ai-comment').addEventListener('click', () => runJohariAICommentary(session));
+  }
+
+  function interpretJohari(w) {
+    const total = w.open.length + w.blind.length + w.hidden.length;
+    if (!total) return '自己選択も他者からの選択もまだありません。';
+    const parts = [];
+    const ratio = (n) => total ? Math.round((n / total) * 100) : 0;
+    if (w.open.length >= w.blind.length && w.open.length >= w.hidden.length) {
+      parts.push('開放の窓が一番大きく、関係の地盤が安定しています。');
+    } else if (w.blind.length > w.open.length && w.blind.length > w.hidden.length) {
+      parts.push('盲点が大きい状態です。フィードバックを取り入れる場面が多いと、開放の窓が一気に広がります。');
+    } else if (w.hidden.length > w.open.length && w.hidden.length > w.blind.length) {
+      parts.push('秘密が大きい状態です。安全な相手に少しずつ開示するだけで、開放の窓は広がります。');
+    }
+    if (w.blind.length && w.hidden.length === 0) parts.push('開示は十分。盲点に向き合うのが次の一手です。');
+    if (w.hidden.length && w.blind.length === 0) parts.push('フィードバックは取り入れている。安全な開示が次の一手です。');
+    if (w.unknown.length > total * 2) parts.push('未知の余地が大きいので、新しい挑戦・対話で発見できる可能性が広いです。');
+    return parts.join(' ');
+  }
+
+  async function runJohariAICommentary(session) {
+    if (!state.settings.apiKey) {
+      alert('設定タブでAPIキーを登録してください。');
+      return;
+    }
+    const out = document.getElementById('johari-ai-output');
+    out.style.display = 'block';
+    out.textContent = '分析中...';
+    const w = computeJohariWindows(session);
+    const payload = [
+      `対象: ${session.scope || '全体'}`,
+      `開放（自分も他者も認識）: ${w.open.join(', ') || 'なし'}`,
+      `盲点（他者だけが認識）: ${w.blind.join(', ') || 'なし'}`,
+      `秘密（自分だけが認識）: ${w.hidden.join(', ') || 'なし'}`,
+      `未知（どちらも未選択）: ${w.unknown.length}個`,
+    ].join('\n');
+    const system = 'あなたはジョハリの窓を使ったコーチングに詳しい心理カウンセラーです。本人の窓のバランスと他診断を統合して、次の一歩を優しく日本語で示します。';
+    const user = [
+      '以下はジョハリの窓の集計です。',
+      '4つの窓のバランスから読み取れる「他者との関係の現在地」を一文でまとめ、',
+      '盲点・秘密のトレイトに具体的に触れながら、開放の窓を広げるための小さな実験を1つ提案してください。',
+      '他の診断スコアがあれば、整合・矛盾を指摘してください（500字程度）。',
+      '',
+      payload,
+      '',
+      buildCrossReferences('johari'),
+    ].join('\n');
+    try {
+      const text = await callClaude(system, user);
+      out.textContent = text;
+      session.aiCommentary = text;
+      save(JOHARI_KEY, state.johariSessions);
+    } catch (err) {
+      out.textContent = 'エラー: ' + err.message;
+    }
+  }
+
+  function renderJohariHistory() {
+    const ul = document.getElementById('johari-history');
+    if (!ul) return;
+    if (!state.johariSessions.length) {
+      ul.innerHTML = '<li class="muted">まだ履歴はありません。</li>';
+      return;
+    }
+    ul.innerHTML = state.johariSessions.map(s => {
+      const w = computeJohariWindows(s);
+      return `<li data-id="${s.id}" class="${state.johariEditingId === s.id ? 'active' : ''}">
+        <div class="h-meta">${escapeHtml(s.scope || '全体')} · ${formatDate(s.date)}</div>
+        <div class="muted" style="font-size:11px;margin-top:2px">開放 ${w.open.length} / 盲点 ${w.blind.length} / 秘密 ${w.hidden.length}</div>
+        <div class="actions" style="margin-top:6px">
+          <button class="jo-view" data-id="${s.id}">結果を表示</button>
+          <button class="jo-del danger" data-id="${s.id}">削除</button>
+        </div>
+      </li>`;
+    }).join('');
+    ul.querySelectorAll('.jo-view').forEach(b => {
+      b.addEventListener('click', () => {
+        const s = state.johariSessions.find(x => x.id === b.dataset.id);
+        if (s) showJohariResult(s);
+      });
+    });
+    ul.querySelectorAll('.jo-del').forEach(b => {
+      b.addEventListener('click', () => {
+        if (!confirm('この履歴を削除しますか？')) return;
+        state.johariSessions = state.johariSessions.filter(x => x.id !== b.dataset.id);
+        if (state.johariEditingId === b.dataset.id) state.johariEditingId = null;
+        save(JOHARI_KEY, state.johariSessions);
+        renderJohariHistory();
+      });
+    });
+  }
+
   renderList();
   renderStats();
   renderHistory();
@@ -3453,4 +3765,5 @@
   renderKolbHistory();
   renderValuesHistory();
   renderThinkingHistory();
+  renderJohari();
 })();

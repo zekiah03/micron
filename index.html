@@ -23,6 +23,7 @@
       <button class="tab" data-tab="kolb">学習タイプ診断</button>
       <button class="tab" data-tab="values">価値観診断</button>
       <button class="tab" data-tab="thinking">思考スタイル診断</button>
+      <button class="tab" data-tab="johari">ジョハリの窓</button>
       <button class="tab" data-tab="axes">軸の設定</button>
       <button class="tab" data-tab="settings">設定</button>
     </nav>
@@ -587,6 +588,61 @@
 
       <h3>診断履歴</h3>
       <ul id="thinking-history" class="social-history"></ul>
+    </section>
+
+    <section id="tab-johari" class="panel">
+      <h2>ジョハリの窓</h2>
+      <p class="muted">「自分から見た自分」と「他者から見た自分（フィードバック）」を選び、4つの窓に自動振り分けします。</p>
+
+      <details class="axis-group">
+        <summary>4つの窓の説明</summary>
+        <ul class="axis-list builtin">
+          <li><b>開放の窓</b>: 自分も他者も知っている部分。広いほど信頼関係が築きやすい。</li>
+          <li><b>盲点の窓</b>: 自分は知らないが他者は知っている部分。フィードバックで縮められる。</li>
+          <li><b>秘密の窓</b>: 自分は知っているが他者には伝えていない部分。適度な開示で関係が深まる。</li>
+          <li><b>未知の窓</b>: どちらも気づいていない可能性。新しい挑戦・自己探求で発見される領域。</li>
+        </ul>
+      </details>
+
+      <div class="johari-meta">
+        <label>対象範囲（コンテキスト）
+          <input type="text" id="johari-scope" placeholder="例: 全体 / 仕事での自分 / 友人関係での自分" />
+        </label>
+        <label>メモ（任意）
+          <input type="text" id="johari-notes" placeholder="気づきや背景" />
+        </label>
+      </div>
+
+      <div class="johari-cols">
+        <section class="johari-col">
+          <h3>自分から見た自分</h3>
+          <p class="muted">あてはまるトレイトを選んでください</p>
+          <div id="johari-self-traits" class="trait-grid"></div>
+          <div class="trait-add">
+            <input type="text" id="johari-self-add" placeholder="独自のトレイトを追加" />
+            <button id="johari-self-add-btn">追加</button>
+          </div>
+        </section>
+        <section class="johari-col">
+          <h3>他者から見た自分（フィードバック）</h3>
+          <p class="muted">これまで他者から言われたこと・印象を選んでください</p>
+          <div id="johari-others-traits" class="trait-grid"></div>
+          <div class="trait-add">
+            <input type="text" id="johari-others-add" placeholder="独自のトレイトを追加" />
+            <button id="johari-others-add-btn">追加</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="actions">
+        <button id="johari-save" class="primary">保存して結果を見る</button>
+        <button id="johari-reset">クリア</button>
+      </div>
+
+      <div id="johari-result" class="hidden"></div>
+
+      <h3>履歴</h3>
+      <ul id="johari-history" class="social-history"></ul>
     </section>
 
     <section id="tab-axes" class="panel">
