@@ -15,15 +15,8 @@
       <button class="tab" data-tab="stats">統計</button>
       <button class="tab" data-tab="ai">AI分析</button>
       <button class="tab" data-tab="graph">図解</button>
-      <button class="tab" data-tab="sessions">セッション</button>
-      <button class="tab" data-tab="actions">アクション</button>
-      <button class="tab" data-tab="works">ワーク</button>
-      <button class="tab" data-tab="social">社会性診断</button>
-      <button class="tab" data-tab="effort">努力診断</button>
-      <button class="tab" data-tab="kolb">学習タイプ診断</button>
-      <button class="tab" data-tab="values">価値観診断</button>
-      <button class="tab" data-tab="thinking">思考スタイル診断</button>
-      <button class="tab" data-tab="johari">ジョハリの窓</button>
+      <button class="tab" data-tab="process">進める</button>
+      <button class="tab" data-tab="diagnoses">診断</button>
       <button class="tab" data-tab="axes">軸の設定</button>
       <button class="tab" data-tab="settings">設定</button>
     </nav>
@@ -259,7 +252,14 @@
       <p class="muted">● 悩み（大きさ=強さ、色=カテゴリ） ／ ▭ 理由 ／ 実線=悩み→理由 ／ 破線=理由→より深い理由</p>
     </section>
 
-    <section id="tab-sessions" class="panel">
+    <section id="tab-process" class="panel">
+      <nav class="sub-tabs">
+        <button class="sub-tab active" data-parent="process" data-sub="sessions">セッション</button>
+        <button class="sub-tab" data-parent="process" data-sub="actions">アクション</button>
+        <button class="sub-tab" data-parent="process" data-sub="works">ワーク</button>
+      </nav>
+
+    <section id="tab-sessions" class="sub-panel active" data-sub="sessions">
       <h2>セッション（対話・議事録）</h2>
       <p class="muted">長文の対話メモをセクション単位で保存し、記録や理由と紐付けて振り返れます。</p>
       <div class="session-layout">
@@ -275,7 +275,7 @@
       </div>
     </section>
 
-    <section id="tab-actions" class="panel">
+    <section id="tab-actions" class="sub-panel" data-sub="actions">
       <h2>アクション（存在実感の3経路）</h2>
       <p class="muted">「存在していい」→「存在している」への転換を、3つの経路で試行します。何をやって、どう効いたか、続けるかを記録します。</p>
 
@@ -346,7 +346,7 @@
       <ul id="actions-list" class="actions-list"></ul>
     </section>
 
-    <section id="tab-works" class="panel">
+    <section id="tab-works" class="sub-panel" data-sub="works">
       <h2>ワーク（設計課題）</h2>
       <p class="muted">未解決の問い・設計課題を「ワーク」として立てて、探求ノートとサブタスクで進めます。セッション議事録の §16〜17 のような内容をここに置けます。</p>
 
@@ -366,7 +366,19 @@
       <article id="work-detail" class="work-detail hidden"></article>
     </section>
 
-    <section id="tab-social" class="panel">
+    </section><!-- /tab-process -->
+
+    <section id="tab-diagnoses" class="panel">
+      <nav class="sub-tabs">
+        <button class="sub-tab active" data-parent="diagnoses" data-sub="social">社会性</button>
+        <button class="sub-tab" data-parent="diagnoses" data-sub="effort">努力</button>
+        <button class="sub-tab" data-parent="diagnoses" data-sub="kolb">学習タイプ</button>
+        <button class="sub-tab" data-parent="diagnoses" data-sub="values">価値観</button>
+        <button class="sub-tab" data-parent="diagnoses" data-sub="thinking">思考スタイル</button>
+        <button class="sub-tab" data-parent="diagnoses" data-sub="johari">ジョハリの窓</button>
+      </nav>
+
+    <section id="tab-social" class="sub-panel active" data-sub="social">
       <h2>社会性診断</h2>
       <p class="muted">MBTIライクな4択質問（全25問）で、社会性の5次元をプロファイルします。ブラウザ内で完結し、履歴も残せます。</p>
 
@@ -411,7 +423,7 @@
       <ul id="social-history" class="social-history"></ul>
     </section>
 
-    <section id="tab-effort" class="panel">
+    <section id="tab-effort" class="sub-panel" data-sub="effort">
       <h2>努力診断</h2>
       <p class="muted">「量／質／設計／選択／持続」の5次元で努力スタイルをプロファイルします（全25問・4択）。</p>
 
@@ -456,7 +468,7 @@
       <ul id="effort-history" class="social-history"></ul>
     </section>
 
-    <section id="tab-kolb" class="panel">
+    <section id="tab-kolb" class="sub-panel" data-sub="kolb">
       <h2>学習タイプ診断（Kolb）</h2>
       <p class="muted">David Kolbの経験学習サイクルを基にした「なぜ／なに／どうやって／今すぐ」の4タイプ診断（全20問・4択）。</p>
 
@@ -500,7 +512,7 @@
       <ul id="kolb-history" class="social-history"></ul>
     </section>
 
-    <section id="tab-values" class="panel">
+    <section id="tab-values" class="sub-panel" data-sub="values">
       <h2>価値観診断</h2>
       <p class="muted">「自律／達成／関係／安定／成長」の5次元で何を大切にしているかを可視化（全25問・4択）。</p>
 
@@ -545,7 +557,7 @@
       <ul id="values-history" class="social-history"></ul>
     </section>
 
-    <section id="tab-thinking" class="panel">
+    <section id="tab-thinking" class="sub-panel" data-sub="thinking">
       <h2>思考スタイル診断</h2>
       <p class="muted">「論理／直感／創造／体系／全体」の5次元で考え方の癖を可視化（全25問・4択）。</p>
 
@@ -590,7 +602,7 @@
       <ul id="thinking-history" class="social-history"></ul>
     </section>
 
-    <section id="tab-johari" class="panel">
+    <section id="tab-johari" class="sub-panel" data-sub="johari">
       <h2>ジョハリの窓</h2>
       <p class="muted">「自分から見た自分」と「他者から見た自分（フィードバック）」を選び、4つの窓に自動振り分けします。</p>
 
@@ -644,6 +656,8 @@
       <h3>履歴</h3>
       <ul id="johari-history" class="social-history"></ul>
     </section>
+
+    </section><!-- /tab-diagnoses -->
 
     <section id="tab-axes" class="panel">
       <h2>軸の設定</h2>

@@ -303,6 +303,36 @@
   }
 
   // ---------- Tabs ----------
+  const subRender = {
+    sessions: renderSessions,
+    actions:  renderActions,
+    works:    renderWorks,
+    social:   renderSocialHistory,
+    effort:   renderEffortHistory,
+    kolb:     renderKolbHistory,
+    values:   renderValuesHistory,
+    thinking: renderThinkingHistory,
+    johari:   renderJohari,
+  };
+  const subState = { process: 'sessions', diagnoses: 'social' };
+
+  function activateSub(parent, sub) {
+    subState[parent] = sub;
+    const root = document.getElementById(`tab-${parent}`);
+    if (!root) return;
+    root.querySelectorAll(':scope > .sub-tabs .sub-tab').forEach(b => {
+      b.classList.toggle('active', b.dataset.sub === sub);
+    });
+    root.querySelectorAll(':scope > .sub-panel').forEach(p => {
+      p.classList.toggle('active', p.dataset.sub === sub);
+    });
+    if (subRender[sub]) subRender[sub]();
+  }
+
+  document.querySelectorAll('.sub-tab').forEach(btn => {
+    btn.addEventListener('click', () => activateSub(btn.dataset.parent, btn.dataset.sub));
+  });
+
   document.querySelectorAll('.tab').forEach(btn => {
     btn.addEventListener('click', () => {
       const name = btn.dataset.tab;
@@ -314,15 +344,7 @@
       if (name === 'axes') renderAxesSettings();
       if (name === 'input') { renderCustomAxesInForm(); renderReasonsInForm(); }
       if (name === 'graph') renderGraph();
-      if (name === 'sessions') renderSessions();
-      if (name === 'actions') renderActions();
-      if (name === 'works') renderWorks();
-      if (name === 'social') renderSocialHistory();
-      if (name === 'effort') renderEffortHistory();
-      if (name === 'kolb') renderKolbHistory();
-      if (name === 'values') renderValuesHistory();
-      if (name === 'thinking') renderThinkingHistory();
-      if (name === 'johari') renderJohari();
+      if (name === 'process' || name === 'diagnoses') activateSub(name, subState[name]);
     });
   });
 
