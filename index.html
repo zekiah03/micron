@@ -34,13 +34,17 @@
           <label>
             カテゴリ
             <select name="category">
-              <option value="仕事">仕事</option>
+              <option value="幸せ・比較">幸せ・比較</option>
+              <option value="年齢と経験">年齢と経験</option>
               <option value="人間関係">人間関係</option>
+              <option value="外見">外見</option>
+              <option value="家族">家族</option>
+              <option value="仕事">仕事</option>
               <option value="健康">健康</option>
               <option value="お金">お金</option>
-              <option value="家族">家族</option>
               <option value="学び">学び</option>
               <option value="将来">将来</option>
+              <option value="解決に向けて">解決に向けて</option>
               <option value="その他">その他</option>
             </select>
           </label>
@@ -52,6 +56,10 @@
         <label>
           タグ (カンマ区切り)
           <input type="text" name="tags" placeholder="例: 朝, 集中, 家族" />
+        </label>
+        <label>
+          気づき・リフレーミング（任意）
+          <textarea name="insight" rows="3" placeholder="後から見返して気づいたこと、自分への問い直し、別の捉え方など"></textarea>
         </label>
         <div class="actions">
           <button type="submit" class="primary">保存</button>
@@ -101,8 +109,10 @@
           <select id="ai-mode">
             <option value="pattern">共通パターンと構造の発見</option>
             <option value="root">根本原因の深掘り</option>
+            <option value="dialog">問いかけ（深掘り質問）</option>
             <option value="action">次に取れるアクションの提案</option>
             <option value="reframe">リフレーミング（視点の転換）</option>
+            <option value="unravel">解き明かす（多層構造で整理）</option>
             <option value="custom">カスタム指示</option>
           </select>
         </label>
@@ -154,6 +164,7 @@
           JSONをインポート
           <input type="file" id="import-file" accept="application/json" hidden />
         </label>
+        <button id="load-sample-btn">サンプル（自分の悩みの種）を読み込む</button>
         <button id="clear-btn" class="danger">すべて削除</button>
       </div>
       <p class="muted">データはこのブラウザのlocalStorageにのみ保存されます。サーバーには送信されません（AI分析時のみAnthropic APIへ送信）。</p>
@@ -167,6 +178,7 @@
         <span class="seed-meta"></span>
       </div>
       <div class="seed-desc"></div>
+      <div class="seed-insight"></div>
       <div class="seed-foot">
         <span class="seed-tags"></span>
         <span class="seed-actions">
@@ -177,6 +189,7 @@
     </li>
   </template>
 
+  <script src="sample-data.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -46,6 +46,7 @@
       id: state.editingId || uid(),
       title: data.title.trim(),
       description: (data.description || '').trim(),
+      insight: (data.insight || '').trim(),
       category: data.category,
       intensity: Number(data.intensity),
       tags: (data.tags || '').split(',').map(s => s.trim()).filter(Boolean),
@@ -110,6 +111,12 @@
       li.querySelector('.seed-meta').innerHTML =
         `${pill} <span>${escapeHtml(s.category)}</span> · <span>${formatDate(s.createdAt)}</span>`;
       li.querySelector('.seed-desc').textContent = s.description;
+      const insightEl = li.querySelector('.seed-insight');
+      if (s.insight) {
+        insightEl.textContent = '💡 ' + s.insight;
+      } else {
+        insightEl.remove();
+      }
       li.querySelector('.seed-tags').innerHTML =
         s.tags.map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join('');
       li.querySelector('.edit-btn').addEventListener('click', () => editSeed(s.id));
@@ -129,6 +136,7 @@
     state.editingId = id;
     form.title.value = s.title;
     form.description.value = s.description;
+    form.insight.value = s.insight || '';
     form.category.value = s.category;
     form.intensity.value = s.intensity;
     form.tags.value = s.tags.join(', ');
@@ -241,6 +249,37 @@
     e.target.value = '';
   });
 
+  document.getElementById('load-sample-btn').addEventListener('click', () => {
+    if (!Array.isArray(window.SAMPLE_SEEDS) || !window.SAMPLE_SEEDS.length) {
+      alert('サンプルデータが見つかりません。');
+      return;
+    }
+    const msg = state.seeds.length
+      ? `既存の記録(${state.seeds.length}件)に、サンプル${window.SAMPLE_SEEDS.length}件を追加します。よろしいですか？`
+      : `サンプル${window.SAMPLE_SEEDS.length}件を読み込みます。よろしいですか？`;
+    if (!confirm(msg)) return;
+    const now = new Date();
+    const added = window.SAMPLE_SEEDS.map((t, i) => {
+      const d = new Date(now.getTime() - i * 60 * 1000);
+      return {
+        id: uid(),
+        title: t.title,
+        description: t.description || '',
+        insight: t.insight || '',
+        category: t.category || 'その他',
+        intensity: Number(t.intensity) || 5,
+        tags: Array.isArray(t.tags) ? t.tags.slice() : [],
+        createdAt: d.toISOString(),
+        updatedAt: d.toISOString(),
+      };
+    });
+    state.seeds = added.concat(state.seeds);
+    save(STORE_KEY, state.seeds);
+    flash(`${added.length}件読み込みました`);
+    renderList();
+    renderStats();
+  });
+
   document.getElementById('clear-btn').addEventListener('click', () => {
     if (!confirm('すべての記録と分析履歴を削除します。よろしいですか？')) return;
     state.seeds = [];
@@ -291,9 +330,16 @@
     const customText = document.getElementById('ai-custom').value.trim();
     const instruction = buildInstruction(mode, customText);
 
-    const seedText = target.map((s, i) =>
-      `【${i + 1}】${s.title}\nカテゴリ: ${s.category} / 強さ: ${s.intensity}/10 / 日付: ${s.createdAt.slice(0, 10)}\nタグ: ${s.tags.join(', ') || 'なし'}\n詳細: ${s.description || '(なし)'}`
-    ).join('\n\n---\n\n');
+    const seedText = target.map((s, i) => {
+      const parts = [
+        `【${i + 1}】${s.title}`,
+        `カテゴリ: ${s.category} / 強さ: ${s.intensity}/10 / 日付: ${s.createdAt.slice(0, 10)}`,
+        `タグ: ${s.tags.join(', ') || 'なし'}`,
+        `詳細: ${s.description || '(なし)'}`,
+      ];
+      if (s.insight) parts.push(`気づき: ${s.insight}`);
+      return parts.join('\n');
+    }).join('\n\n---\n\n');
 
     const systemPrompt = [
       'あなたは思慮深く、共感的で、しかし流されずに構造化して考える分析パートナーです。',
@@ -334,10 +380,20 @@
         return '以下の記録から、共通するパターン・繰り返されているテーマ・隠れた構造を見つけ、3〜5個にまとめて提示してください。それぞれ根拠となる記録番号を引用してください。';
       case 'root':
         return '以下の記録の背景にある根本原因の仮説を複数挙げてください。表層の悩みと、その下にありそうな価値観・信念・環境要因を分けて整理してください。';
+      case 'dialog':
+        return '以下の記録を読み、本人がさらに深く自己理解するための「問いかけ」を5〜7個してください。答えを押し付けず、本人が自分の言葉で言語化できるような開かれた質問にしてください。質問ごとに、どの記録から着想したか（番号）と、なぜその問いが有効かの一文を添えてください。';
       case 'action':
         return '以下の記録を踏まえ、今週から試せる小さな具体的アクションを優先度順に5つ提案してください。各アクションには、対応する悩み・期待される効果・最初の一歩を含めてください。';
       case 'reframe':
         return '以下の記録について、異なる視点からの捉え直し（リフレーミング）をいくつか提示してください。ただし安直なポジティブ変換ではなく、妥当性のある別解釈や長期視点を示してください。';
+      case 'unravel':
+        return [
+          '以下の記録を「解き明かす」ために、次の3層で整理してください。',
+          '1. 表層（何が起きているか・何を感じているか）',
+          '2. 中層（その感情の下にある欲求・恐れ・信念）',
+          '3. 深層（その信念の起源として考えられる経験・環境）',
+          '各層で、どの記録番号が該当するか引用し、共通して見える構造を最後にまとめてください。',
+        ].join('\n');
       case 'custom':
         return custom || '以下の記録を分析してください。';
       default:
@@ -393,8 +449,10 @@
     return {
       pattern: 'パターン発見',
       root: '根本原因',
+      dialog: '問いかけ',
       action: 'アクション提案',
       reframe: 'リフレーミング',
+      unravel: '解き明かす',
       custom: 'カスタム',
     }[m] || m;
   }

@@ -176,6 +176,15 @@ button.danger:hover { background: #fee2e2; }
 .seed-title { font-weight: 600; font-size: 15px; }
 .seed-meta { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .seed-desc { margin: 6px 0; font-size: 14px; white-space: pre-wrap; }
+.seed-insight {
+  margin: 6px 0 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  background: #fef9c3;
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  white-space: pre-wrap;
+}
 .seed-foot {
   display: flex;
   justify-content: space-between;
