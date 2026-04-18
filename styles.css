@@ -508,6 +508,17 @@ button.danger:hover { background: #fee2e2; }
   font-size: 13px;
 }
 .suggest-check { margin-right: 4px; }
+.depth-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.depth-badge.depth-表層 { background: #dbeafe; color: #1e40af; }
+.depth-badge.depth-中層 { background: #fde68a; color: #854d0e; }
+.depth-badge.depth-核心 { background: #fca5a5; color: #7f1d1d; }
+.rationale { font-size: 12px; margin-top: 2px; }
 
 /* --- Sessions --- */
 .session-layout {

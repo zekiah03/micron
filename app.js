@@ -561,6 +561,8 @@
       status.textContent = `完了 (${target.length}件を分析 / モデル: ${state.settings.model})`;
       if (mode === 'suggest-reasons') {
         renderSuggestPreview(text, target);
+      } else if (mode === 'reclassify-depth') {
+        renderReclassifyPreview(text, target);
       }
       state.history.unshift({
         id: uid(),
@@ -618,6 +620,27 @@
           '}',
           '```',
           'key は R1, R2, ... の形式で一意。parents は深い理由の key の配列。anchor_indices は関連する記録番号（【n】）の配列。',
+        ].join('\n');
+      case 'reclassify-depth':
+        return [
+          '以下の記録それぞれを、次の層A/B/Cモデルに振り分けてください。',
+          '- 層A（核心）: 「ありのままでは愛されない」のような、幼少期からの自己への根本信念。',
+          '- 層B（中層）: 比較・自己否定・欲求の抑圧といった思考と行動の癖。層Aを維持するループ。',
+          '- 層C（表層）: 外見・人間関係・具体的な悩み。Cだけ潰してもCは再生産される。',
+          '',
+          '出力は必ず以下のJSONのみ（コードブロック```json ... ```で囲む）:',
+          '```json',
+          '{',
+          '  "classifications": [',
+          '    {',
+          '      "index": 1,',
+          '      "depth": "核心",',
+          '      "rationale": "なぜその層に分類したかの一文"',
+          '    }',
+          '  ]',
+          '}',
+          '```',
+          'depth は "表層" / "中層" / "核心" のいずれか。index は【n】の番号。すべての記録について分類を返してください。',
         ].join('\n');
       case 'custom':
         return custom || '以下の記録を分析してください。';
@@ -679,8 +702,74 @@
       reframe: 'リフレーミング',
       unravel: '解き明かす',
       'suggest-reasons': '理由ネットワーク提案',
+      'reclassify-depth': '深さ層 再分類',
       custom: 'カスタム',
     }[m] || m;
+  }
+
+  function renderReclassifyPreview(aiText, targetSeeds) {
+    const wrap = document.getElementById('ai-suggest-preview');
+    const json = extractJson(aiText);
+    if (!json || !Array.isArray(json.classifications)) {
+      wrap.innerHTML = '<p class="muted">提案されたJSONを解析できませんでした。出力を確認してください。</p>';
+      return;
+    }
+    const valid = ['表層', '中層', '核心'];
+    const rows = json.classifications.filter(c => valid.includes(c.depth) && typeof c.index === 'number');
+    if (!rows.length) {
+      wrap.innerHTML = '<p class="muted">有効な分類結果がありません。</p>';
+      return;
+    }
+    wrap.innerHTML = `
+      <div class="suggest-box">
+        <h3>深さ層の再分類提案（${rows.length}件）</h3>
+        <p class="muted">チェックを入れた項目のみ、記録の「深さ層」に上書きされます。</p>
+        <ul class="suggest-list">
+          ${rows.map((c, i) => {
+            const s = targetSeeds[c.index - 1];
+            if (!s) return '';
+            const before = s.depth || '未設定';
+            const changed = before !== c.depth;
+            return `<li>
+              <label>
+                <input type="checkbox" class="reclass-check" data-i="${i}" ${changed ? 'checked' : ''} />
+                <b>【${c.index}】</b>
+                <span>${escapeHtml(truncate(s.title, 36))}</span>
+                <span class="muted">${escapeHtml(before)} →</span>
+                <b class="depth-badge depth-${c.depth}">${escapeHtml(c.depth)}</b>
+                ${c.rationale ? `<div class="rationale muted">${escapeHtml(c.rationale)}</div>` : ''}
+              </label>
+            </li>`;
+          }).join('')}
+        </ul>
+        <div class="actions">
+          <button id="reclass-accept" class="primary">選択した分類を適用</button>
+          <button id="reclass-all">全選択</button>
+          <button id="reclass-none">全解除</button>
+        </div>
+      </div>`;
+    wrap.querySelector('#reclass-all').addEventListener('click', () => {
+      wrap.querySelectorAll('.reclass-check').forEach(c => { c.checked = true; });
+    });
+    wrap.querySelector('#reclass-none').addEventListener('click', () => {
+      wrap.querySelectorAll('.reclass-check').forEach(c => { c.checked = false; });
+    });
+    wrap.querySelector('#reclass-accept').addEventListener('click', () => {
+      const picked = Array.from(wrap.querySelectorAll('.reclass-check'))
+        .filter(c => c.checked)
+        .map(c => rows[+c.dataset.i]);
+      if (!picked.length) { alert('適用する項目がありません。'); return; }
+      let n = 0;
+      for (const c of picked) {
+        const s = targetSeeds[c.index - 1];
+        if (!s) continue;
+        const target = state.seeds.find(x => x.id === s.id);
+        if (target) { target.depth = c.depth; target.updatedAt = new Date().toISOString(); n++; }
+      }
+      save(STORE_KEY, state.seeds);
+      wrap.innerHTML = `<p class="muted">${n}件の深さ層を更新しました。</p>`;
+      renderList();
+    });
   }
 
   function renderSuggestPreview(aiText, targetSeeds) {

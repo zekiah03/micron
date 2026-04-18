@@ -97,12 +97,12 @@
               </select>
             </label>
             <label>
-              深さ層
+              深さ層（層A/B/C）
               <select name="depth">
                 <option value="">—</option>
-                <option value="表層">表層（出来事・感情）</option>
-                <option value="中層">中層（欲求・信念）</option>
-                <option value="核心">核心（起源・価値観）</option>
+                <option value="表層">表層（層C: 具体的な悩み・出来事）</option>
+                <option value="中層">中層（層B: 思考・行動の癖）</option>
+                <option value="核心">核心（層A: 自己への根本信念）</option>
               </select>
             </label>
           </div>
@@ -176,6 +176,7 @@
             <option value="reframe">リフレーミング（視点の転換）</option>
             <option value="unravel">解き明かす（多層構造で整理）</option>
             <option value="suggest-reasons">理由ネットワーク提案（図解に追加）</option>
+            <option value="reclassify-depth">深さ層（層A/B/C）を再分類</option>
             <option value="custom">カスタム指示</option>
           </select>
         </label>
@@ -264,8 +265,18 @@
         <li><b>帰属</b>（選択）: 本人 / 他者 / 環境 / 複合</li>
         <li><b>コントロール可能性</b>（選択）: 可 / 部分的 / 不可</li>
         <li><b>時間軸</b>（選択）: 過去 / 現在 / 未来</li>
-        <li><b>深さ層</b>（選択）: 表層 / 中層 / 核心</li>
+        <li><b>深さ層</b>（選択）: 表層（層C: 具体的な悩み） / 中層（層B: 思考・行動の癖） / 核心（層A: 自己への根本信念）</li>
       </ul>
+
+      <details class="axis-group">
+        <summary>層A/B/C モデル（セッションからの定義）</summary>
+        <ul class="axis-list builtin">
+          <li><b>層A（核心）</b>: 「ありのままでは愛されない」のような、幼少期からの自己への根本信念。解体するものではなく、気づいた瞬間に同化が解ける。</li>
+          <li><b>層B（中層）</b>: 比較・自己否定・欲求の抑圧といった思考と行動の癖。層Aを維持するループを作っている。</li>
+          <li><b>層C（表層）</b>: 外見、人間関係、始めるのが遅い等の具体的な悩み。Cだけ潰してもCが再生産される。</li>
+        </ul>
+        <p class="muted">AIに既存記録を層A/B/Cに再分類してもらうには、「AI分析」→「深さ層（層A/B/C）を再分類」を使います。</p>
+      </details>
 
       <h3>カスタム軸</h3>
       <ul id="custom-axes-list" class="axis-list"></ul>
