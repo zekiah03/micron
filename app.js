@@ -14,6 +14,7 @@
   const VALUES_KEY = 'nayami-values-v1';
   const THINKING_KEY = 'nayami-thinking-v1';
   const JOHARI_KEY = 'nayami-johari-v1';
+  const SUMMARY_KEY = 'nayami-summary-v1';
 
   const JOHARI_TRAITS = [
     '明るい', '静か', '親切', '几帳面', '大胆', '慎重', '創造的', '論理的', '共感的', '独立心が強い',
@@ -270,6 +271,7 @@
     valuesAssessments: load(VALUES_KEY, []),
     thinkingAssessments: load(THINKING_KEY, []),
     johariSessions: load(JOHARI_KEY, []),
+    summaryAnalyses: load(SUMMARY_KEY, []),
     quiz: null,
     effortQuiz: null,
     kolbQuiz: null,
@@ -345,6 +347,7 @@
       if (name === 'input') { renderCustomAxesInForm(); renderReasonsInForm(); }
       if (name === 'graph') renderGraph();
       if (name === 'process' || name === 'diagnoses') activateSub(name, subState[name]);
+      if (name === 'summary') renderSummary();
     });
   });
 
@@ -597,6 +600,7 @@
       valuesAssessments: state.valuesAssessments,
       thinkingAssessments: state.thinkingAssessments,
       johariSessions: state.johariSessions,
+      summaryAnalyses: state.summaryAnalyses,
     }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -668,6 +672,10 @@
         state.johariSessions = data.johariSessions;
         save(JOHARI_KEY, state.johariSessions);
       }
+      if (Array.isArray(data.summaryAnalyses)) {
+        state.summaryAnalyses = data.summaryAnalyses;
+        save(SUMMARY_KEY, state.summaryAnalyses);
+      }
       flash('インポートしました');
       renderList();
       renderAxesSettings();
@@ -682,6 +690,7 @@
       renderValuesHistory();
       renderThinkingHistory();
       renderJohari();
+      renderSummary();
     } catch (err) {
       alert('インポートに失敗しました: ' + err.message);
     }
@@ -816,6 +825,7 @@
     state.johariSessions = [];
     state.johariDraft = { selfTraits: [], othersTraits: [], extraSelf: [], extraOthers: [] };
     state.johariEditingId = null;
+    state.summaryAnalyses = [];
     save(STORE_KEY, state.seeds);
     save(HISTORY_KEY, state.history);
     save(REASONS_KEY, state.reasons);
@@ -829,6 +839,7 @@
     save(VALUES_KEY, state.valuesAssessments);
     save(THINKING_KEY, state.thinkingAssessments);
     save(JOHARI_KEY, state.johariSessions);
+    save(SUMMARY_KEY, state.summaryAnalyses);
     renderList();
     renderHistory();
     renderReasonsInForm();
@@ -841,6 +852,7 @@
     renderValuesHistory();
     renderThinkingHistory();
     renderJohari();
+    renderSummary();
     flash('削除しました');
   });
 
@@ -3738,6 +3750,232 @@
     }
   }
 
+  // ---------- Summary (comprehensive) analysis ----------
+  function summaryDiagnostics() {
+    return [
+      { key: 'social',   label: '社会性',     dims: SOCIAL_DIMENSIONS,   list: state.socialAssessments },
+      { key: 'effort',   label: '努力',       dims: EFFORT_DIMENSIONS,   list: state.effortAssessments },
+      { key: 'kolb',     label: '学習タイプ', dims: KOLB_DIMENSIONS,     list: state.kolbAssessments },
+      { key: 'values',   label: '価値観',     dims: VALUES_DIMENSIONS,   list: state.valuesAssessments },
+      { key: 'thinking', label: '思考スタイル', dims: THINKING_DIMENSIONS, list: state.thinkingAssessments },
+    ];
+  }
+
+  function renderSummary() {
+    const snap = document.getElementById('summary-snapshot');
+    if (!snap) return;
+    const cards = [];
+    for (const d of summaryDiagnostics()) {
+      const latest = d.list[0];
+      if (!latest) {
+        cards.push(`<div class="snap-card empty"><div class="snap-label">${escapeHtml(d.label)}</div><div class="snap-empty">未診断</div></div>`);
+        continue;
+      }
+      const top = d.dims.slice().sort((a, b) => latest.scores[b.key] - latest.scores[a.key])[0];
+      const bottom = d.dims.slice().sort((a, b) => latest.scores[a.key] - latest.scores[b.key])[0];
+      const avg = Math.round(d.dims.reduce((s, x) => s + latest.scores[x.key], 0) / d.dims.length);
+      const bars = d.dims.map(x => `
+        <span class="snap-bar" title="${escapeAttr(x.label)}: ${latest.scores[x.key]}">
+          <span class="snap-bar-fill" style="height:${latest.scores[x.key]}%;background:${x.color}"></span>
+        </span>`).join('');
+      cards.push(`<div class="snap-card">
+        <div class="snap-label">${escapeHtml(d.label)}</div>
+        <div class="snap-bars">${bars}</div>
+        <div class="snap-meta muted">平均 ${avg} · 最高 <b style="color:${top.color}">${escapeHtml(top.label)}</b></div>
+      </div>`);
+    }
+    // Johari card
+    const johari = state.johariSessions[0];
+    if (johari) {
+      const w = computeJohariWindows(johari);
+      cards.push(`<div class="snap-card">
+        <div class="snap-label">ジョハリの窓</div>
+        <div class="snap-meta">開放 ${w.open.length} / 盲点 ${w.blind.length} / 秘密 ${w.hidden.length}</div>
+        <div class="muted" style="font-size:11px">${escapeHtml(johari.scope || '全体')}</div>
+      </div>`);
+    } else {
+      cards.push(`<div class="snap-card empty"><div class="snap-label">ジョハリの窓</div><div class="snap-empty">未診断</div></div>`);
+    }
+    // Seeds / reasons / sessions counts
+    cards.push(`<div class="snap-card">
+      <div class="snap-label">悩みの種</div>
+      <div class="snap-meta"><b>${state.seeds.length}</b>件</div>
+    </div>`);
+    cards.push(`<div class="snap-card">
+      <div class="snap-label">理由ネットワーク</div>
+      <div class="snap-meta"><b>${state.reasons.length}</b>個 / 親子リンク ${state.reasons.reduce((s, r) => s + (r.parentIds || []).length, 0)}</div>
+    </div>`);
+    cards.push(`<div class="snap-card">
+      <div class="snap-label">セッション</div>
+      <div class="snap-meta"><b>${state.sessions.length}</b>件 / セクション ${state.sessions.reduce((s, x) => s + x.sections.length, 0)}</div>
+    </div>`);
+    snap.innerHTML = cards.join('');
+    renderSummaryHistory();
+  }
+
+  document.getElementById('summary-run').addEventListener('click', runSummary);
+  document.getElementById('summary-copy').addEventListener('click', () => {
+    const t = document.getElementById('summary-output').textContent;
+    if (!t) return;
+    navigator.clipboard.writeText(t).then(() => flash('コピーしました'));
+  });
+  document.getElementById('summary-filter').addEventListener('input', renderSummaryHistory);
+
+  async function runSummary() {
+    if (!state.settings.apiKey) {
+      alert('設定タブでAPIキーを登録してください。');
+      return;
+    }
+    const out = document.getElementById('summary-output');
+    const status = document.getElementById('summary-status');
+    out.textContent = '';
+    const name = document.getElementById('summary-name').value.trim() || '本人';
+    const inclSeeds = document.getElementById('incl-seeds').checked;
+    const inclReasons = document.getElementById('incl-reasons').checked;
+    const inclSessions = document.getElementById('incl-sessions').checked;
+
+    const payloadParts = [];
+    const snapshot = { name, diagnostics: {}, counts: {} };
+
+    for (const d of summaryDiagnostics()) {
+      const latest = d.list[0];
+      if (!latest) {
+        payloadParts.push(`## ${d.label}\n（未診断）`);
+        snapshot.diagnostics[d.key] = null;
+        continue;
+      }
+      const dims = d.dims.map(x => `${x.label}: ${latest.scores[x.key]}`).join(' / ');
+      payloadParts.push(`## ${d.label}（${formatDate(latest.date)}）\n${dims}`);
+      snapshot.diagnostics[d.key] = { scores: latest.scores, date: latest.date };
+    }
+    const johari = state.johariSessions[0];
+    if (johari) {
+      const w = computeJohariWindows(johari);
+      payloadParts.push(`## ジョハリの窓（${escapeHtml(johari.scope || '全体')} / ${formatDate(johari.date)}）
+開放: ${w.open.join(', ') || 'なし'}
+盲点: ${w.blind.join(', ') || 'なし'}
+秘密: ${w.hidden.join(', ') || 'なし'}
+未知の余地: ${w.unknown.length}個`);
+      snapshot.diagnostics.johari = { open: w.open, blind: w.blind, hidden: w.hidden, unknownCount: w.unknown.length, scope: johari.scope, date: johari.date };
+    } else {
+      payloadParts.push('## ジョハリの窓\n（未診断）');
+      snapshot.diagnostics.johari = null;
+    }
+
+    if (inclSeeds && state.seeds.length) {
+      const items = state.seeds.slice(0, 30).map((s, i) =>
+        `[${i + 1}] ${s.title} (カテゴリ:${s.category}, 強さ:${s.intensity}, 帰属:${s.attribution || '?'}, 深さ:${s.depth || '?'})`
+      ).join('\n');
+      payloadParts.push(`## 悩みの種（直近${Math.min(30, state.seeds.length)}件 / 全${state.seeds.length}件）\n${items}`);
+      snapshot.counts.seeds = state.seeds.length;
+    }
+    if (inclReasons && state.reasons.length) {
+      const items = state.reasons.slice(0, 25).map(r => {
+        const parents = (r.parentIds || []).map(pid => {
+          const p = state.reasons.find(x => x.id === pid);
+          return p ? `「${truncate(p.text, 20)}」` : '';
+        }).filter(Boolean).join(', ');
+        return `- ${r.text}${parents ? `  ← ${parents}` : ''}`;
+      }).join('\n');
+      payloadParts.push(`## 理由ネットワーク（直近${Math.min(25, state.reasons.length)}件 / 全${state.reasons.length}件）\n${items}`);
+      snapshot.counts.reasons = state.reasons.length;
+    }
+    if (inclSessions && state.sessions.length) {
+      const items = state.sessions.slice(0, 3).map(s => {
+        const heads = s.sections.slice(0, 8).map(sec => `  - ${sec.heading}`).join('\n');
+        return `### ${s.title}（${s.date}）\n${heads}`;
+      }).join('\n\n');
+      payloadParts.push(`## セッション議事録（直近${Math.min(3, state.sessions.length)}件の見出しのみ）\n${items}`);
+      snapshot.counts.sessions = state.sessions.length;
+    }
+
+    const system = [
+      'あなたは心理学・コーチング・経験学習理論に通じた、思慮深い分析パートナーです。',
+      '複数の自己診断結果と本人の悩み・理由ネットワークを統合し、一人の人物像として丁寧に読み解きます。',
+      '断定や決めつけを避け、本人が次の一歩を選べる形で日本語で回答します。',
+    ].join('\n');
+
+    const userPrompt = [
+      `以下は「${name}」さんの自己分析データです。これらを統合的に分析してください。`,
+      '',
+      '出力には以下を含めてください（マークダウンの見出しで区切る）:',
+      '## 1. 人物プロファイル（200字程度の物語的な要約）',
+      '## 2. 各データから見える強み（箇条書き、根拠引用）',
+      '## 3. 構造的な「ねじれ」（複数のデータが共通して指している葛藤）',
+      '## 4. 隠れている層（A=信念 / B=思考と行動の癖 / C=表層の悩み の対応）',
+      '## 5. 今週から試せる小さな一歩（1〜2個、具体的に）',
+      '',
+      '全体で800〜1200字。安直な励ましは避け、データに即して書いてください。',
+      '',
+      payloadParts.join('\n\n'),
+    ].join('\n');
+
+    document.getElementById('summary-run').disabled = true;
+    status.textContent = '統合分析中...';
+    try {
+      const text = await callClaude(system, userPrompt);
+      out.textContent = text;
+      const record = {
+        id: 'sum_' + uid(),
+        name,
+        date: new Date().toISOString(),
+        snapshot,
+        output: text,
+        notes: '',
+      };
+      state.summaryAnalyses.unshift(record);
+      state.summaryAnalyses = state.summaryAnalyses.slice(0, 50);
+      save(SUMMARY_KEY, state.summaryAnalyses);
+      status.textContent = `完了 (${name}・${formatDate(record.date)})`;
+      renderSummaryHistory();
+    } catch (err) {
+      status.textContent = 'エラー: ' + err.message;
+    } finally {
+      document.getElementById('summary-run').disabled = false;
+    }
+  }
+
+  function renderSummaryHistory() {
+    const ul = document.getElementById('summary-history');
+    if (!ul) return;
+    const filterEl = document.getElementById('summary-filter');
+    const q = (filterEl ? filterEl.value : '').trim().toLowerCase();
+    let items = state.summaryAnalyses.slice();
+    if (q) items = items.filter(r => (r.name || '').toLowerCase().includes(q));
+    if (!items.length) {
+      ul.innerHTML = '<li class="muted">履歴はありません。</li>';
+      return;
+    }
+    ul.innerHTML = items.map(r => `
+      <li data-id="${r.id}">
+        <div class="h-meta"><b>${escapeHtml(r.name || '無名')}</b> · ${formatDate(r.date)}</div>
+        <div class="h-preview">${escapeHtml(r.output).slice(0, 200)}…</div>
+        <div class="actions" style="margin-top:6px">
+          <button class="sum-view" data-id="${r.id}">結果を表示</button>
+          <button class="sum-del danger" data-id="${r.id}">削除</button>
+        </div>
+      </li>
+    `).join('');
+    ul.querySelectorAll('.sum-view').forEach(b => {
+      b.addEventListener('click', () => {
+        const r = state.summaryAnalyses.find(x => x.id === b.dataset.id);
+        if (!r) return;
+        document.getElementById('summary-output').textContent = r.output;
+        document.getElementById('summary-status').textContent = `履歴を表示中 (${r.name || '無名'} · ${formatDate(r.date)})`;
+        document.getElementById('summary-name').value = r.name || '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+    ul.querySelectorAll('.sum-del').forEach(b => {
+      b.addEventListener('click', () => {
+        if (!confirm('この履歴を削除しますか？')) return;
+        state.summaryAnalyses = state.summaryAnalyses.filter(x => x.id !== b.dataset.id);
+        save(SUMMARY_KEY, state.summaryAnalyses);
+        renderSummaryHistory();
+      });
+    });
+  }
+
   function renderJohariHistory() {
     const ul = document.getElementById('johari-history');
     if (!ul) return;
@@ -3788,4 +4026,5 @@
   renderValuesHistory();
   renderThinkingHistory();
   renderJohari();
+  renderSummary();
 })();

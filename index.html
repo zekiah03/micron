@@ -17,6 +17,7 @@
       <button class="tab" data-tab="graph">図解</button>
       <button class="tab" data-tab="process">進める</button>
       <button class="tab" data-tab="diagnoses">診断</button>
+      <button class="tab" data-tab="summary">総合分析</button>
       <button class="tab" data-tab="axes">軸の設定</button>
       <button class="tab" data-tab="settings">設定</button>
     </nav>
@@ -658,6 +659,40 @@
     </section>
 
     </section><!-- /tab-diagnoses -->
+
+    <section id="tab-summary" class="panel">
+      <h2>総合分析</h2>
+      <p class="muted">名前を入れて、各診断の最新スコア／悩みの種／理由ネットワークを束ねてClaudeに渡し、一人の人物像として統合解析します。結果は名前付きで履歴保存されます。</p>
+
+      <div class="summary-controls">
+        <label>
+          名前
+          <input type="text" id="summary-name" placeholder="例: 自分 / 〇〇さん" />
+        </label>
+        <div class="summary-incl">
+          <label class="inline"><input type="checkbox" id="incl-seeds" checked /> 悩みの種を含める</label>
+          <label class="inline"><input type="checkbox" id="incl-reasons" checked /> 理由ネットワークを含める</label>
+          <label class="inline"><input type="checkbox" id="incl-sessions" /> セッション議事録も含める</label>
+        </div>
+      </div>
+
+      <h3>含まれる最新スコア</h3>
+      <div id="summary-snapshot" class="summary-snapshot"></div>
+
+      <div class="actions">
+        <button id="summary-run" class="primary">AIで総合分析を実行</button>
+        <button id="summary-copy">結果をコピー</button>
+      </div>
+
+      <div id="summary-status" class="muted"></div>
+      <article id="summary-output" class="ai-output"></article>
+
+      <h3>分析履歴</h3>
+      <div class="filters">
+        <input type="search" id="summary-filter" placeholder="名前で絞り込み" />
+      </div>
+      <ul id="summary-history" class="social-history"></ul>
+    </section>
 
     <section id="tab-axes" class="panel">
       <h2>軸の設定</h2>
