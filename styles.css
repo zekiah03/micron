@@ -478,6 +478,38 @@ button.danger:hover { background: #fee2e2; }
   margin-left: 4px;
 }
 
+/* --- Suggest preview --- */
+.suggest-box {
+  background: #fef9c3;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 12px 0;
+}
+.suggest-box h3 { margin: 0 0 8px; font-size: 14px; }
+.suggest-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 12px;
+}
+.suggest-list li {
+  padding: 6px 0;
+  border-bottom: 1px dashed #fcd34d;
+  font-size: 13px;
+}
+.suggest-list li:last-child { border-bottom: 0; }
+.suggest-list label {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+}
+.suggest-check { margin-right: 4px; }
+
+
 
 @media (max-width: 600px) {
   .row { grid-template-columns: 1fr; }

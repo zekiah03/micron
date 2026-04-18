@@ -484,6 +484,7 @@
     const mode = aiMode.value;
     const customText = document.getElementById('ai-custom').value.trim();
     const instruction = buildInstruction(mode, customText);
+    document.getElementById('ai-suggest-preview').innerHTML = '';
 
     const seedText = target.map((s, i) => {
       const parts = [
@@ -522,6 +523,9 @@
       const text = await callClaude(systemPrompt, userPrompt);
       out.textContent = text;
       status.textContent = `完了 (${target.length}件を分析 / モデル: ${state.settings.model})`;
+      if (mode === 'suggest-reasons') {
+        renderSuggestPreview(text, target);
+      }
       state.history.unshift({
         id: uid(),
         at: new Date().toISOString(),
@@ -559,6 +563,25 @@
           '2. 中層（その感情の下にある欲求・恐れ・信念）',
           '3. 深層（その信念の起源として考えられる経験・環境）',
           '各層で、どの記録番号が該当するか引用し、共通して見える構造を最後にまとめてください。',
+        ].join('\n');
+      case 'suggest-reasons':
+        return [
+          '以下の記録を読み、その背景にある「理由」の候補を5〜10個提案してください。',
+          '深い理由（核心・起源）と、そこから派生する中層の理由まで、親子関係を意識してください。',
+          '出力は必ず以下のJSONのみ（前後の文章や説明は不要、コードブロックで囲んでください）:',
+          '```json',
+          '{',
+          '  "reasons": [',
+          '    {',
+          '      "key": "R1",',
+          '      "text": "理由の内容（30字程度）",',
+          '      "parents": ["R2"],',
+          '      "anchor_indices": [1, 3]',
+          '    }',
+          '  ]',
+          '}',
+          '```',
+          'key は R1, R2, ... の形式で一意。parents は深い理由の key の配列。anchor_indices は関連する記録番号（【n】）の配列。',
         ].join('\n');
       case 'custom':
         return custom || '以下の記録を分析してください。';
@@ -619,8 +642,97 @@
       action: 'アクション提案',
       reframe: 'リフレーミング',
       unravel: '解き明かす',
+      'suggest-reasons': '理由ネットワーク提案',
       custom: 'カスタム',
     }[m] || m;
+  }
+
+  function renderSuggestPreview(aiText, targetSeeds) {
+    const wrap = document.getElementById('ai-suggest-preview');
+    const json = extractJson(aiText);
+    if (!json || !Array.isArray(json.reasons)) {
+      wrap.innerHTML = '<p class="muted">提案されたJSONを解析できませんでした。AIの出力（上）を確認してください。</p>';
+      return;
+    }
+    const reasons = json.reasons;
+    wrap.innerHTML = `
+      <div class="suggest-box">
+        <h3>提案された理由（${reasons.length}件）</h3>
+        <p class="muted">チェックを入れた項目のみ、図解に追加されます。key の親子関係は保持されます。</p>
+        <ul class="suggest-list">
+          ${reasons.map((r, i) => `
+            <li>
+              <label>
+                <input type="checkbox" class="suggest-check" data-i="${i}" checked />
+                <b>${escapeHtml(r.key || ('R' + (i + 1)))}</b>
+                <span>${escapeHtml(r.text || '')}</span>
+                ${Array.isArray(r.parents) && r.parents.length ? `<span class="muted">← ${r.parents.map(escapeHtml).join(', ')}</span>` : ''}
+                ${Array.isArray(r.anchor_indices) && r.anchor_indices.length ? `<span class="muted">【記録: ${r.anchor_indices.join(', ')}】</span>` : ''}
+              </label>
+            </li>
+          `).join('')}
+        </ul>
+        <div class="actions">
+          <button id="suggest-accept" class="primary">選択した理由を追加</button>
+          <button id="suggest-all">全選択</button>
+          <button id="suggest-none">全解除</button>
+        </div>
+      </div>`;
+
+    wrap.querySelector('#suggest-all').addEventListener('click', () => {
+      wrap.querySelectorAll('.suggest-check').forEach(c => { c.checked = true; });
+    });
+    wrap.querySelector('#suggest-none').addEventListener('click', () => {
+      wrap.querySelectorAll('.suggest-check').forEach(c => { c.checked = false; });
+    });
+    wrap.querySelector('#suggest-accept').addEventListener('click', () => {
+      const picked = Array.from(wrap.querySelectorAll('.suggest-check'))
+        .filter(c => c.checked)
+        .map(c => reasons[+c.dataset.i]);
+      if (!picked.length) { alert('追加する項目がありません。'); return; }
+      applySuggestedReasons(picked, targetSeeds);
+      wrap.innerHTML = `<p class="muted">${picked.length}件を理由ネットワークに追加しました。図解タブで確認できます。</p>`;
+    });
+  }
+
+  function extractJson(text) {
+    const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    const candidate = fence ? fence[1] : text;
+    try { return JSON.parse(candidate); } catch {}
+    // try trimming to first { ... last }
+    const a = candidate.indexOf('{'), b = candidate.lastIndexOf('}');
+    if (a >= 0 && b > a) {
+      try { return JSON.parse(candidate.slice(a, b + 1)); } catch {}
+    }
+    return null;
+  }
+
+  function applySuggestedReasons(picked, targetSeeds) {
+    const keyToId = {};
+    // Pass 1: create reasons
+    for (const r of picked) {
+      const id = 'r_' + uid();
+      keyToId[r.key || id] = id;
+      const anchors = [];
+      for (const idx of (r.anchor_indices || [])) {
+        const s = targetSeeds[Number(idx) - 1];
+        if (s) anchors.push({ seedId: s.id, axisKey: null });
+      }
+      state.reasons.push({ id, text: r.text || '', parentIds: [], anchors });
+    }
+    // Pass 2: resolve parent links
+    for (const r of picked) {
+      const id = keyToId[r.key];
+      const node = state.reasons.find(x => x.id === id);
+      if (!node) continue;
+      for (const pkey of (r.parents || [])) {
+        const pid = keyToId[pkey];
+        if (pid && pid !== id && !wouldCreateCycle(id, pid)) {
+          node.parentIds.push(pid);
+        }
+      }
+    }
+    save(REASONS_KEY, state.reasons);
   }
 
   // ---------- Helpers ----------
@@ -869,6 +981,7 @@
   const graphFilter = document.getElementById('graph-filter');
   const graphCat = document.getElementById('graph-cat');
   const graphInfo = document.getElementById('graph-info');
+  const graphView = document.getElementById('graph-view');
   let graphNodes = [];
   let graphLinks = [];
   let simRaf = null;
@@ -893,7 +1006,7 @@
     renderGraph();
   });
 
-  [graphFilter, graphCat].forEach(el => el.addEventListener('change', renderGraph));
+  [graphFilter, graphCat, graphView].forEach(el => el.addEventListener('change', renderGraph));
 
   function renderGraph() {
     // Populate categories
@@ -904,10 +1017,17 @@
 
     const filter = graphFilter.value;
     const catSel = graphCat.value;
+    const view = graphView.value;
 
     let seeds = state.seeds.slice();
     if (catSel) seeds = seeds.filter(s => s.category === catSel);
     if (filter === 'high') seeds = seeds.filter(s => s.intensity >= 7);
+
+    if (view === 'matrix') {
+      if (simRaf) { cancelAnimationFrame(simRaf); simRaf = null; }
+      renderMatrix(seeds);
+      return;
+    }
 
     const seedIds = new Set(seeds.map(s => s.id));
     let reasons = state.reasons.slice();
@@ -992,6 +1112,115 @@
 
     simIter = 0;
     runSim();
+  }
+
+  function renderMatrix(seeds) {
+    const W = 900, H = 600;
+    const cols = ['本人', '他者', '環境', '複合'];
+    const rows = ['可', '部分的', '不可'];
+    const padL = 110, padT = 80, padR = 20, padB = 40;
+    const cellW = (W - padL - padR) / cols.length;
+    const cellH = (H - padT - padB) / rows.length;
+
+    // quadrant hints (意味合いの補助メモ)
+    const hints = {
+      '本人_可':   { text: '動ける領域',        color: '#d1fae5' },
+      '本人_部分的': { text: '半分は自分次第',    color: '#ecfccb' },
+      '本人_不可': { text: '受け入れ／ケア',    color: '#fef3c7' },
+      '他者_可':   { text: '働きかけ・対話',    color: '#dbeafe' },
+      '他者_部分的': { text: '距離の調整',       color: '#e0e7ff' },
+      '他者_不可': { text: '距離を取る／諦め', color: '#fee2e2' },
+      '環境_可':   { text: '環境を変える',      color: '#cffafe' },
+      '環境_部分的': { text: '条件の工夫',       color: '#ede9fe' },
+      '環境_不可': { text: '時代・運の領域',    color: '#fecaca' },
+      '複合_可':   { text: '要因の切り分け',    color: '#f0abfc' },
+      '複合_部分的': { text: '整理から入る',     color: '#fde68a' },
+      '複合_不可': { text: '保留・観察',        color: '#f3e8ff' },
+    };
+
+    // Bucket seeds into cells; collect uncategorized
+    const buckets = {};
+    const uncategorized = [];
+    for (const s of seeds) {
+      const a = s.attribution, c = s.controllability;
+      if (!a || !c || !cols.includes(a) || !rows.includes(c)) {
+        uncategorized.push(s);
+        continue;
+      }
+      const key = a + '_' + c;
+      (buckets[key] = buckets[key] || []).push(s);
+    }
+
+    const parts = [];
+    // Background cells
+    for (let ri = 0; ri < rows.length; ri++) {
+      for (let ci = 0; ci < cols.length; ci++) {
+        const x = padL + ci * cellW;
+        const y = padT + ri * cellH;
+        const key = cols[ci] + '_' + rows[ri];
+        const h = hints[key] || { text: '', color: '#f9fafb' };
+        parts.push(`<rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" fill="${h.color}" opacity="0.5" stroke="#e5e7eb" stroke-width="1"/>`);
+        parts.push(`<text x="${x + 8}" y="${y + 16}" font-size="10" fill="#6b7280">${escapeHtml(h.text)}</text>`);
+      }
+    }
+    // Column labels (帰属)
+    for (let ci = 0; ci < cols.length; ci++) {
+      const x = padL + ci * cellW + cellW / 2;
+      parts.push(`<text x="${x}" y="${padT - 32}" text-anchor="middle" font-size="13" font-weight="600" fill="#1f2430">${escapeHtml(cols[ci])}</text>`);
+    }
+    parts.push(`<text x="${padL + (W - padL - padR) / 2}" y="${padT - 54}" text-anchor="middle" font-size="11" fill="#6b7280">帰属（誰の問題か） →</text>`);
+
+    // Row labels (コントロール)
+    for (let ri = 0; ri < rows.length; ri++) {
+      const y = padT + ri * cellH + cellH / 2;
+      parts.push(`<text x="${padL - 12}" y="${y + 4}" text-anchor="end" font-size="13" font-weight="600" fill="#1f2430">${escapeHtml(rows[ri])}</text>`);
+    }
+    parts.push(`<text x="20" y="${padT + (H - padT - padB) / 2}" text-anchor="middle" font-size="11" fill="#6b7280" transform="rotate(-90 20 ${padT + (H - padT - padB) / 2})">↑ コントロール可能性</text>`);
+
+    // Place seeds within each cell (grid packing)
+    const nodes = [];
+    for (let ri = 0; ri < rows.length; ri++) {
+      for (let ci = 0; ci < cols.length; ci++) {
+        const key = cols[ci] + '_' + rows[ri];
+        const list = buckets[key] || [];
+        if (!list.length) continue;
+        const x0 = padL + ci * cellW;
+        const y0 = padT + ri * cellH + 20;
+        const perRow = Math.max(2, Math.ceil(Math.sqrt(list.length * (cellW / (cellH - 20)))));
+        list.forEach((s, idx) => {
+          const row = Math.floor(idx / perRow);
+          const col = idx % perRow;
+          const x = x0 + (cellW / (perRow + 1)) * (col + 1);
+          const y = y0 + 18 + row * 36;
+          const r = 8 + (Number(s.intensity) || 5) * 0.9;
+          nodes.push({ id: 's_' + s.id, ref: s.id, type: 'seed', x, y, r, color: categoryColor(s.category), label: s.title });
+        });
+      }
+    }
+
+    // Uncategorized footer
+    if (uncategorized.length) {
+      const y = H - padB + 6;
+      parts.push(`<text x="${padL}" y="${y}" font-size="11" fill="#6b7280">未分類（帰属/コントロール未設定）: ${uncategorized.length}件</text>`);
+    }
+
+    // Render seed dots
+    for (const n of nodes) {
+      const sel = state.selectedNodeId === n.id ? ' selected' : '';
+      parts.push(`<g class="node node-seed${sel}" data-id="${n.id}" transform="translate(${n.x},${n.y})">
+        <circle r="${n.r}" fill="${n.color}" stroke="#fff" stroke-width="2"></circle>
+        <text y="${n.r + 12}" text-anchor="middle" class="node-label">${escapeHtml(truncate(n.label, 12))}</text>
+      </g>`);
+    }
+
+    graphNodes = nodes;
+    graphLinks = [];
+    graphInfo.textContent = `2×2マトリクス: 配置 ${nodes.length}件 / 未分類 ${uncategorized.length}件`;
+    graphSvg.innerHTML = parts.join('');
+    // Only click selection (no drag in matrix)
+    graphSvg.querySelectorAll('.node').forEach(g => {
+      g.addEventListener('click', () => selectNode(g.dataset.id));
+    });
   }
 
   function runSim() {
