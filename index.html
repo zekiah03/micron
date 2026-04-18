@@ -15,6 +15,7 @@
       <button class="tab" data-tab="stats">統計</button>
       <button class="tab" data-tab="ai">AI分析</button>
       <button class="tab" data-tab="graph">図解</button>
+      <button class="tab" data-tab="sessions">セッション</button>
       <button class="tab" data-tab="axes">軸の設定</button>
       <button class="tab" data-tab="settings">設定</button>
     </nav>
@@ -235,6 +236,22 @@
         </aside>
       </div>
       <p class="muted">● 悩み（大きさ=強さ、色=カテゴリ） ／ ▭ 理由 ／ 実線=悩み→理由 ／ 破線=理由→より深い理由</p>
+    </section>
+
+    <section id="tab-sessions" class="panel">
+      <h2>セッション（対話・議事録）</h2>
+      <p class="muted">長文の対話メモをセクション単位で保存し、記録や理由と紐付けて振り返れます。</p>
+      <div class="session-layout">
+        <aside class="session-sidebar">
+          <div class="actions">
+            <button id="new-session-btn" class="primary">＋ 新規セッション</button>
+          </div>
+          <ul id="sessions-list" class="session-list"></ul>
+        </aside>
+        <main id="session-detail" class="session-detail">
+          <p class="muted">左のリストからセッションを選択するか、「＋ 新規セッション」を押してください。</p>
+        </main>
+      </div>
     </section>
 
     <section id="tab-axes" class="panel">

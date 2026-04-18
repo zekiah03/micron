@@ -509,6 +509,111 @@ button.danger:hover { background: #fee2e2; }
 }
 .suggest-check { margin-right: 4px; }
 
+/* --- Sessions --- */
+.session-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+}
+@media (max-width: 800px) { .session-layout { grid-template-columns: 1fr; } }
+
+.session-sidebar .actions { margin-bottom: 8px; }
+.session-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.session-list li {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+.session-list li:hover { background: #f9fafb; }
+.session-list li.active {
+  border-color: var(--brand);
+  background: #eef2ff;
+}
+.session-list .s-title { font-weight: 600; font-size: 14px; }
+.session-list .s-meta { font-size: 11px; margin-top: 2px; }
+
+.session-detail {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+}
+.session-head {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.session-head .s-title-input {
+  flex: 1;
+  min-width: 200px;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+.session-head .s-date-input { width: auto; margin: 0; }
+.session-head .s-delete { padding: 6px 10px; font-size: 12px; }
+.s-participants { font-size: 12px; }
+.s-participants input { margin: 0; }
+
+.section-card {
+  background: #fafafa;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.section-head {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.sec-heading {
+  flex: 1;
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0;
+}
+.section-actions { display: flex; gap: 4px; }
+.section-actions button {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.sec-body {
+  width: 100%;
+  margin: 0;
+  font-size: 13px;
+  background: #fff;
+  white-space: pre-wrap;
+}
+.section-links {
+  margin-top: 8px;
+  font-size: 12px;
+}
+.section-links summary { cursor: pointer; color: var(--muted); }
+.section-links label { font-size: 12px; }
+.section-links select { margin-top: 4px; }
+.link-chips { margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
+.link-chip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+}
+.link-chip.reason { background: #fef3c7; color: #92400e; }
+
 
 
 @media (max-width: 600px) {

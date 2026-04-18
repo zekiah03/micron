@@ -5,6 +5,7 @@
   const AXES_KEY = 'nayami-custom-axes-v1';
   const REASONS_KEY = 'nayami-reasons-v1';
   const POSITIONS_KEY = 'nayami-positions-v1';
+  const SESSIONS_KEY = 'nayami-sessions-v1';
 
   const BUILTIN_AXES = [
     { key: 'attribution', label: '帰属' },
@@ -46,9 +47,11 @@
     customAxes: load(AXES_KEY, []),
     reasons: load(REASONS_KEY, []),
     positions: load(POSITIONS_KEY, {}),
+    sessions: load(SESSIONS_KEY, []),
     editingId: null,
     formReasons: [], // reasons being edited in the current form session
     selectedNodeId: null,
+    selectedSessionId: null,
   };
 
   function load(key, fallback) {
@@ -78,6 +81,7 @@
       if (name === 'axes') renderAxesSettings();
       if (name === 'input') { renderCustomAxesInForm(); renderReasonsInForm(); }
       if (name === 'graph') renderGraph();
+      if (name === 'sessions') renderSessions();
     });
   });
 
@@ -319,6 +323,7 @@
       customAxes: state.customAxes,
       reasons: state.reasons,
       positions: state.positions,
+      sessions: state.sessions,
     }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -354,11 +359,16 @@
         state.positions = data.positions;
         save(POSITIONS_KEY, state.positions);
       }
+      if (Array.isArray(data.sessions)) {
+        state.sessions = data.sessions;
+        save(SESSIONS_KEY, state.sessions);
+      }
       flash('インポートしました');
       renderList();
       renderAxesSettings();
       renderCustomAxesInForm();
       renderReasonsInForm();
+      renderSessions();
     } catch (err) {
       alert('インポートに失敗しました: ' + err.message);
     }
@@ -398,9 +408,9 @@
     save(STORE_KEY, state.seeds);
 
     // サンプル理由ネットワーク
+    const byTitle = new Map(added.map(s => [s.title, s.id]));
+    const byKey = new Map();
     if (Array.isArray(window.SAMPLE_REASONS) && window.SAMPLE_REASONS.length) {
-      const byTitle = new Map(added.map(s => [s.title, s.id]));
-      const byKey = new Map();
       const newReasons = [];
       // 1st pass: create reasons without parents
       for (const t of window.SAMPLE_REASONS) {
@@ -424,6 +434,29 @@
       save(REASONS_KEY, state.reasons);
     }
 
+    // サンプルセッション
+    if (Array.isArray(window.SAMPLE_SESSIONS) && window.SAMPLE_SESSIONS.length) {
+      for (const t of window.SAMPLE_SESSIONS) {
+        const session = {
+          id: 'ss_' + uid(),
+          title: t.title,
+          date: t.date || new Date().toISOString().slice(0, 10),
+          participants: t.participants ? t.participants.slice() : [],
+          sections: (t.sections || []).map(sec => ({
+            id: 'sec_' + uid(),
+            heading: sec.heading,
+            body: sec.body,
+            seedIds: (sec.linkSeedTitles || []).map(title => byTitle.get(title)).filter(Boolean),
+            reasonIds: (sec.linkReasonKeys || []).map(key => byKey.get(key)).filter(Boolean),
+          })),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        state.sessions.unshift(session);
+      }
+      save(SESSIONS_KEY, state.sessions);
+    }
+
     flash(`${added.length}件読み込みました`);
     renderList();
     renderStats();
@@ -431,18 +464,21 @@
   });
 
   document.getElementById('clear-btn').addEventListener('click', () => {
-    if (!confirm('すべての記録・理由・分析履歴・位置情報を削除します。よろしいですか？')) return;
+    if (!confirm('すべての記録・理由・分析履歴・位置情報・セッションを削除します。よろしいですか？')) return;
     state.seeds = [];
     state.history = [];
     state.reasons = [];
     state.positions = {};
+    state.sessions = [];
     save(STORE_KEY, state.seeds);
     save(HISTORY_KEY, state.history);
     save(REASONS_KEY, state.reasons);
     save(POSITIONS_KEY, state.positions);
+    save(SESSIONS_KEY, state.sessions);
     renderList();
     renderHistory();
     renderReasonsInForm();
+    renderSessions();
     flash('削除しました');
   });
 
@@ -1478,10 +1514,183 @@
     return key;
   }
 
+  // ---------- Sessions ----------
+  document.getElementById('new-session-btn').addEventListener('click', () => {
+    const s = {
+      id: 'ss_' + uid(),
+      title: '新しいセッション',
+      date: new Date().toISOString().slice(0, 10),
+      participants: [],
+      sections: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    state.sessions.unshift(s);
+    save(SESSIONS_KEY, state.sessions);
+    state.selectedSessionId = s.id;
+    renderSessions();
+  });
+
+  function renderSessions() {
+    const list = document.getElementById('sessions-list');
+    if (!list) return;
+    if (!state.sessions.length) {
+      list.innerHTML = '<li class="muted">まだセッションはありません。</li>';
+      renderSessionDetail(null);
+      return;
+    }
+    list.innerHTML = state.sessions.map(s => `
+      <li data-id="${s.id}" class="${state.selectedSessionId === s.id ? 'active' : ''}">
+        <div class="s-title">${escapeHtml(s.title)}</div>
+        <div class="s-meta muted">${escapeHtml(s.date || '')} · ${s.sections.length}セクション</div>
+      </li>
+    `).join('');
+    list.querySelectorAll('li[data-id]').forEach(li => {
+      li.addEventListener('click', () => {
+        state.selectedSessionId = li.dataset.id;
+        renderSessions();
+      });
+    });
+    const sel = state.sessions.find(s => s.id === state.selectedSessionId) || state.sessions[0];
+    state.selectedSessionId = sel.id;
+    renderSessionDetail(sel);
+  }
+
+  function renderSessionDetail(s) {
+    const el = document.getElementById('session-detail');
+    if (!s) { el.innerHTML = '<p class="muted">左のリストからセッションを選択してください。</p>'; return; }
+    el.innerHTML = `
+      <div class="session-head">
+        <input class="s-title-input" value="${escapeAttr(s.title)}" placeholder="タイトル" />
+        <input class="s-date-input" type="date" value="${escapeAttr(s.date || '')}" />
+        <button class="danger s-delete">削除</button>
+      </div>
+      <label class="s-participants">
+        参加者（カンマ区切り）
+        <input type="text" value="${escapeAttr((s.participants || []).join(', '))}" placeholder="例: 私, パートナー" />
+      </label>
+      <div id="session-sections"></div>
+      <div class="actions"><button class="add-section">＋ セクションを追加</button></div>
+    `;
+    el.querySelector('.s-title-input').addEventListener('change', e => {
+      s.title = e.target.value.trim() || '(無題)';
+      s.updatedAt = new Date().toISOString();
+      save(SESSIONS_KEY, state.sessions);
+      renderSessions();
+    });
+    el.querySelector('.s-date-input').addEventListener('change', e => {
+      s.date = e.target.value;
+      save(SESSIONS_KEY, state.sessions);
+      renderSessions();
+    });
+    el.querySelector('.s-participants input').addEventListener('change', e => {
+      s.participants = e.target.value.split(',').map(x => x.trim()).filter(Boolean);
+      save(SESSIONS_KEY, state.sessions);
+    });
+    el.querySelector('.s-delete').addEventListener('click', () => {
+      if (!confirm('このセッションを削除しますか？')) return;
+      state.sessions = state.sessions.filter(x => x.id !== s.id);
+      state.selectedSessionId = null;
+      save(SESSIONS_KEY, state.sessions);
+      renderSessions();
+    });
+    el.querySelector('.add-section').addEventListener('click', () => {
+      s.sections.push({ id: 'sec_' + uid(), heading: '新しいセクション', body: '', seedIds: [], reasonIds: [] });
+      save(SESSIONS_KEY, state.sessions);
+      renderSessionDetail(s);
+    });
+    renderSessionSections(s);
+  }
+
+  function renderSessionSections(s) {
+    const wrap = document.getElementById('session-sections');
+    if (!wrap) return;
+    if (!s.sections.length) {
+      wrap.innerHTML = '<p class="muted">セクションを追加してメモを書きましょう。</p>';
+      return;
+    }
+    wrap.innerHTML = s.sections.map((sec, idx) => {
+      const seedOpts = state.seeds.map(x =>
+        `<option value="${x.id}" ${(sec.seedIds || []).includes(x.id) ? 'selected' : ''}>${escapeHtml(truncate(x.title, 40))}</option>`
+      ).join('');
+      const reasonOpts = state.reasons.map(r =>
+        `<option value="${r.id}" ${(sec.reasonIds || []).includes(r.id) ? 'selected' : ''}>${escapeHtml(truncate(r.text, 40))}</option>`
+      ).join('');
+      const linkedSeeds = (sec.seedIds || [])
+        .map(id => state.seeds.find(x => x.id === id))
+        .filter(Boolean)
+        .map(x => `<span class="link-chip seed">📌 ${escapeHtml(truncate(x.title, 24))}</span>`).join('');
+      const linkedReasons = (sec.reasonIds || [])
+        .map(id => state.reasons.find(x => x.id === id))
+        .filter(Boolean)
+        .map(r => `<span class="link-chip reason">💡 ${escapeHtml(truncate(r.text, 24))}</span>`).join('');
+      return `<article class="section-card" data-idx="${idx}">
+        <div class="section-head">
+          <input class="sec-heading" value="${escapeAttr(sec.heading)}" />
+          <div class="section-actions">
+            <button class="sec-up" ${idx === 0 ? 'disabled' : ''}>↑</button>
+            <button class="sec-down" ${idx === s.sections.length - 1 ? 'disabled' : ''}>↓</button>
+            <button class="sec-del danger">削除</button>
+          </div>
+        </div>
+        <textarea class="sec-body" rows="6" placeholder="本文">${escapeHtml(sec.body || '')}</textarea>
+        <details class="section-links">
+          <summary>紐付け（${(sec.seedIds || []).length + (sec.reasonIds || []).length}）</summary>
+          <label>悩みの種を紐付け<select class="sec-seeds" multiple size="4">${seedOpts}</select></label>
+          <label>理由を紐付け<select class="sec-reasons" multiple size="4">${reasonOpts}</select></label>
+        </details>
+        <div class="link-chips">${linkedSeeds}${linkedReasons}</div>
+      </article>`;
+    }).join('');
+
+    const sections = wrap.querySelectorAll('.section-card');
+    sections.forEach(card => {
+      const idx = Number(card.dataset.idx);
+      const sec = s.sections[idx];
+      card.querySelector('.sec-heading').addEventListener('change', e => {
+        sec.heading = e.target.value;
+        save(SESSIONS_KEY, state.sessions);
+      });
+      card.querySelector('.sec-body').addEventListener('change', e => {
+        sec.body = e.target.value;
+        save(SESSIONS_KEY, state.sessions);
+      });
+      card.querySelector('.sec-seeds').addEventListener('change', e => {
+        sec.seedIds = Array.from(e.target.selectedOptions).map(o => o.value);
+        save(SESSIONS_KEY, state.sessions);
+        renderSessionSections(s);
+      });
+      card.querySelector('.sec-reasons').addEventListener('change', e => {
+        sec.reasonIds = Array.from(e.target.selectedOptions).map(o => o.value);
+        save(SESSIONS_KEY, state.sessions);
+        renderSessionSections(s);
+      });
+      card.querySelector('.sec-up').addEventListener('click', () => {
+        if (idx === 0) return;
+        [s.sections[idx - 1], s.sections[idx]] = [s.sections[idx], s.sections[idx - 1]];
+        save(SESSIONS_KEY, state.sessions);
+        renderSessionSections(s);
+      });
+      card.querySelector('.sec-down').addEventListener('click', () => {
+        if (idx === s.sections.length - 1) return;
+        [s.sections[idx + 1], s.sections[idx]] = [s.sections[idx], s.sections[idx + 1]];
+        save(SESSIONS_KEY, state.sessions);
+        renderSessionSections(s);
+      });
+      card.querySelector('.sec-del').addEventListener('click', () => {
+        if (!confirm('このセクションを削除しますか？')) return;
+        s.sections.splice(idx, 1);
+        save(SESSIONS_KEY, state.sessions);
+        renderSessionSections(s);
+      });
+    });
+  }
+
   renderList();
   renderStats();
   renderHistory();
   renderAxesSettings();
   renderCustomAxesInForm();
   renderReasonsInForm();
+  renderSessions();
 })();
