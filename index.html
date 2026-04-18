@@ -20,6 +20,7 @@
       <button class="tab" data-tab="works">ワーク</button>
       <button class="tab" data-tab="social">社会性診断</button>
       <button class="tab" data-tab="effort">努力診断</button>
+      <button class="tab" data-tab="kolb">学習タイプ診断</button>
       <button class="tab" data-tab="axes">軸の設定</button>
       <button class="tab" data-tab="settings">設定</button>
     </nav>
@@ -450,6 +451,50 @@
 
       <h3>診断履歴</h3>
       <ul id="effort-history" class="social-history"></ul>
+    </section>
+
+    <section id="tab-kolb" class="panel">
+      <h2>学習タイプ診断（Kolb）</h2>
+      <p class="muted">David Kolbの経験学習サイクルを基にした「なぜ／なに／どうやって／今すぐ」の4タイプ診断（全20問・4択）。</p>
+
+      <details class="axis-group">
+        <summary>4タイプの説明</summary>
+        <ul class="axis-list builtin">
+          <li><b>なぜタイプ</b>（Why / 理論・目的重視）: 「これをやる意味は？」が明確だと動ける。Diverging寄り。</li>
+          <li><b>なにタイプ</b>（What / 事実・データ重視）: 根拠と体系が揃うと安心して進める。Assimilating寄り。</li>
+          <li><b>どうやってタイプ</b>（How / 手順・プロセス重視）: 明確なステップで着実に実行。Converging寄り。</li>
+          <li><b>今すぐタイプ</b>（Now/If / 行動・実践重視）: まず試して結果から学ぶ。Accommodating寄り。</li>
+        </ul>
+      </details>
+
+      <div id="kolb-intro">
+        <div class="actions">
+          <button id="kolb-start" class="primary">診断を開始する</button>
+        </div>
+      </div>
+
+      <div id="kolb-quiz" class="hidden">
+        <div class="quiz-progress">
+          <div class="quiz-progress-bar"><div id="kolb-progress-fill"></div></div>
+          <span id="kolb-progress-text"></span>
+        </div>
+        <div class="quiz-question" id="kolb-question"></div>
+        <div class="quiz-choices">
+          <button class="kolb-choice" data-val="4">はい</button>
+          <button class="kolb-choice" data-val="3">どちらかといえばはい</button>
+          <button class="kolb-choice" data-val="2">どちらかといえばいいえ</button>
+          <button class="kolb-choice" data-val="1">いいえ</button>
+        </div>
+        <div class="actions">
+          <button id="kolb-back">← 前の質問</button>
+          <button id="kolb-cancel">中断</button>
+        </div>
+      </div>
+
+      <div id="kolb-result" class="hidden"></div>
+
+      <h3>診断履歴</h3>
+      <ul id="kolb-history" class="social-history"></ul>
     </section>
 
     <section id="tab-axes" class="panel">

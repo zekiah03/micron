@@ -10,6 +10,7 @@
   const WORKS_KEY = 'nayami-works-v1';
   const SOCIAL_KEY = 'nayami-social-v1';
   const EFFORT_KEY = 'nayami-effort-v1';
+  const KOLB_KEY = 'nayami-kolb-v1';
 
   const SOCIAL_DIMENSIONS = [
     { key: 'communication', label: 'コミュニケーション', color: '#3b82f6' },
@@ -17,6 +18,40 @@
     { key: 'cooperation',   label: '協調性',             color: '#10b981' },
     { key: 'assertion',     label: '自己主張力',         color: '#f59e0b' },
     { key: 'adaptation',    label: '社会的適応力',       color: '#8b5cf6' },
+  ];
+
+  const KOLB_DIMENSIONS = [
+    { key: 'why',    label: 'なぜ',     color: '#ef4444', description: '理論・目的重視（Diverging）' },
+    { key: 'what',   label: 'なに',     color: '#3b82f6', description: '事実・データ重視（Assimilating）' },
+    { key: 'how',    label: 'どうやって', color: '#10b981', description: '手順・プロセス重視（Converging）' },
+    { key: 'now',    label: '今すぐ',   color: '#f59e0b', description: '行動・実践重視（Accommodating）' },
+  ];
+
+  const KOLB_QUESTIONS = [
+    // why
+    { dim: 'why', text: '新しいことを学ぶとき、まず目的や理由を調べる' },
+    { dim: 'why', text: '「これをやって何の意味があるの？」と思うことが多い' },
+    { dim: 'why', text: '情熱を感じるテーマだと一気に没頭できる' },
+    { dim: 'why', text: '全体像や長期ビジョンが見えると動きやすくなる' },
+    { dim: 'why', text: '納得できないことは、頼まれても動けない' },
+    // what
+    { dim: 'what', text: 'データ・統計・具体例を重視する' },
+    { dim: 'what', text: '根拠のない話はあまり信じない' },
+    { dim: 'what', text: '情報を体系的に整理するのが好き' },
+    { dim: 'what', text: 'まずは調べてから動くタイプだ' },
+    { dim: 'what', text: '客観的な事実が揃うと安心する' },
+    // how
+    { dim: 'how', text: '手順やステップが明確だと安心する' },
+    { dim: 'how', text: 'マニュアルやチュートリアルをしっかり読む方だ' },
+    { dim: 'how', text: 'プロセスを丁寧に守る方だ' },
+    { dim: 'how', text: '計画通りに進めることが好きだ' },
+    { dim: 'how', text: '「やり方」が分かれば着実に実行できる' },
+    // now
+    { dim: 'now', text: 'とりあえず試してみるのが好き' },
+    { dim: 'now', text: '失敗しながら学ぶことに抵抗がない' },
+    { dim: 'now', text: '計画より行動を優先する' },
+    { dim: 'now', text: 'ノリで動いてうまくいくことが多い' },
+    { dim: 'now', text: 'やってみてから考えるタイプだ' },
   ];
 
   const EFFORT_DIMENSIONS = [
@@ -139,8 +174,10 @@
     works: load(WORKS_KEY, []),
     socialAssessments: load(SOCIAL_KEY, []),
     effortAssessments: load(EFFORT_KEY, []),
+    kolbAssessments: load(KOLB_KEY, []),
     quiz: null,
     effortQuiz: null,
+    kolbQuiz: null,
     editingId: null,
     editingActionId: null,
     actionPathFilter: 'all',
@@ -183,6 +220,7 @@
       if (name === 'works') renderWorks();
       if (name === 'social') renderSocialHistory();
       if (name === 'effort') renderEffortHistory();
+      if (name === 'kolb') renderKolbHistory();
     });
   });
 
@@ -431,6 +469,7 @@
       works: state.works,
       socialAssessments: state.socialAssessments,
       effortAssessments: state.effortAssessments,
+      kolbAssessments: state.kolbAssessments,
     }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -486,6 +525,10 @@
         state.effortAssessments = data.effortAssessments;
         save(EFFORT_KEY, state.effortAssessments);
       }
+      if (Array.isArray(data.kolbAssessments)) {
+        state.kolbAssessments = data.kolbAssessments;
+        save(KOLB_KEY, state.kolbAssessments);
+      }
       flash('インポートしました');
       renderList();
       renderAxesSettings();
@@ -496,6 +539,7 @@
       renderWorks();
       renderSocialHistory();
       renderEffortHistory();
+      renderKolbHistory();
     } catch (err) {
       alert('インポートに失敗しました: ' + err.message);
     }
@@ -624,6 +668,7 @@
     state.works = [];
     state.socialAssessments = [];
     state.effortAssessments = [];
+    state.kolbAssessments = [];
     save(STORE_KEY, state.seeds);
     save(HISTORY_KEY, state.history);
     save(REASONS_KEY, state.reasons);
@@ -633,6 +678,7 @@
     save(WORKS_KEY, state.works);
     save(SOCIAL_KEY, state.socialAssessments);
     save(EFFORT_KEY, state.effortAssessments);
+    save(KOLB_KEY, state.kolbAssessments);
     renderList();
     renderHistory();
     renderReasonsInForm();
@@ -641,6 +687,7 @@
     renderWorks();
     renderSocialHistory();
     renderEffortHistory();
+    renderKolbHistory();
     flash('削除しました');
   });
 
@@ -2802,6 +2849,219 @@
     });
   }
 
+  // ---------- Kolb learning-type assessment ----------
+  const kolbIntro = document.getElementById('kolb-intro');
+  const kolbQuizEl = document.getElementById('kolb-quiz');
+  const kolbResult = document.getElementById('kolb-result');
+  const kolbQuestionEl = document.getElementById('kolb-question');
+  const kolbProgressFill = document.getElementById('kolb-progress-fill');
+  const kolbProgressText = document.getElementById('kolb-progress-text');
+
+  document.getElementById('kolb-start').addEventListener('click', () => {
+    state.kolbQuiz = { idx: 0, answers: new Array(KOLB_QUESTIONS.length).fill(null) };
+    kolbIntro.classList.add('hidden');
+    kolbResult.classList.add('hidden');
+    kolbQuizEl.classList.remove('hidden');
+    renderKolbQuestion();
+  });
+
+  document.querySelectorAll('.kolb-choice').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!state.kolbQuiz) return;
+      state.kolbQuiz.answers[state.kolbQuiz.idx] = Number(btn.dataset.val);
+      if (state.kolbQuiz.idx < KOLB_QUESTIONS.length - 1) {
+        state.kolbQuiz.idx++;
+        renderKolbQuestion();
+      } else {
+        finishKolbQuiz();
+      }
+    });
+  });
+
+  document.getElementById('kolb-back').addEventListener('click', () => {
+    if (!state.kolbQuiz || state.kolbQuiz.idx === 0) return;
+    state.kolbQuiz.idx--;
+    renderKolbQuestion();
+  });
+
+  document.getElementById('kolb-cancel').addEventListener('click', () => {
+    if (!confirm('診断を中断しますか？（回答は保存されません）')) return;
+    state.kolbQuiz = null;
+    kolbQuizEl.classList.add('hidden');
+    kolbIntro.classList.remove('hidden');
+  });
+
+  function renderKolbQuestion() {
+    const { idx, answers } = state.kolbQuiz;
+    const q = KOLB_QUESTIONS[idx];
+    const dim = KOLB_DIMENSIONS.find(d => d.key === q.dim);
+    kolbQuestionEl.innerHTML = `
+      <div class="q-dim" style="color:${dim.color}">${escapeHtml(dim.label)}タイプ</div>
+      <div class="q-text">${escapeHtml(q.text)}</div>`;
+    kolbProgressFill.style.width = `${((idx + 1) / KOLB_QUESTIONS.length) * 100}%`;
+    kolbProgressText.textContent = `${idx + 1} / ${KOLB_QUESTIONS.length}`;
+    document.querySelectorAll('.kolb-choice').forEach(b => {
+      b.classList.toggle('selected', Number(b.dataset.val) === answers[idx]);
+    });
+    document.getElementById('kolb-back').disabled = idx === 0;
+  }
+
+  function finishKolbQuiz() {
+    const scores = computeDimensionScores(state.kolbQuiz.answers, KOLB_QUESTIONS, KOLB_DIMENSIONS);
+    const record = {
+      id: 'ka_' + uid(),
+      date: new Date().toISOString(),
+      answers: state.kolbQuiz.answers.slice(),
+      scores,
+      notes: '',
+      aiCommentary: '',
+    };
+    state.kolbAssessments.unshift(record);
+    save(KOLB_KEY, state.kolbAssessments);
+    state.kolbQuiz = null;
+    kolbQuizEl.classList.add('hidden');
+    kolbIntro.classList.remove('hidden');
+    showKolbResult(record);
+    renderKolbHistory();
+  }
+
+  function showKolbResult(record) {
+    kolbResult.classList.remove('hidden');
+    const scores = record.scores;
+    const sorted = KOLB_DIMENSIONS.slice().sort((a, b) => scores[b.key] - scores[a.key]);
+    const high = sorted[0], second = sorted[1], low = sorted[sorted.length - 1];
+    const avg = Math.round(KOLB_DIMENSIONS.reduce((s, d) => s + scores[d.key], 0) / KOLB_DIMENSIONS.length);
+    const balanced = (scores[high.key] - scores[low.key]) <= 15;
+    const profileName = balanced ? `バランス型（${high.label}寄り）` : `${high.label}・${second.label}型`;
+    const advice = kolbAdvice(high.key);
+
+    kolbResult.innerHTML = `
+      <div class="result-card">
+        <div class="result-head">
+          <h3>学習タイプ: <span style="color:${high.color}">${escapeHtml(profileName)}</span></h3>
+          <span class="muted">${escapeHtml(formatDate(record.date))}</span>
+        </div>
+        <div class="result-grid">
+          ${renderRadarSvg(scores, KOLB_DIMENSIONS)}
+          <div class="result-scores">
+            ${KOLB_DIMENSIONS.map(d => `
+              <div class="score-row">
+                <span class="score-label" style="color:${d.color}">${escapeHtml(d.label)}</span>
+                <div class="score-bar-wrap"><div class="score-bar" style="width:${scores[d.key]}%;background:${d.color}"></div></div>
+                <span class="score-val">${scores[d.key]}</span>
+              </div>
+            `).join('')}
+            <div class="score-summary">
+              <div>平均: <b>${avg}</b></div>
+              <div>最高: <b style="color:${high.color}">${escapeHtml(high.label)} (${scores[high.key]})</b></div>
+              <div>最低: <b style="color:${low.color}">${escapeHtml(low.label)} (${scores[low.key]})</b></div>
+            </div>
+          </div>
+        </div>
+        <div class="result-interpret">${escapeHtml(advice)}</div>
+        <div class="actions">
+          <button id="kolb-ai-comment">AIで深掘りコメント（社会性・努力との関連も）</button>
+          <button id="kolb-retry">もう一度受ける</button>
+        </div>
+        <div id="kolb-ai-output" class="ai-output" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
+      </div>
+    `;
+    document.getElementById('kolb-retry').addEventListener('click', () => {
+      document.getElementById('kolb-start').click();
+    });
+    document.getElementById('kolb-ai-comment').addEventListener('click', () => runKolbAICommentary(record));
+  }
+
+  function kolbAdvice(topKey) {
+    return ({
+      why:  'あなたは「意味」が原動力です。長期ビジョンと結びつかないタスクで失速しやすいので、毎週「なぜやるか」を一行に書き出すと続きやすくなります。',
+      what: 'あなたは「根拠」で安心するタイプ。データ集めで止まりやすいので、「8割の根拠で動く」を意識的に許可してあげると行動量が増えます。',
+      how:  'あなたは「手順」が明確だと強い。逆に予定外に弱いので、「この手順が崩れた時のバックアッププラン」を1つ持っておくと不測に強くなります。',
+      now:  'あなたは「行動」で学ぶタイプ。事前準備が薄くなりがちなので、行動の前に「一つだけ振り返る問い」を持つと学びの質が上がります。',
+    })[topKey] || '';
+  }
+
+  async function runKolbAICommentary(record) {
+    if (!state.settings.apiKey) {
+      alert('設定タブでAPIキーを登録してください。');
+      return;
+    }
+    const out = document.getElementById('kolb-ai-output');
+    out.style.display = 'block';
+    out.textContent = '分析中...';
+    const kolbPayload = KOLB_DIMENSIONS.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join('\n');
+    const latestSocial = state.socialAssessments[0];
+    const latestEffort = state.effortAssessments[0];
+    const crossPayload = [];
+    if (latestSocial) {
+      crossPayload.push('## 直近の社会性スコア\n' +
+        SOCIAL_DIMENSIONS.map(d => `${d.label}: ${latestSocial.scores[d.key]}`).join(' / '));
+    }
+    if (latestEffort) {
+      crossPayload.push('## 直近の努力スコア\n' +
+        EFFORT_DIMENSIONS.map(d => `${d.label}: ${latestEffort.scores[d.key]}`).join(' / '));
+    }
+    const system = 'あなたは経験学習理論（Kolb）に詳しいコーチです。学習タイプ・社会性・努力スコアを統合し、本人が次の一手を取れるよう日本語で解説します。';
+    const user = [
+      '以下は学習タイプの4次元スコア（0〜100）です。',
+      'それぞれの意味、組み合わせのプロファイル、強みと弱みを述べた上で、',
+      '社会性スコア・努力スコアと突き合わせて「相乗効果が出ている部分」「ねじれている（衝突している）部分」を指摘してください。',
+      '最後に、今週から試せる小さなアクションを1つ提案してください。',
+      '全体で500字程度にまとめてください。',
+      '',
+      '## 学習タイプスコア',
+      kolbPayload,
+      '',
+      crossPayload.join('\n\n') || '（社会性・努力スコアはまだありません）',
+    ].join('\n');
+    try {
+      const text = await callClaude(system, user);
+      out.textContent = text;
+      record.aiCommentary = text;
+      save(KOLB_KEY, state.kolbAssessments);
+    } catch (err) {
+      out.textContent = 'エラー: ' + err.message;
+    }
+  }
+
+  function renderKolbHistory() {
+    const ul = document.getElementById('kolb-history');
+    if (!ul) return;
+    if (!state.kolbAssessments.length) {
+      ul.innerHTML = '<li class="muted">まだ診断履歴はありません。</li>';
+      return;
+    }
+    ul.innerHTML = state.kolbAssessments.map(r => {
+      const top = KOLB_DIMENSIONS.slice().sort((a, b) => r.scores[b.key] - r.scores[a.key])[0];
+      const bars = KOLB_DIMENSIONS.map(d => `
+        <span class="mini-bar" title="${escapeAttr(d.label)}: ${r.scores[d.key]}">
+          <span class="mini-bar-fill" style="height:${r.scores[d.key]}%;background:${d.color}"></span>
+        </span>`).join('');
+      return `<li data-id="${r.id}">
+        <div class="h-meta">${formatDate(r.date)} · 最高: <b style="color:${top.color}">${escapeHtml(top.label)}</b></div>
+        <div class="mini-bars">${bars}</div>
+        <div class="actions" style="margin-top:6px">
+          <button class="ka-view" data-id="${r.id}">結果を表示</button>
+          <button class="ka-del danger" data-id="${r.id}">削除</button>
+        </div>
+      </li>`;
+    }).join('');
+    ul.querySelectorAll('.ka-view').forEach(b => {
+      b.addEventListener('click', () => {
+        const r = state.kolbAssessments.find(x => x.id === b.dataset.id);
+        if (r) showKolbResult(r);
+      });
+    });
+    ul.querySelectorAll('.ka-del').forEach(b => {
+      b.addEventListener('click', () => {
+        if (!confirm('この診断履歴を削除しますか？')) return;
+        state.kolbAssessments = state.kolbAssessments.filter(x => x.id !== b.dataset.id);
+        save(KOLB_KEY, state.kolbAssessments);
+        renderKolbHistory();
+      });
+    });
+  }
+
   renderList();
   renderStats();
   renderHistory();
@@ -2813,4 +3073,5 @@
   renderWorks();
   renderSocialHistory();
   renderEffortHistory();
+  renderKolbHistory();
 })();
