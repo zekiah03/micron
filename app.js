@@ -12,6 +12,7 @@
     { key: 'controllability', label: 'コントロール' },
     { key: 'timeFrame', label: '時間軸' },
     { key: 'depth', label: '深さ' },
+    { key: 'interventionPoint', label: '介入点' },
   ];
 
   const CATEGORY_COLORS = {
@@ -109,6 +110,7 @@
       controllability: data.controllability || '',
       timeFrame: data.timeFrame || '',
       depth: data.depth || '',
+      interventionPoint: data.interventionPoint || '',
       customAxes,
       createdAt: state.editingId
         ? state.seeds.find(s => s.id === state.editingId)?.createdAt || new Date().toISOString()
@@ -226,6 +228,7 @@
     form.elements.controllability.value = s.controllability || '';
     form.elements.timeFrame.value = s.timeFrame || '';
     form.elements.depth.value = s.depth || '';
+    form.elements.interventionPoint.value = s.interventionPoint || '';
     renderCustomAxesInForm(s.customAxes || {});
     state.formReasons = state.reasons
       .filter(r => (r.anchors || []).some(a => a.seedId === id))
@@ -399,6 +402,7 @@
         controllability: t.controllability || '',
         timeFrame: t.timeFrame || '',
         depth: t.depth || '',
+        interventionPoint: t.interventionPoint || '',
         customAxes: t.customAxes ? { ...t.customAxes } : {},
         createdAt: d.toISOString(),
         updatedAt: d.toISOString(),
@@ -563,6 +567,8 @@
         renderSuggestPreview(text, target);
       } else if (mode === 'reclassify-depth') {
         renderReclassifyPreview(text, target);
+      } else if (mode === 'intervention-map') {
+        renderInterventionPreview(text, target);
       }
       state.history.unshift({
         id: uid(),
@@ -620,6 +626,26 @@
           '}',
           '```',
           'key は R1, R2, ... の形式で一意。parents は深い理由の key の配列。anchor_indices は関連する記録番号（【n】）の配列。',
+        ].join('\n');
+      case 'intervention-map':
+        return [
+          '以下の記録それぞれについて、「層Aを維持するループ（入力→解釈→感情→行動→結果→信念強化）」のどこで断ち切るのが最も有効かを提案してください。',
+          '選択肢: 入力制御 / 解釈遅延 / 感情切断 / 行動固定 / 結果再定義',
+          '',
+          '出力は必ず以下のJSONのみ（コードブロック```json ... ```で囲む）:',
+          '```json',
+          '{',
+          '  "interventions": [',
+          '    {',
+          '      "index": 1,',
+          '      "point": "解釈遅延",',
+          '      "reason": "この悩みで効くと考える理由（一文）",',
+          '      "first_step": "今週から試せる小さな具体アクション（一文）"',
+          '    }',
+          '  ]',
+          '}',
+          '```',
+          'すべての記録について一つずつ提案してください。',
         ].join('\n');
       case 'reclassify-depth':
         return [
@@ -703,6 +729,7 @@
       unravel: '解き明かす',
       'suggest-reasons': '理由ネットワーク提案',
       'reclassify-depth': '深さ層 再分類',
+      'intervention-map': '介入点マップ',
       custom: 'カスタム',
     }[m] || m;
   }
@@ -817,6 +844,76 @@
       if (!picked.length) { alert('追加する項目がありません。'); return; }
       applySuggestedReasons(picked, targetSeeds);
       wrap.innerHTML = `<p class="muted">${picked.length}件を理由ネットワークに追加しました。図解タブで確認できます。</p>`;
+    });
+  }
+
+  function renderInterventionPreview(aiText, targetSeeds) {
+    const wrap = document.getElementById('ai-suggest-preview');
+    const json = extractJson(aiText);
+    if (!json || !Array.isArray(json.interventions)) {
+      wrap.innerHTML = '<p class="muted">提案されたJSONを解析できませんでした。出力を確認してください。</p>';
+      return;
+    }
+    const valid = ['入力制御', '解釈遅延', '感情切断', '行動固定', '結果再定義'];
+    const rows = json.interventions.filter(c => valid.includes(c.point) && typeof c.index === 'number');
+    if (!rows.length) {
+      wrap.innerHTML = '<p class="muted">有効な提案がありません。</p>';
+      return;
+    }
+    wrap.innerHTML = `
+      <div class="suggest-box">
+        <h3>介入点マップ（${rows.length}件）</h3>
+        <p class="muted">チェックした項目の「介入点」軸が記録に反映されます。first_stepは提案として保持されます（アクション機能に後で取り込み予定）。</p>
+        <ul class="suggest-list">
+          ${rows.map((c, i) => {
+            const s = targetSeeds[c.index - 1];
+            if (!s) return '';
+            const before = s.interventionPoint || '未設定';
+            const changed = before !== c.point;
+            return `<li>
+              <label>
+                <input type="checkbox" class="interv-check" data-i="${i}" ${changed ? 'checked' : ''} />
+                <b>【${c.index}】</b>
+                <span>${escapeHtml(truncate(s.title, 36))}</span>
+                <span class="muted">${escapeHtml(before)} →</span>
+                <b class="interv-badge">${escapeHtml(c.point)}</b>
+                ${c.reason ? `<div class="rationale muted">理由: ${escapeHtml(c.reason)}</div>` : ''}
+                ${c.first_step ? `<div class="rationale">最初の一歩: ${escapeHtml(c.first_step)}</div>` : ''}
+              </label>
+            </li>`;
+          }).join('')}
+        </ul>
+        <div class="actions">
+          <button id="interv-accept" class="primary">選択した介入点を適用</button>
+          <button id="interv-all">全選択</button>
+          <button id="interv-none">全解除</button>
+        </div>
+      </div>`;
+    wrap.querySelector('#interv-all').addEventListener('click', () => {
+      wrap.querySelectorAll('.interv-check').forEach(c => { c.checked = true; });
+    });
+    wrap.querySelector('#interv-none').addEventListener('click', () => {
+      wrap.querySelectorAll('.interv-check').forEach(c => { c.checked = false; });
+    });
+    wrap.querySelector('#interv-accept').addEventListener('click', () => {
+      const picked = Array.from(wrap.querySelectorAll('.interv-check'))
+        .filter(c => c.checked)
+        .map(c => rows[+c.dataset.i]);
+      if (!picked.length) { alert('適用する項目がありません。'); return; }
+      let n = 0;
+      for (const c of picked) {
+        const s = targetSeeds[c.index - 1];
+        if (!s) continue;
+        const target = state.seeds.find(x => x.id === s.id);
+        if (target) {
+          target.interventionPoint = c.point;
+          target.updatedAt = new Date().toISOString();
+          n++;
+        }
+      }
+      save(STORE_KEY, state.seeds);
+      wrap.innerHTML = `<p class="muted">${n}件の介入点を更新しました。</p>`;
+      renderList();
     });
   }
 

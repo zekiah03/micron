@@ -105,6 +105,17 @@
                 <option value="核心">核心（層A: 自己への根本信念）</option>
               </select>
             </label>
+            <label>
+              介入点（どこで断ち切るか）
+              <select name="interventionPoint">
+                <option value="">—</option>
+                <option value="入力制御">入力制御（刺激を減らす・避ける）</option>
+                <option value="解釈遅延">解釈遅延（意味づけを保留）</option>
+                <option value="感情切断">感情切断（感情→行動の連鎖を止める）</option>
+                <option value="行動固定">行動固定（反射を別の行動に置き換える）</option>
+                <option value="結果再定義">結果再定義（結果の意味を捉え直す）</option>
+              </select>
+            </label>
           </div>
         </details>
 
@@ -177,6 +188,7 @@
             <option value="unravel">解き明かす（多層構造で整理）</option>
             <option value="suggest-reasons">理由ネットワーク提案（図解に追加）</option>
             <option value="reclassify-depth">深さ層（層A/B/C）を再分類</option>
+            <option value="intervention-map">介入点マップ（どこで断ち切るか）</option>
             <option value="custom">カスタム指示</option>
           </select>
         </label>
@@ -266,7 +278,32 @@
         <li><b>コントロール可能性</b>（選択）: 可 / 部分的 / 不可</li>
         <li><b>時間軸</b>（選択）: 過去 / 現在 / 未来</li>
         <li><b>深さ層</b>（選択）: 表層（層C: 具体的な悩み） / 中層（層B: 思考・行動の癖） / 核心（層A: 自己への根本信念）</li>
+        <li><b>介入点</b>（選択）: 入力制御 / 解釈遅延 / 感情切断 / 行動固定 / 結果再定義</li>
       </ul>
+
+      <details class="axis-group">
+        <summary>層Aを維持するループと5つの介入点</summary>
+        <div class="loop-diagram">
+          <div class="loop-step">入力</div>
+          <div class="loop-arrow">→</div>
+          <div class="loop-step">解釈</div>
+          <div class="loop-arrow">→</div>
+          <div class="loop-step">感情</div>
+          <div class="loop-arrow">→</div>
+          <div class="loop-step">行動</div>
+          <div class="loop-arrow">→</div>
+          <div class="loop-step">結果</div>
+          <div class="loop-arrow">→</div>
+          <div class="loop-step">信念強化</div>
+        </div>
+        <ul class="axis-list builtin">
+          <li><b>入力制御</b>: 刺激そのものを減らす・避ける（SNSを切る、特定の場面を避ける等）</li>
+          <li><b>解釈遅延</b>: 意味づけを保留する（「これが本当にそうか」を保留）</li>
+          <li><b>感情切断</b>: 感情から自動で発動する行動の連鎖を止める（一呼吸入れる）</li>
+          <li><b>行動固定</b>: 反射的な行動を別の行動に置き換える（憎しみが湧いたら散歩に出る等）</li>
+          <li><b>結果再定義</b>: 結果の意味を捉え直す（「失敗」ではなく「試行」）</li>
+        </ul>
+      </details>
 
       <details class="axis-group">
         <summary>層A/B/C モデル（セッションからの定義）</summary>
