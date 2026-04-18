@@ -18,6 +18,7 @@
       <button class="tab" data-tab="sessions">セッション</button>
       <button class="tab" data-tab="actions">アクション</button>
       <button class="tab" data-tab="works">ワーク</button>
+      <button class="tab" data-tab="social">社会性診断</button>
       <button class="tab" data-tab="axes">軸の設定</button>
       <button class="tab" data-tab="settings">設定</button>
     </nav>
@@ -358,6 +359,51 @@
       <ul id="works-list" class="works-list"></ul>
 
       <article id="work-detail" class="work-detail hidden"></article>
+    </section>
+
+    <section id="tab-social" class="panel">
+      <h2>社会性診断</h2>
+      <p class="muted">MBTIライクな4択質問（全25問）で、社会性の5次元をプロファイルします。ブラウザ内で完結し、履歴も残せます。</p>
+
+      <details class="axis-group">
+        <summary>5つの次元の説明</summary>
+        <ul class="axis-list builtin">
+          <li><b>コミュニケーション能力</b>: 話す・聞く・非言語で関わる力</li>
+          <li><b>共感力</b>: 相手の気持ちを理解し寄り添う力</li>
+          <li><b>協調性</b>: 役割分担・調整・チームワーク</li>
+          <li><b>自己主張力</b>: 自分の意見を相手を尊重しつつ伝える力</li>
+          <li><b>社会的適応力</b>: 状況に合わせて柔軟に振る舞う力</li>
+        </ul>
+      </details>
+
+      <div id="social-intro">
+        <div class="actions">
+          <button id="social-start" class="primary">診断を開始する</button>
+        </div>
+      </div>
+
+      <div id="social-quiz" class="hidden">
+        <div class="quiz-progress">
+          <div class="quiz-progress-bar"><div id="quiz-progress-fill"></div></div>
+          <span id="quiz-progress-text"></span>
+        </div>
+        <div class="quiz-question" id="quiz-question"></div>
+        <div class="quiz-choices">
+          <button class="quiz-choice" data-val="4">はい</button>
+          <button class="quiz-choice" data-val="3">どちらかといえばはい</button>
+          <button class="quiz-choice" data-val="2">どちらかといえばいいえ</button>
+          <button class="quiz-choice" data-val="1">いいえ</button>
+        </div>
+        <div class="actions">
+          <button id="quiz-back">← 前の質問</button>
+          <button id="quiz-cancel">中断</button>
+        </div>
+      </div>
+
+      <div id="social-result" class="hidden"></div>
+
+      <h3>診断履歴</h3>
+      <ul id="social-history" class="social-history"></ul>
     </section>
 
     <section id="tab-axes" class="panel">

@@ -8,6 +8,48 @@
   const SESSIONS_KEY = 'nayami-sessions-v1';
   const ACTIONS_KEY = 'nayami-actions-v1';
   const WORKS_KEY = 'nayami-works-v1';
+  const SOCIAL_KEY = 'nayami-social-v1';
+
+  const SOCIAL_DIMENSIONS = [
+    { key: 'communication', label: 'コミュニケーション', color: '#3b82f6' },
+    { key: 'empathy',       label: '共感力',             color: '#ec4899' },
+    { key: 'cooperation',   label: '協調性',             color: '#10b981' },
+    { key: 'assertion',     label: '自己主張力',         color: '#f59e0b' },
+    { key: 'adaptation',    label: '社会的適応力',       color: '#8b5cf6' },
+  ];
+
+  const SOCIAL_QUESTIONS = [
+    // communication
+    { dim: 'communication', text: '初対面の人とも自然に会話を始められる' },
+    { dim: 'communication', text: '相手の話を遮らず、最後まで聞くことができる' },
+    { dim: 'communication', text: '表情やジェスチャーで気持ちを伝えるのが得意だ' },
+    { dim: 'communication', text: '会話の沈黙を気まずいと感じず過ごせる' },
+    { dim: 'communication', text: '自分の考えを分かりやすい言葉で説明できる' },
+    // empathy
+    { dim: 'empathy', text: '相手の表情から気持ちの変化を読み取れる' },
+    { dim: 'empathy', text: '相手が悲しんでいる時、自然に寄り添える' },
+    { dim: 'empathy', text: '自分と違う立場の人の考えを想像できる' },
+    { dim: 'empathy', text: '「なぜその人がそう感じるのか」を考える習慣がある' },
+    { dim: 'empathy', text: '他者の感情が自分にも伝わってくることが多い' },
+    // cooperation
+    { dim: 'cooperation', text: 'グループ活動で役割を積極的に引き受ける' },
+    { dim: 'cooperation', text: '意見の違いを調整するのが得意だ' },
+    { dim: 'cooperation', text: '他の人の意見を取り入れて自分の案を修正できる' },
+    { dim: 'cooperation', text: 'チームの目標を自分の意見より優先できる時がある' },
+    { dim: 'cooperation', text: '場の空気を読んで適切に行動できる' },
+    // assertion
+    { dim: 'assertion', text: '自分の意見をはっきりと伝えられる' },
+    { dim: 'assertion', text: '気が進まないことに「NO」と断ることができる' },
+    { dim: 'assertion', text: '不快なことを言われたら、それを相手に伝えられる' },
+    { dim: 'assertion', text: '自分の意見を通しつつ、相手も尊重できる' },
+    { dim: 'assertion', text: '周りに流されず、自分の判断を貫ける' },
+    // adaptation
+    { dim: 'adaptation', text: '職場・学校・プライベートで振る舞いを使い分けられる' },
+    { dim: 'adaptation', text: '初めての環境にも比較的早く馴染める' },
+    { dim: 'adaptation', text: 'ルールや暗黙のマナーに気づいて従える' },
+    { dim: 'adaptation', text: '予期しない状況にも落ち着いて対応できる' },
+    { dim: 'adaptation', text: '多様な世代・文化の人とも関係を築ける' },
+  ];
 
   const BUILTIN_AXES = [
     { key: 'attribution', label: '帰属' },
@@ -53,6 +95,8 @@
     sessions: load(SESSIONS_KEY, []),
     actions: load(ACTIONS_KEY, []),
     works: load(WORKS_KEY, []),
+    socialAssessments: load(SOCIAL_KEY, []),
+    quiz: null,
     editingId: null,
     editingActionId: null,
     actionPathFilter: 'all',
@@ -93,6 +137,7 @@
       if (name === 'sessions') renderSessions();
       if (name === 'actions') renderActions();
       if (name === 'works') renderWorks();
+      if (name === 'social') renderSocialHistory();
     });
   });
 
@@ -339,6 +384,7 @@
       sessions: state.sessions,
       actions: state.actions,
       works: state.works,
+      socialAssessments: state.socialAssessments,
     }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -386,6 +432,10 @@
         state.works = data.works;
         save(WORKS_KEY, state.works);
       }
+      if (Array.isArray(data.socialAssessments)) {
+        state.socialAssessments = data.socialAssessments;
+        save(SOCIAL_KEY, state.socialAssessments);
+      }
       flash('インポートしました');
       renderList();
       renderAxesSettings();
@@ -394,6 +444,7 @@
       renderSessions();
       renderActions();
       renderWorks();
+      renderSocialHistory();
     } catch (err) {
       alert('インポートに失敗しました: ' + err.message);
     }
@@ -520,6 +571,7 @@
     state.sessions = [];
     state.actions = [];
     state.works = [];
+    state.socialAssessments = [];
     save(STORE_KEY, state.seeds);
     save(HISTORY_KEY, state.history);
     save(REASONS_KEY, state.reasons);
@@ -527,12 +579,14 @@
     save(SESSIONS_KEY, state.sessions);
     save(ACTIONS_KEY, state.actions);
     save(WORKS_KEY, state.works);
+    save(SOCIAL_KEY, state.socialAssessments);
     renderList();
     renderHistory();
     renderReasonsInForm();
     renderSessions();
     renderActions();
     renderWorks();
+    renderSocialHistory();
     flash('削除しました');
   });
 
@@ -2202,6 +2256,260 @@
     });
   }
 
+  // ---------- Social assessment ----------
+  const socialIntro = document.getElementById('social-intro');
+  const socialQuiz = document.getElementById('social-quiz');
+  const socialResult = document.getElementById('social-result');
+  const quizQuestionEl = document.getElementById('quiz-question');
+  const quizProgressFill = document.getElementById('quiz-progress-fill');
+  const quizProgressText = document.getElementById('quiz-progress-text');
+
+  document.getElementById('social-start').addEventListener('click', () => {
+    state.quiz = { idx: 0, answers: new Array(SOCIAL_QUESTIONS.length).fill(null) };
+    socialIntro.classList.add('hidden');
+    socialResult.classList.add('hidden');
+    socialQuiz.classList.remove('hidden');
+    renderQuizQuestion();
+  });
+
+  document.querySelectorAll('.quiz-choice').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!state.quiz) return;
+      state.quiz.answers[state.quiz.idx] = Number(btn.dataset.val);
+      if (state.quiz.idx < SOCIAL_QUESTIONS.length - 1) {
+        state.quiz.idx++;
+        renderQuizQuestion();
+      } else {
+        finishQuiz();
+      }
+    });
+  });
+
+  document.getElementById('quiz-back').addEventListener('click', () => {
+    if (!state.quiz || state.quiz.idx === 0) return;
+    state.quiz.idx--;
+    renderQuizQuestion();
+  });
+
+  document.getElementById('quiz-cancel').addEventListener('click', () => {
+    if (!confirm('診断を中断しますか？（回答は保存されません）')) return;
+    state.quiz = null;
+    socialQuiz.classList.add('hidden');
+    socialIntro.classList.remove('hidden');
+  });
+
+  function renderQuizQuestion() {
+    const { idx, answers } = state.quiz;
+    const q = SOCIAL_QUESTIONS[idx];
+    const dim = SOCIAL_DIMENSIONS.find(d => d.key === q.dim);
+    quizQuestionEl.innerHTML = `
+      <div class="q-dim" style="color:${dim.color}">${escapeHtml(dim.label)}</div>
+      <div class="q-text">${escapeHtml(q.text)}</div>`;
+    quizProgressFill.style.width = `${((idx + 1) / SOCIAL_QUESTIONS.length) * 100}%`;
+    quizProgressText.textContent = `${idx + 1} / ${SOCIAL_QUESTIONS.length}`;
+    // Highlight selected
+    document.querySelectorAll('.quiz-choice').forEach(b => {
+      b.classList.toggle('selected', Number(b.dataset.val) === answers[idx]);
+    });
+    document.getElementById('quiz-back').disabled = idx === 0;
+  }
+
+  function finishQuiz() {
+    const scores = computeSocialScores(state.quiz.answers);
+    const record = {
+      id: 'sa_' + uid(),
+      date: new Date().toISOString(),
+      answers: state.quiz.answers.slice(),
+      scores,
+      notes: '',
+      aiCommentary: '',
+    };
+    state.socialAssessments.unshift(record);
+    save(SOCIAL_KEY, state.socialAssessments);
+    state.quiz = null;
+    socialQuiz.classList.add('hidden');
+    socialIntro.classList.remove('hidden');
+    showSocialResult(record);
+    renderSocialHistory();
+  }
+
+  function computeSocialScores(answers) {
+    const sums = {}, counts = {};
+    for (const d of SOCIAL_DIMENSIONS) { sums[d.key] = 0; counts[d.key] = 0; }
+    for (let i = 0; i < SOCIAL_QUESTIONS.length; i++) {
+      const a = answers[i];
+      if (a == null) continue;
+      const dim = SOCIAL_QUESTIONS[i].dim;
+      sums[dim] += a;
+      counts[dim]++;
+    }
+    // Normalize to 0-100: raw range per item = 1-4, so max = 4n, min = n
+    const out = {};
+    for (const d of SOCIAL_DIMENSIONS) {
+      const max = counts[d.key] * 4, min = counts[d.key];
+      out[d.key] = max > min ? Math.round(((sums[d.key] - min) / (max - min)) * 100) : 0;
+    }
+    return out;
+  }
+
+  function showSocialResult(record) {
+    socialResult.classList.remove('hidden');
+    const scores = record.scores;
+    const sorted = SOCIAL_DIMENSIONS.slice().sort((a, b) => scores[b.key] - scores[a.key]);
+    const high = sorted[0], low = sorted[sorted.length - 1];
+    const avg = Math.round(SOCIAL_DIMENSIONS.reduce((s, d) => s + scores[d.key], 0) / SOCIAL_DIMENSIONS.length);
+
+    socialResult.innerHTML = `
+      <div class="result-card">
+        <div class="result-head">
+          <h3>診断結果</h3>
+          <span class="muted">${escapeHtml(formatDate(record.date))}</span>
+        </div>
+        <div class="result-grid">
+          ${renderSocialRadar(scores)}
+          <div class="result-scores">
+            ${SOCIAL_DIMENSIONS.map(d => `
+              <div class="score-row">
+                <span class="score-label" style="color:${d.color}">${escapeHtml(d.label)}</span>
+                <div class="score-bar-wrap"><div class="score-bar" style="width:${scores[d.key]}%;background:${d.color}"></div></div>
+                <span class="score-val">${scores[d.key]}</span>
+              </div>
+            `).join('')}
+            <div class="score-summary">
+              <div>平均: <b>${avg}</b></div>
+              <div>最高: <b style="color:${high.color}">${escapeHtml(high.label)} (${scores[high.key]})</b></div>
+              <div>最低: <b style="color:${low.color}">${escapeHtml(low.label)} (${scores[low.key]})</b></div>
+            </div>
+          </div>
+        </div>
+        <div class="result-interpret">${escapeHtml(interpretSocial(scores, high, low, avg))}</div>
+        <div class="actions">
+          <button id="social-ai-comment">AIで深掘りコメント</button>
+          <button id="social-retry">もう一度受ける</button>
+        </div>
+        <div id="social-ai-output" class="ai-output" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
+      </div>
+    `;
+    document.getElementById('social-retry').addEventListener('click', () => {
+      document.getElementById('social-start').click();
+    });
+    document.getElementById('social-ai-comment').addEventListener('click', () => runSocialAICommentary(record));
+  }
+
+  function interpretSocial(scores, high, low, avg) {
+    const parts = [];
+    parts.push(`平均 ${avg} のプロファイル。`);
+    if (scores[high.key] - scores[low.key] >= 30) {
+      parts.push(`${high.label} と ${low.label} の差が大きく、アンバランスな傾向。`);
+    } else {
+      parts.push(`各次元の差は小さく、バランス型。`);
+    }
+    const pair = high.key + '_' + low.key;
+    const hints = {
+      empathy_assertion: '相手の気持ちは読めるが、自分の主張を抑えがち。我慢が溜まりやすい。',
+      communication_empathy: '会話は回せるが、相手の感情の機微を見落としがち。',
+      assertion_empathy: '自分の意見は通せるが、相手の気持ちへの配慮を意識的に足すと関係が深まる。',
+      cooperation_assertion: '場を円滑にするのは得意だが、自分の「NO」を出す練習が効く。',
+      adaptation_assertion: '状況に合わせる柔軟性は高いが、自分を出す場面を意識的に作ると良い。',
+      empathy_communication: '気持ちは受け取れるが、それを言葉にして伝えるところが止まりがち。',
+      adaptation_empathy: '適応はできるが、表面的な対応で終わりやすい。感情の奥まで踏み込むと深まる。',
+    };
+    if (hints[pair]) parts.push(hints[pair]);
+    return parts.join(' ');
+  }
+
+  function renderSocialRadar(scores) {
+    const cx = 130, cy = 130, R = 100;
+    const n = SOCIAL_DIMENSIONS.length;
+    const pts = SOCIAL_DIMENSIONS.map((d, i) => {
+      const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+      const r = (scores[d.key] / 100) * R;
+      return [cx + Math.cos(ang) * r, cy + Math.sin(ang) * r];
+    });
+    const gridRings = [0.25, 0.5, 0.75, 1].map(f => {
+      const p = SOCIAL_DIMENSIONS.map((d, i) => {
+        const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+        return `${cx + Math.cos(ang) * R * f},${cy + Math.sin(ang) * R * f}`;
+      }).join(' ');
+      return `<polygon points="${p}" fill="none" stroke="#e5e7eb" stroke-width="1"/>`;
+    }).join('');
+    const axes = SOCIAL_DIMENSIONS.map((d, i) => {
+      const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+      const x = cx + Math.cos(ang) * R, y = cy + Math.sin(ang) * R;
+      const lx = cx + Math.cos(ang) * (R + 22), ly = cy + Math.sin(ang) * (R + 18);
+      return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>
+              <text x="${lx}" y="${ly}" text-anchor="middle" dy="4" font-size="11" fill="${d.color}" font-weight="600">${escapeHtml(d.label)}</text>`;
+    }).join('');
+    const shape = `<polygon points="${pts.map(p => p.join(',')).join(' ')}" fill="#6366f1" fill-opacity="0.25" stroke="#6366f1" stroke-width="2"/>`;
+    const dots = pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="#6366f1"/>`).join('');
+    return `<svg class="radar-svg" viewBox="0 0 260 260">${gridRings}${axes}${shape}${dots}</svg>`;
+  }
+
+  async function runSocialAICommentary(record) {
+    if (!state.settings.apiKey) {
+      alert('設定タブでAPIキーを登録してください。');
+      return;
+    }
+    const out = document.getElementById('social-ai-output');
+    out.style.display = 'block';
+    out.textContent = '分析中...';
+    const payload = SOCIAL_DIMENSIONS.map(d => `${d.label}: ${record.scores[d.key]}`).join('\n');
+    const system = 'あなたは思慮深い心理カウンセラーです。MBTI 風の簡易診断の結果を、決めつけず、本人の自己理解に役立つ形で日本語で解説します。';
+    const user = [
+      '以下は社会性の5次元スコアです（0〜100）。',
+      'それぞれの意味合い、全体のプロファイル、アンバランスがある場合はその構造、伸ばすヒント、注意点を400字程度でまとめてください。',
+      '断定しすぎず、本人が試せる小さな一歩を一つ添えてください。',
+      '',
+      payload,
+    ].join('\n');
+    try {
+      const text = await callClaude(system, user);
+      out.textContent = text;
+      record.aiCommentary = text;
+      save(SOCIAL_KEY, state.socialAssessments);
+    } catch (err) {
+      out.textContent = 'エラー: ' + err.message;
+    }
+  }
+
+  function renderSocialHistory() {
+    const ul = document.getElementById('social-history');
+    if (!ul) return;
+    if (!state.socialAssessments.length) {
+      ul.innerHTML = '<li class="muted">まだ診断履歴はありません。</li>';
+      return;
+    }
+    ul.innerHTML = state.socialAssessments.map(r => {
+      const avg = Math.round(SOCIAL_DIMENSIONS.reduce((s, d) => s + r.scores[d.key], 0) / SOCIAL_DIMENSIONS.length);
+      const bars = SOCIAL_DIMENSIONS.map(d => `
+        <span class="mini-bar" title="${escapeAttr(d.label)}: ${r.scores[d.key]}">
+          <span class="mini-bar-fill" style="height:${r.scores[d.key]}%;background:${d.color}"></span>
+        </span>`).join('');
+      return `<li data-id="${r.id}">
+        <div class="h-meta">${formatDate(r.date)} · 平均 ${avg}</div>
+        <div class="mini-bars">${bars}</div>
+        <div class="actions" style="margin-top:6px">
+          <button class="sa-view" data-id="${r.id}">結果を表示</button>
+          <button class="sa-del danger" data-id="${r.id}">削除</button>
+        </div>
+      </li>`;
+    }).join('');
+    ul.querySelectorAll('.sa-view').forEach(b => {
+      b.addEventListener('click', () => {
+        const r = state.socialAssessments.find(x => x.id === b.dataset.id);
+        if (r) showSocialResult(r);
+      });
+    });
+    ul.querySelectorAll('.sa-del').forEach(b => {
+      b.addEventListener('click', () => {
+        if (!confirm('この診断履歴を削除しますか？')) return;
+        state.socialAssessments = state.socialAssessments.filter(x => x.id !== b.dataset.id);
+        save(SOCIAL_KEY, state.socialAssessments);
+        renderSocialHistory();
+      });
+    });
+  }
+
   renderList();
   renderStats();
   renderHistory();
@@ -2211,4 +2519,5 @@
   renderSessions();
   renderActions();
   renderWorks();
+  renderSocialHistory();
 })();
