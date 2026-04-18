@@ -21,6 +21,8 @@
       <button class="tab" data-tab="social">社会性診断</button>
       <button class="tab" data-tab="effort">努力診断</button>
       <button class="tab" data-tab="kolb">学習タイプ診断</button>
+      <button class="tab" data-tab="values">価値観診断</button>
+      <button class="tab" data-tab="thinking">思考スタイル診断</button>
       <button class="tab" data-tab="axes">軸の設定</button>
       <button class="tab" data-tab="settings">設定</button>
     </nav>
@@ -495,6 +497,96 @@
 
       <h3>診断履歴</h3>
       <ul id="kolb-history" class="social-history"></ul>
+    </section>
+
+    <section id="tab-values" class="panel">
+      <h2>価値観診断</h2>
+      <p class="muted">「自律／達成／関係／安定／成長」の5次元で何を大切にしているかを可視化（全25問・4択）。</p>
+
+      <details class="axis-group">
+        <summary>5つの次元の説明</summary>
+        <ul class="axis-list builtin">
+          <li><b>自律</b>: 自分で決めたい・束縛を嫌う</li>
+          <li><b>達成</b>: 成果・結果を出すことに意味を感じる</li>
+          <li><b>関係</b>: 人との繋がりを大事にする</li>
+          <li><b>安定</b>: 予測可能性・安心を求める</li>
+          <li><b>成長</b>: 新しい刺激・挑戦を求める</li>
+        </ul>
+      </details>
+
+      <div id="values-intro">
+        <div class="actions">
+          <button id="values-start" class="primary">診断を開始する</button>
+        </div>
+      </div>
+
+      <div id="values-quiz" class="hidden">
+        <div class="quiz-progress">
+          <div class="quiz-progress-bar"><div id="values-progress-fill"></div></div>
+          <span id="values-progress-text"></span>
+        </div>
+        <div class="quiz-question" id="values-question"></div>
+        <div class="quiz-choices">
+          <button class="values-choice" data-val="4">はい</button>
+          <button class="values-choice" data-val="3">どちらかといえばはい</button>
+          <button class="values-choice" data-val="2">どちらかといえばいいえ</button>
+          <button class="values-choice" data-val="1">いいえ</button>
+        </div>
+        <div class="actions">
+          <button id="values-back">← 前の質問</button>
+          <button id="values-cancel">中断</button>
+        </div>
+      </div>
+
+      <div id="values-result" class="hidden"></div>
+
+      <h3>診断履歴</h3>
+      <ul id="values-history" class="social-history"></ul>
+    </section>
+
+    <section id="tab-thinking" class="panel">
+      <h2>思考スタイル診断</h2>
+      <p class="muted">「論理／直感／創造／体系／全体」の5次元で考え方の癖を可視化（全25問・4択）。</p>
+
+      <details class="axis-group">
+        <summary>5つの次元の説明</summary>
+        <ul class="axis-list builtin">
+          <li><b>論理</b>: 筋道立てて分析する</li>
+          <li><b>直感</b>: 感覚で素早く掴む</li>
+          <li><b>創造</b>: 既存の枠から外れて発想する</li>
+          <li><b>体系</b>: 順序立てて整理する</li>
+          <li><b>全体</b>: 大きな絵で捉える</li>
+        </ul>
+      </details>
+
+      <div id="thinking-intro">
+        <div class="actions">
+          <button id="thinking-start" class="primary">診断を開始する</button>
+        </div>
+      </div>
+
+      <div id="thinking-quiz" class="hidden">
+        <div class="quiz-progress">
+          <div class="quiz-progress-bar"><div id="thinking-progress-fill"></div></div>
+          <span id="thinking-progress-text"></span>
+        </div>
+        <div class="quiz-question" id="thinking-question"></div>
+        <div class="quiz-choices">
+          <button class="thinking-choice" data-val="4">はい</button>
+          <button class="thinking-choice" data-val="3">どちらかといえばはい</button>
+          <button class="thinking-choice" data-val="2">どちらかといえばいいえ</button>
+          <button class="thinking-choice" data-val="1">いいえ</button>
+        </div>
+        <div class="actions">
+          <button id="thinking-back">← 前の質問</button>
+          <button id="thinking-cancel">中断</button>
+        </div>
+      </div>
+
+      <div id="thinking-result" class="hidden"></div>
+
+      <h3>診断履歴</h3>
+      <ul id="thinking-history" class="social-history"></ul>
     </section>
 
     <section id="tab-axes" class="panel">

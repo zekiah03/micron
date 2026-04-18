@@ -925,6 +925,25 @@ button.danger:hover { background: #fee2e2; }
   font-weight: 600;
 }
 
+.values-choice, .thinking-choice {
+  padding: 14px 16px;
+  font-size: 14px;
+  text-align: left;
+  border: 1.5px solid var(--line);
+  background: var(--panel);
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.1s;
+}
+.values-choice:hover, .thinking-choice:hover { border-color: var(--brand); background: #f5f3ff; }
+.values-choice.selected, .thinking-choice.selected {
+  border-color: var(--brand);
+  background: #eef2ff;
+  color: var(--brand);
+  font-weight: 600;
+}
+
 .result-card {
   background: var(--panel);
   border: 1px solid var(--line);

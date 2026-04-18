@@ -11,6 +11,8 @@
   const SOCIAL_KEY = 'nayami-social-v1';
   const EFFORT_KEY = 'nayami-effort-v1';
   const KOLB_KEY = 'nayami-kolb-v1';
+  const VALUES_KEY = 'nayami-values-v1';
+  const THINKING_KEY = 'nayami-thinking-v1';
 
   const SOCIAL_DIMENSIONS = [
     { key: 'communication', label: 'コミュニケーション', color: '#3b82f6' },
@@ -18,6 +20,88 @@
     { key: 'cooperation',   label: '協調性',             color: '#10b981' },
     { key: 'assertion',     label: '自己主張力',         color: '#f59e0b' },
     { key: 'adaptation',    label: '社会的適応力',       color: '#8b5cf6' },
+  ];
+
+  const VALUES_DIMENSIONS = [
+    { key: 'autonomy',    label: '自律', color: '#8b5cf6', description: '自分で決めたい・束縛を嫌う' },
+    { key: 'achievement', label: '達成', color: '#ef4444', description: '成果・結果を出すことに意味を感じる' },
+    { key: 'relation',    label: '関係', color: '#ec4899', description: '人との繋がりを大事にする' },
+    { key: 'stability',   label: '安定', color: '#3b82f6', description: '予測可能性・安心を求める' },
+    { key: 'growth',      label: '成長', color: '#10b981', description: '新しい刺激・挑戦を求める' },
+  ];
+
+  const VALUES_QUESTIONS = [
+    // autonomy
+    { dim: 'autonomy', text: '何をするかは自分で決めたい' },
+    { dim: 'autonomy', text: '人から細かく指示されると窮屈に感じる' },
+    { dim: 'autonomy', text: '自由な時間が確保できないとストレスを感じる' },
+    { dim: 'autonomy', text: '自分のスタイルを大切にしたい' },
+    { dim: 'autonomy', text: '規則やマニュアルに縛られたくない' },
+    // achievement
+    { dim: 'achievement', text: '目標を達成することにやりがいを感じる' },
+    { dim: 'achievement', text: '成果が見えないと張り合いがない' },
+    { dim: 'achievement', text: '周囲より上にいたいと感じることがある' },
+    { dim: 'achievement', text: '評価されることでモチベーションが上がる' },
+    { dim: 'achievement', text: '自分の活動で結果を残したい' },
+    // relation
+    { dim: 'relation', text: '人と深く繋がっている感覚が大事だ' },
+    { dim: 'relation', text: '誰かのために何かをすることに喜びを感じる' },
+    { dim: 'relation', text: '一人でいると寂しさを感じやすい' },
+    { dim: 'relation', text: '人間関係を維持するために時間を使う方だ' },
+    { dim: 'relation', text: '信頼できる人がいることが心の支えになる' },
+    // stability
+    { dim: 'stability', text: '予測できる毎日が落ち着く' },
+    { dim: 'stability', text: '大きな変化は不安に感じる' },
+    { dim: 'stability', text: '経済的・身体的に安定していたい' },
+    { dim: 'stability', text: 'リスクは避ける方だ' },
+    { dim: 'stability', text: 'ルーティンがあると安心する' },
+    // growth
+    { dim: 'growth', text: '新しい刺激や挑戦に惹かれる' },
+    { dim: 'growth', text: '同じことの繰り返しは退屈に感じる' },
+    { dim: 'growth', text: '自分が伸びている感覚がほしい' },
+    { dim: 'growth', text: '学び続けることが好きだ' },
+    { dim: 'growth', text: '未知の領域に踏み込むのが楽しい' },
+  ];
+
+  const THINKING_DIMENSIONS = [
+    { key: 'logical',    label: '論理', color: '#3b82f6', description: '筋道立てて分析する' },
+    { key: 'intuitive',  label: '直感', color: '#ec4899', description: '感覚で素早く掴む' },
+    { key: 'creative',   label: '創造', color: '#f59e0b', description: '既存の枠から外れて発想する' },
+    { key: 'systematic', label: '体系', color: '#10b981', description: '順序立てて整理する' },
+    { key: 'holistic',   label: '全体', color: '#8b5cf6', description: '大きな絵で捉える' },
+  ];
+
+  const THINKING_QUESTIONS = [
+    // logical
+    { dim: 'logical', text: '結論に至るまでの筋道を意識する' },
+    { dim: 'logical', text: '「なぜそう言えるのか」を確認したくなる' },
+    { dim: 'logical', text: '矛盾があると気になって解消したくなる' },
+    { dim: 'logical', text: '感情よりも事実を優先する' },
+    { dim: 'logical', text: '議論や議題を構造化して考えるのが得意だ' },
+    // intuitive
+    { dim: 'intuitive', text: '「なんとなくこう」が当たることが多い' },
+    { dim: 'intuitive', text: '説明できないけれど分かることがある' },
+    { dim: 'intuitive', text: '一目見ただけで全体像を掴めることがある' },
+    { dim: 'intuitive', text: 'ロジックより感覚で意思決定することが多い' },
+    { dim: 'intuitive', text: '第一印象を信頼している' },
+    // creative
+    { dim: 'creative', text: '既存のやり方を疑って別案を考えたくなる' },
+    { dim: 'creative', text: 'アイデアが次々と湧いてくる' },
+    { dim: 'creative', text: '制約があってもひっくり返す発想が出る' },
+    { dim: 'creative', text: '異分野を組み合わせて新しいものを作るのが好き' },
+    { dim: 'creative', text: '「もしXだったら」と仮定で発想することが多い' },
+    // systematic
+    { dim: 'systematic', text: '物事を順序立てて整理するのが好き' },
+    { dim: 'systematic', text: 'ステップを踏んで進めるのが落ち着く' },
+    { dim: 'systematic', text: '情報をカテゴリに分類したくなる' },
+    { dim: 'systematic', text: '計画通りに進めるのが心地よい' },
+    { dim: 'systematic', text: '関係性を図やチャートで整理する' },
+    // holistic
+    { dim: 'holistic', text: '細部より全体像を掴みたい' },
+    { dim: 'holistic', text: '大きな目的・意味を意識して動く' },
+    { dim: 'holistic', text: '物事の繋がりや背景を見ようとする' },
+    { dim: 'holistic', text: '一つの問題を多角的に見るのが好き' },
+    { dim: 'holistic', text: '部分にこだわりすぎないようにしている' },
   ];
 
   const KOLB_DIMENSIONS = [
@@ -175,9 +259,13 @@
     socialAssessments: load(SOCIAL_KEY, []),
     effortAssessments: load(EFFORT_KEY, []),
     kolbAssessments: load(KOLB_KEY, []),
+    valuesAssessments: load(VALUES_KEY, []),
+    thinkingAssessments: load(THINKING_KEY, []),
     quiz: null,
     effortQuiz: null,
     kolbQuiz: null,
+    valuesQuiz: null,
+    thinkingQuiz: null,
     editingId: null,
     editingActionId: null,
     actionPathFilter: 'all',
@@ -221,6 +309,8 @@
       if (name === 'social') renderSocialHistory();
       if (name === 'effort') renderEffortHistory();
       if (name === 'kolb') renderKolbHistory();
+      if (name === 'values') renderValuesHistory();
+      if (name === 'thinking') renderThinkingHistory();
     });
   });
 
@@ -470,6 +560,8 @@
       socialAssessments: state.socialAssessments,
       effortAssessments: state.effortAssessments,
       kolbAssessments: state.kolbAssessments,
+      valuesAssessments: state.valuesAssessments,
+      thinkingAssessments: state.thinkingAssessments,
     }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -529,6 +621,14 @@
         state.kolbAssessments = data.kolbAssessments;
         save(KOLB_KEY, state.kolbAssessments);
       }
+      if (Array.isArray(data.valuesAssessments)) {
+        state.valuesAssessments = data.valuesAssessments;
+        save(VALUES_KEY, state.valuesAssessments);
+      }
+      if (Array.isArray(data.thinkingAssessments)) {
+        state.thinkingAssessments = data.thinkingAssessments;
+        save(THINKING_KEY, state.thinkingAssessments);
+      }
       flash('インポートしました');
       renderList();
       renderAxesSettings();
@@ -540,6 +640,8 @@
       renderSocialHistory();
       renderEffortHistory();
       renderKolbHistory();
+      renderValuesHistory();
+      renderThinkingHistory();
     } catch (err) {
       alert('インポートに失敗しました: ' + err.message);
     }
@@ -669,6 +771,8 @@
     state.socialAssessments = [];
     state.effortAssessments = [];
     state.kolbAssessments = [];
+    state.valuesAssessments = [];
+    state.thinkingAssessments = [];
     save(STORE_KEY, state.seeds);
     save(HISTORY_KEY, state.history);
     save(REASONS_KEY, state.reasons);
@@ -679,6 +783,8 @@
     save(SOCIAL_KEY, state.socialAssessments);
     save(EFFORT_KEY, state.effortAssessments);
     save(KOLB_KEY, state.kolbAssessments);
+    save(VALUES_KEY, state.valuesAssessments);
+    save(THINKING_KEY, state.thinkingAssessments);
     renderList();
     renderHistory();
     renderReasonsInForm();
@@ -688,6 +794,8 @@
     renderSocialHistory();
     renderEffortHistory();
     renderKolbHistory();
+    renderValuesHistory();
+    renderThinkingHistory();
     flash('削除しました');
   });
 
@@ -2849,6 +2957,25 @@
     });
   }
 
+  // ---------- Cross-reference helper for AI ----------
+  function buildCrossReferences(except) {
+    const sections = [
+      { key: 'social',   label: '社会性',     dims: SOCIAL_DIMENSIONS,   list: state.socialAssessments },
+      { key: 'effort',   label: '努力',       dims: EFFORT_DIMENSIONS,   list: state.effortAssessments },
+      { key: 'kolb',     label: '学習タイプ', dims: KOLB_DIMENSIONS,     list: state.kolbAssessments },
+      { key: 'values',   label: '価値観',     dims: VALUES_DIMENSIONS,   list: state.valuesAssessments },
+      { key: 'thinking', label: '思考スタイル', dims: THINKING_DIMENSIONS, list: state.thinkingAssessments },
+    ];
+    const parts = [];
+    for (const s of sections) {
+      if (s.key === except) continue;
+      const latest = s.list[0];
+      if (!latest) continue;
+      parts.push(`## 直近の${s.label}スコア\n` + s.dims.map(d => `${d.label}: ${latest.scores[d.key]}`).join(' / '));
+    }
+    return parts.length ? parts.join('\n\n') : '（他の診断はまだ受けていません）';
+  }
+
   // ---------- Kolb learning-type assessment ----------
   const kolbIntro = document.getElementById('kolb-intro');
   const kolbQuizEl = document.getElementById('kolb-quiz');
@@ -2990,29 +3117,18 @@
     out.style.display = 'block';
     out.textContent = '分析中...';
     const kolbPayload = KOLB_DIMENSIONS.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join('\n');
-    const latestSocial = state.socialAssessments[0];
-    const latestEffort = state.effortAssessments[0];
-    const crossPayload = [];
-    if (latestSocial) {
-      crossPayload.push('## 直近の社会性スコア\n' +
-        SOCIAL_DIMENSIONS.map(d => `${d.label}: ${latestSocial.scores[d.key]}`).join(' / '));
-    }
-    if (latestEffort) {
-      crossPayload.push('## 直近の努力スコア\n' +
-        EFFORT_DIMENSIONS.map(d => `${d.label}: ${latestEffort.scores[d.key]}`).join(' / '));
-    }
-    const system = 'あなたは経験学習理論（Kolb）に詳しいコーチです。学習タイプ・社会性・努力スコアを統合し、本人が次の一手を取れるよう日本語で解説します。';
+    const system = 'あなたは経験学習理論（Kolb）に詳しいコーチです。学習タイプを他の診断と統合し、本人が次の一手を取れるよう日本語で解説します。';
     const user = [
       '以下は学習タイプの4次元スコア（0〜100）です。',
       'それぞれの意味、組み合わせのプロファイル、強みと弱みを述べた上で、',
-      '社会性スコア・努力スコアと突き合わせて「相乗効果が出ている部分」「ねじれている（衝突している）部分」を指摘してください。',
+      '他の診断スコアと突き合わせて「相乗効果が出ている部分」「ねじれている（衝突している）部分」を指摘してください。',
       '最後に、今週から試せる小さなアクションを1つ提案してください。',
       '全体で500字程度にまとめてください。',
       '',
       '## 学習タイプスコア',
       kolbPayload,
       '',
-      crossPayload.join('\n\n') || '（社会性・努力スコアはまだありません）',
+      buildCrossReferences('kolb'),
     ].join('\n');
     try {
       const text = await callClaude(system, user);
@@ -3062,6 +3178,267 @@
     });
   }
 
+  // ---------- Values assessment ----------
+  bindAssessment({
+    prefix: 'values',
+    key: VALUES_KEY,
+    dims: VALUES_DIMENSIONS,
+    questions: VALUES_QUESTIONS,
+    list: () => state.valuesAssessments,
+    setList: (v) => { state.valuesAssessments = v; },
+    quizState: () => state.valuesQuiz,
+    setQuizState: (v) => { state.valuesQuiz = v; },
+    qLabelSuffix: 'を大切にする',
+    profileFn: (high, second, low, balanced) => balanced
+      ? { name: `バランス型（${high.label}寄り）`, color: high.color }
+      : { name: `${high.label}・${second.label}型`, color: high.color },
+    adviceFn: (top) => ({
+      autonomy:    'あなたは「自分で決める自由」を最重視。組織や関係で束縛が強い場面ではエネルギーが奪われやすいので、決定権が確保できる環境設計が効きます。',
+      achievement: 'あなたは「成果」が原動力。手応えのない状態が続くと枯れやすいので、小さくても結果が見える指標を週次で持つと持続します。',
+      relation:    'あなたは「人との繋がり」が中心。一方で「相手のため」と「自分のため」の境目が曖昧になりやすいので、線引きを意識すると関係が長持ちします。',
+      stability:   'あなたは「予測可能性」が安心の源。変化のストレスが大きいので、変化を避けるのではなく、小さなステップに分解して試すと適応コストが下がります。',
+      growth:      'あなたは「成長・刺激」が燃料。同じことの繰り返しで失速しやすいので、3ヶ月ごとに学習対象を意識的に変える運用が合います。',
+    })[top] || '',
+    aiSystem: 'あなたは価値観研究（Schwartzら）に詳しいコーチです。価値観プロファイルを他の診断と統合して、本人が大事にしているものと現在の生き方のズレを優しく指摘します。',
+    aiUser: (payload, scores) => [
+      '以下は価値観の5次元スコア（0〜100）です。',
+      '何を大切にしているかのプロファイル、価値観間の葛藤の可能性（例: 自律↑ × 関係↑ → 自立と繋がりの両立緊張）、',
+      '他の診断スコアと突き合わせて見える「価値観と行動のズレ」、',
+      '今週試せる小さな一致回復アクションを示してください（500字程度）。',
+      '',
+      '## 価値観スコア',
+      payload,
+      '',
+      buildCrossReferences('values'),
+    ].join('\n'),
+  });
+
+  // ---------- Thinking-style assessment ----------
+  bindAssessment({
+    prefix: 'thinking',
+    key: THINKING_KEY,
+    dims: THINKING_DIMENSIONS,
+    questions: THINKING_QUESTIONS,
+    list: () => state.thinkingAssessments,
+    setList: (v) => { state.thinkingAssessments = v; },
+    quizState: () => state.thinkingQuiz,
+    setQuizState: (v) => { state.thinkingQuiz = v; },
+    qLabelSuffix: '思考',
+    profileFn: (high, second, low, balanced) => balanced
+      ? { name: `バランス型（${high.label}寄り）`, color: high.color }
+      : { name: `${high.label}・${second.label}型`, color: high.color },
+    adviceFn: (top) => ({
+      logical:    '論理が強い。一方で感情データを軽視しがちなので、相手の感情を「データ」として扱う訓練を入れると関係性が滑らかになります。',
+      intuitive:  '直感が強い。説明責任が必要な場面で詰まりやすいので、後追いで「なぜそう感じたか」を言語化する習慣を持つと直感が磨かれます。',
+      creative:   '創造性が強い。発散しすぎて収束できないことがあるので、アイデアを出した翌日に「捨てる作業」を入れると形になります。',
+      systematic: '体系的思考が強い。完璧な整理を求めて動き出しが遅れがちなので、「7割で動かす」を許可してあげると速度が出ます。',
+      holistic:   '全体把握が強い。細部の詰めが甘くなりがちなので、重要な場面では誰かに「ディテール担当」をお願いする運用が効きます。',
+    })[top] || '',
+    aiSystem: 'あなたは認知スタイル研究に詳しいコーチです。思考スタイルを他の診断と統合し、強みの活かし方と盲点を日本語で解説します。',
+    aiUser: (payload, scores) => [
+      '以下は思考スタイルの5次元スコア（0〜100）です。',
+      'プロファイルの特徴、組み合わせから見える得意・盲点、',
+      '他の診断スコアと突き合わせた相乗効果や衝突、',
+      '今週試せる小さなアクションを示してください（500字程度）。',
+      '',
+      '## 思考スタイルスコア',
+      payload,
+      '',
+      buildCrossReferences('thinking'),
+    ].join('\n'),
+  });
+
+  // Generic assessment binder used by Values and Thinking
+  function bindAssessment(cfg) {
+    const { prefix, key, dims, questions } = cfg;
+    const introEl = document.getElementById(`${prefix}-intro`);
+    const quizEl = document.getElementById(`${prefix}-quiz`);
+    const resultEl = document.getElementById(`${prefix}-result`);
+    const questionEl = document.getElementById(`${prefix}-question`);
+    const progressFill = document.getElementById(`${prefix}-progress-fill`);
+    const progressText = document.getElementById(`${prefix}-progress-text`);
+
+    document.getElementById(`${prefix}-start`).addEventListener('click', () => {
+      cfg.setQuizState({ idx: 0, answers: new Array(questions.length).fill(null) });
+      introEl.classList.add('hidden');
+      resultEl.classList.add('hidden');
+      quizEl.classList.remove('hidden');
+      drawQ();
+    });
+
+    document.querySelectorAll(`.${prefix}-choice`).forEach(btn => {
+      btn.addEventListener('click', () => {
+        const q = cfg.quizState();
+        if (!q) return;
+        q.answers[q.idx] = Number(btn.dataset.val);
+        if (q.idx < questions.length - 1) { q.idx++; drawQ(); }
+        else { finish(); }
+      });
+    });
+
+    document.getElementById(`${prefix}-back`).addEventListener('click', () => {
+      const q = cfg.quizState();
+      if (!q || q.idx === 0) return;
+      q.idx--;
+      drawQ();
+    });
+
+    document.getElementById(`${prefix}-cancel`).addEventListener('click', () => {
+      if (!confirm('診断を中断しますか？（回答は保存されません）')) return;
+      cfg.setQuizState(null);
+      quizEl.classList.add('hidden');
+      introEl.classList.remove('hidden');
+    });
+
+    function drawQ() {
+      const { idx, answers } = cfg.quizState();
+      const q = questions[idx];
+      const dim = dims.find(d => d.key === q.dim);
+      questionEl.innerHTML = `
+        <div class="q-dim" style="color:${dim.color}">${escapeHtml(dim.label)}${escapeHtml(cfg.qLabelSuffix || '')}</div>
+        <div class="q-text">${escapeHtml(q.text)}</div>`;
+      progressFill.style.width = `${((idx + 1) / questions.length) * 100}%`;
+      progressText.textContent = `${idx + 1} / ${questions.length}`;
+      document.querySelectorAll(`.${prefix}-choice`).forEach(b => {
+        b.classList.toggle('selected', Number(b.dataset.val) === answers[idx]);
+      });
+      document.getElementById(`${prefix}-back`).disabled = idx === 0;
+    }
+
+    function finish() {
+      const q = cfg.quizState();
+      const scores = computeDimensionScores(q.answers, questions, dims);
+      const record = {
+        id: `${prefix.slice(0, 1)}a_` + uid(),
+        date: new Date().toISOString(),
+        answers: q.answers.slice(),
+        scores,
+        notes: '',
+        aiCommentary: '',
+      };
+      cfg.setList([record, ...cfg.list()]);
+      save(key, cfg.list());
+      cfg.setQuizState(null);
+      quizEl.classList.add('hidden');
+      introEl.classList.remove('hidden');
+      showResult(record);
+      drawHistory();
+    }
+
+    function showResult(record) {
+      resultEl.classList.remove('hidden');
+      const scores = record.scores;
+      const sorted = dims.slice().sort((a, b) => scores[b.key] - scores[a.key]);
+      const high = sorted[0], second = sorted[1], low = sorted[sorted.length - 1];
+      const avg = Math.round(dims.reduce((s, d) => s + scores[d.key], 0) / dims.length);
+      const balanced = (scores[high.key] - scores[low.key]) <= 15;
+      const profile = cfg.profileFn(high, second, low, balanced);
+      const advice = cfg.adviceFn(high.key);
+
+      resultEl.innerHTML = `
+        <div class="result-card">
+          <div class="result-head">
+            <h3>${escapeHtml(prefix === 'values' ? '価値観プロファイル' : '思考スタイル')}: <span style="color:${profile.color}">${escapeHtml(profile.name)}</span></h3>
+            <span class="muted">${escapeHtml(formatDate(record.date))}</span>
+          </div>
+          <div class="result-grid">
+            ${renderRadarSvg(scores, dims)}
+            <div class="result-scores">
+              ${dims.map(d => `
+                <div class="score-row">
+                  <span class="score-label" style="color:${d.color}">${escapeHtml(d.label)}</span>
+                  <div class="score-bar-wrap"><div class="score-bar" style="width:${scores[d.key]}%;background:${d.color}"></div></div>
+                  <span class="score-val">${scores[d.key]}</span>
+                </div>
+              `).join('')}
+              <div class="score-summary">
+                <div>平均: <b>${avg}</b></div>
+                <div>最高: <b style="color:${high.color}">${escapeHtml(high.label)} (${scores[high.key]})</b></div>
+                <div>最低: <b style="color:${low.color}">${escapeHtml(low.label)} (${scores[low.key]})</b></div>
+              </div>
+            </div>
+          </div>
+          <div class="result-interpret">${escapeHtml(advice)}</div>
+          <div class="actions">
+            <button class="ai-btn" data-id="${record.id}">AIで深掘りコメント（他診断との関連も）</button>
+            <button class="retry-btn">もう一度受ける</button>
+          </div>
+          <div class="ai-output ai-out" data-id="${record.id}" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
+        </div>
+      `;
+      resultEl.querySelector('.retry-btn').addEventListener('click', () => {
+        document.getElementById(`${prefix}-start`).click();
+      });
+      resultEl.querySelector('.ai-btn').addEventListener('click', () => runAI(record));
+    }
+
+    async function runAI(record) {
+      if (!state.settings.apiKey) {
+        alert('設定タブでAPIキーを登録してください。');
+        return;
+      }
+      const out = resultEl.querySelector('.ai-out');
+      out.style.display = 'block';
+      out.textContent = '分析中...';
+      const payload = dims.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join('\n');
+      try {
+        const text = await callClaude(cfg.aiSystem, cfg.aiUser(payload, record.scores));
+        out.textContent = text;
+        record.aiCommentary = text;
+        save(key, cfg.list());
+      } catch (err) {
+        out.textContent = 'エラー: ' + err.message;
+      }
+    }
+
+    function drawHistory() {
+      const ul = document.getElementById(`${prefix}-history`);
+      if (!ul) return;
+      const list = cfg.list();
+      if (!list.length) {
+        ul.innerHTML = '<li class="muted">まだ診断履歴はありません。</li>';
+        return;
+      }
+      ul.innerHTML = list.map(r => {
+        const top = dims.slice().sort((a, b) => r.scores[b.key] - r.scores[a.key])[0];
+        const bars = dims.map(d => `
+          <span class="mini-bar" title="${escapeAttr(d.label)}: ${r.scores[d.key]}">
+            <span class="mini-bar-fill" style="height:${r.scores[d.key]}%;background:${d.color}"></span>
+          </span>`).join('');
+        return `<li data-id="${r.id}">
+          <div class="h-meta">${formatDate(r.date)} · 最高: <b style="color:${top.color}">${escapeHtml(top.label)}</b></div>
+          <div class="mini-bars">${bars}</div>
+          <div class="actions" style="margin-top:6px">
+            <button class="hview" data-id="${r.id}">結果を表示</button>
+            <button class="hdel danger" data-id="${r.id}">削除</button>
+          </div>
+        </li>`;
+      }).join('');
+      ul.querySelectorAll('.hview').forEach(b => {
+        b.addEventListener('click', () => {
+          const r = cfg.list().find(x => x.id === b.dataset.id);
+          if (r) showResult(r);
+        });
+      });
+      ul.querySelectorAll('.hdel').forEach(b => {
+        b.addEventListener('click', () => {
+          if (!confirm('この診断履歴を削除しますか？')) return;
+          cfg.setList(cfg.list().filter(x => x.id !== b.dataset.id));
+          save(key, cfg.list());
+          drawHistory();
+        });
+      });
+    }
+
+    // expose history renderer
+    cfg.renderHistory = drawHistory;
+    if (prefix === 'values') window.__renderValuesHistory = drawHistory;
+    if (prefix === 'thinking') window.__renderThinkingHistory = drawHistory;
+  }
+
+  function renderValuesHistory() { window.__renderValuesHistory && window.__renderValuesHistory(); }
+  function renderThinkingHistory() { window.__renderThinkingHistory && window.__renderThinkingHistory(); }
+
   renderList();
   renderStats();
   renderHistory();
@@ -3074,4 +3451,6 @@
   renderSocialHistory();
   renderEffortHistory();
   renderKolbHistory();
+  renderValuesHistory();
+  renderThinkingHistory();
 })();
