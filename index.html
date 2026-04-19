@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Prism — 自分を6つの角度から見る</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23000%22%20stroke%3D%22%23000%22%20stroke-width%3D%222%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%203%20L21.5%2020%20L2.5%2020%20Z%22%20fill%3D%22none%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%229.5%22%20r%3D%221.2%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%229.7%22%20cy%3D%2213.5%22%20r%3D%221.2%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%2214.3%22%20cy%3D%2213.5%22%20r%3D%221.2%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%227.4%22%20cy%3D%2217.5%22%20r%3D%221.2%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2217.5%22%20r%3D%221.2%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%2216.6%22%20cy%3D%2217.5%22%20r%3D%221.2%22%20stroke%3D%22none%22%2F%3E%3C%2Fsvg%3E" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
   <div id="welcome" class="welcome-overlay hidden">
     <div class="welcome-card">
-      <button type="button" class="welcome-close" onclick="document.getElementById('welcome').classList.add('hidden'); document.body.style.overflow = ''; try { localStorage.setItem('prism-welcomed-v1','1'); } catch(e){}" aria-label="閉じる">×</button>
+      <button type="button" class="welcome-close" onclick="window.prismDismissWelcome();return false;" aria-label="閉じる">×</button>
       <svg class="logo-prism logo-big" viewBox="0 0 24 24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
            fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round">
         <path d="M12 3 L21.5 20 L2.5 20 Z"/>
@@ -49,10 +49,7 @@
       <p class="muted welcome-note">データはすべてこのブラウザ内（localStorage）にのみ保存されます。AI分析時だけ Anthropic API に送信されます。</p>
 
       <div class="actions welcome-actions">
-        <button type="button" id="welcome-start" class="primary"
-                onclick="document.getElementById('welcome').classList.add('hidden'); document.body.style.overflow = ''; try { localStorage.setItem('prism-welcomed-v1','1'); } catch(e){}">
-          始める
-        </button>
+        <button type="button" id="welcome-start" class="primary" onclick="window.prismDismissWelcome();return false;">始める</button>
       </div>
     </div>
   </div>
@@ -436,7 +433,7 @@
 
       <h3>使い方</h3>
       <div class="actions">
-        <button id="show-welcome" onclick="document.getElementById('welcome').classList.remove('hidden'); document.body.style.overflow = 'hidden';">使い方をもう一度見る</button>
+        <button id="show-welcome" onclick="window.prismShowWelcome();return false;">使い方をもう一度見る</button>
       </div>
 
       <h3>データ管理</h3>
@@ -456,28 +453,37 @@
   <div id="toast" class="toast hidden"></div>
 
   <script>
-    // Welcome overlay: show on first visit; buttons have their own inline onclick handlers
+    // Welcome overlay logic - defined globally so onclick attributes can reference it
+    window.prismDismissWelcome = function() {
+      var el = document.getElementById('welcome');
+      if (el) { el.style.display = 'none'; }
+      document.body.style.overflow = '';
+      try { localStorage.setItem('prism-welcomed-v1','1'); } catch(e){}
+      return false;
+    };
+    window.prismShowWelcome = function() {
+      var el = document.getElementById('welcome');
+      if (el) { el.classList.remove('hidden'); el.style.display = ''; }
+      document.body.style.overflow = 'hidden';
+      return false;
+    };
+    // Show on first visit
     (function(){
       try {
         if (!localStorage.getItem('prism-welcomed-v1')) {
           var el = document.getElementById('welcome');
           if (el) { el.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
         }
-      } catch(e) {
-        var el = document.getElementById('welcome');
-        if (el) el.classList.remove('hidden');
-      }
+      } catch(e) {}
       // Click outside card dismisses
       var overlay = document.getElementById('welcome');
-      if (overlay) overlay.addEventListener('click', function(e){
-        if (e.target === overlay) {
-          overlay.classList.add('hidden');
-          document.body.style.overflow = '';
-          try { localStorage.setItem('prism-welcomed-v1','1'); } catch(e){}
-        }
-      });
+      if (overlay) {
+        overlay.addEventListener('click', function(e){
+          if (e.target === overlay) window.prismDismissWelcome();
+        });
+      }
     })();
   </script>
-  <script src="app.js"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
