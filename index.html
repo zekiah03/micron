@@ -412,7 +412,9 @@
       </label>
       <div class="actions">
         <button id="save-settings" class="primary">設定を保存</button>
+        <button id="test-api">API接続をテスト</button>
       </div>
+      <p class="muted" style="font-size:11px;margin-top:4px">APIキーは <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> から取得できます。ブラウザのlocalStorageにのみ保存され、Anthropic以外の外部に送信されません。</p>
 
       <h3>データ管理</h3>
       <div class="actions">
@@ -427,6 +429,8 @@
     </section>
   </main>
 
+
+  <div id="toast" class="toast hidden"></div>
 
   <script src="app.js"></script>
 </body>

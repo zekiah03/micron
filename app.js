@@ -303,6 +303,29 @@
     flash('設定を保存しました');
   });
 
+  document.getElementById('test-api').addEventListener('click', async () => {
+    const btn = document.getElementById('test-api');
+    state.settings.apiKey = apiKeyInput.value.trim();
+    state.settings.model = modelSel.value;
+    save(SETTINGS_KEY, state.settings);
+    if (!state.settings.apiKey) {
+      flash('APIキーを入力してください', 'error');
+      return;
+    }
+    btn.classList.add('loading');
+    try {
+      const reply = await callClaude(
+        'あなたは接続テスト用のアシスタントです。短く返答してください。',
+        '接続テストです。「OK」とだけ返してください。'
+      );
+      flash('接続成功: ' + (reply.slice(0, 40) || 'OK'));
+    } catch (err) {
+      flash('接続失敗: ' + err.message, 'error');
+    } finally {
+      btn.classList.remove('loading');
+    }
+  });
+
   document.getElementById('export-btn').addEventListener('click', () => {
     const blob = new Blob([JSON.stringify({
       people: state.people,
@@ -422,6 +445,8 @@
       names.map(n => `<option value="${escapeAttr(n)}" ${n === current ? 'selected' : ''}>${escapeHtml(n)}</option>`).join('');
     personRenameBtn.disabled = !current;
     personDeleteBtn.disabled = !current;
+    const bar = document.querySelector('.person-bar');
+    if (bar) bar.classList.toggle('empty', !current);
   }
 
   personSelect.addEventListener('change', () => {
@@ -547,6 +572,38 @@
     renderThinkingHistory();
     renderJohari();
     renderSummary();
+    renderDiagBadges();
+  }
+
+  function renderDiagBadges() {
+    const lists = {
+      social: state.socialAssessments,
+      effort: state.effortAssessments,
+      kolb: state.kolbAssessments,
+      values: state.valuesAssessments,
+      thinking: state.thinkingAssessments,
+      johari: state.johariSessions,
+    };
+    document.querySelectorAll('.diag-tabs .sub-tab').forEach(btn => {
+      const sub = btn.dataset.sub;
+      const list = lists[sub] || [];
+      let badge = btn.querySelector('.st-badge');
+      if (!state.currentPerson) {
+        if (badge) badge.remove();
+        return;
+      }
+      const hasData = list.some(r => r.personName === state.currentPerson);
+      if (hasData) {
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.className = 'st-badge';
+          btn.appendChild(badge);
+        }
+        badge.textContent = '✓ 受診済み';
+      } else if (badge) {
+        badge.remove();
+      }
+    });
   }
 
   // Guard: ensure user has selected a person before starting a quiz
@@ -577,11 +634,71 @@
   function escapeAttr(s) { return escapeHtml(s); }
 
   let flashTimer;
-  function flash(msg) {
-    const el = document.getElementById('ai-status');
+  function flash(msg, kind) {
+    const el = document.getElementById('toast');
+    if (!el) return;
     clearTimeout(flashTimer);
     el.textContent = msg;
-    flashTimer = setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 2500);
+    el.className = 'toast' + (kind ? ' toast-' + kind : '');
+    el.classList.remove('hidden');
+    flashTimer = setTimeout(() => { el.classList.add('hidden'); }, 2800);
+  }
+
+  function truncate(s, n) {
+    s = String(s || '');
+    return s.length > n ? s.slice(0, n - 1) + '…' : s;
+  }
+
+  async function callClaude(systemPrompt, userPrompt) {
+    if (!state.settings.apiKey) throw new Error('APIキーが設定されていません');
+    let res;
+    try {
+      res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': state.settings.apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: state.settings.model,
+          max_tokens: 2048,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userPrompt }],
+        }),
+      });
+    } catch (e) {
+      throw new Error('ネットワーク接続に失敗しました: ' + e.message);
+    }
+    if (!res.ok) {
+      let detail = '';
+      let parsed = null;
+      try {
+        const body = await res.text();
+        detail = body.slice(0, 300);
+        try { parsed = JSON.parse(body); } catch {}
+      } catch {}
+      const msg = parsed?.error?.message || detail;
+      if (res.status === 401) {
+        throw new Error('APIキーが正しくありません (401): ' + msg);
+      }
+      if (res.status === 403) {
+        throw new Error('権限エラー (403): ' + msg);
+      }
+      if (res.status === 429) {
+        throw new Error('レート制限に達しました (429): ' + msg);
+      }
+      if (res.status >= 500) {
+        throw new Error(`Anthropic API サーバーエラー (${res.status}): しばらく待って再度お試しください`);
+      }
+      throw new Error(`${res.status} ${msg || res.statusText}`);
+    }
+    const data = await res.json();
+    if (!data || !Array.isArray(data.content)) {
+      throw new Error('予期しないAPI応答: ' + JSON.stringify(data).slice(0, 200));
+    }
+    return data.content.map(c => c.text || '').join('\n');
   }
 
   // ---------- Social assessment ----------
@@ -661,6 +778,7 @@
     socialIntro.classList.remove('hidden');
     showSocialResult(record);
     renderSocialHistory();
+    renderDiagBadges();
   }
 
   function computeSocialScores(answers) {
@@ -796,16 +914,18 @@
 
   async function runSocialAICommentary(record) {
     if (!state.settings.apiKey) {
-      alert('設定タブでAPIキーを登録してください。');
+      flash('設定タブでAPIキーを登録してください', 'error');
       return;
     }
     const out = document.getElementById('social-ai-output');
+    const btn = document.getElementById('social-ai-comment');
     out.style.display = 'block';
     out.textContent = '分析中...';
+    if (btn) btn.classList.add('loading');
     const payload = SOCIAL_DIMENSIONS.map(d => `${d.label}: ${record.scores[d.key]}`).join('\n');
     const system = 'あなたは思慮深い心理カウンセラーです。自己診断の結果を、決めつけず、本人の自己理解に役立つ形で日本語で解説します。';
     const user = [
-      '以下は社会性の5次元スコアです（0〜100）。',
+      '以下は「人との関わり方」の5次元スコアです（0〜100）。',
       'それぞれの意味合い、全体のプロファイル、アンバランスがある場合はその構造、伸ばすヒント、注意点を400字程度でまとめてください。',
       '断定しすぎず、本人が試せる小さな一歩を一つ添えてください。',
       '',
@@ -818,6 +938,9 @@
       save(SOCIAL_KEY, state.socialAssessments);
     } catch (err) {
       out.textContent = 'エラー: ' + err.message;
+      flash('AI呼び出しに失敗しました', 'error');
+    } finally {
+      if (btn) btn.classList.remove('loading');
     }
   }
 
@@ -936,6 +1059,7 @@
     effortIntro.classList.remove('hidden');
     showEffortResult(record);
     renderEffortHistory();
+    renderDiagBadges();
   }
 
   function showEffortResult(record) {
@@ -1018,16 +1142,18 @@
 
   async function runEffortAICommentary(record) {
     if (!state.settings.apiKey) {
-      alert('設定タブでAPIキーを登録してください。');
+      flash('設定タブでAPIキーを登録してください', 'error');
       return;
     }
     const out = document.getElementById('effort-ai-output');
+    const btn = document.getElementById('effort-ai-comment');
     out.style.display = 'block';
     out.textContent = '分析中...';
+    if (btn) btn.classList.add('loading');
     const payload = EFFORT_DIMENSIONS.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join('\n');
-    const system = 'あなたは思慮深いコーチです。努力の5次元（量/質/設計/選択/持続）スコアを読み、本人が次の一手を決められるよう日本語で解説します。';
+    const system = 'あなたは思慮深いコーチです。努力スタイルの5次元（量/質/設計/選択/持続）スコアを読み、本人が次の一手を決められるよう日本語で解説します。';
     const user = [
-      '以下は努力の5次元スコア（0〜100）です。',
+      '以下は「努力スタイル」の5次元スコア（0〜100）です。',
       '全体のプロファイル、強みと弱み、どの次元を次に伸ばすと効果が大きいか、',
       '今週から試せる具体アクションを1〜2つ、合わせて400字程度で示してください。',
       '',
@@ -1040,6 +1166,9 @@
       save(EFFORT_KEY, state.effortAssessments);
     } catch (err) {
       out.textContent = 'エラー: ' + err.message;
+      flash('AI呼び出しに失敗しました', 'error');
+    } finally {
+      if (btn) btn.classList.remove('loading');
     }
   }
 
@@ -1184,6 +1313,7 @@
     kolbIntro.classList.remove('hidden');
     showKolbResult(record);
     renderKolbHistory();
+    renderDiagBadges();
   }
 
   function showKolbResult(record) {
@@ -1244,22 +1374,24 @@
 
   async function runKolbAICommentary(record) {
     if (!state.settings.apiKey) {
-      alert('設定タブでAPIキーを登録してください。');
+      flash('設定タブでAPIキーを登録してください', 'error');
       return;
     }
     const out = document.getElementById('kolb-ai-output');
+    const btn = document.getElementById('kolb-ai-comment');
     out.style.display = 'block';
     out.textContent = '分析中...';
+    if (btn) btn.classList.add('loading');
     const kolbPayload = KOLB_DIMENSIONS.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join('\n');
-    const system = 'あなたは経験学習理論（Kolb）に詳しいコーチです。学習タイプを他の診断と統合し、本人が次の一手を取れるよう日本語で解説します。';
+    const system = 'あなたは経験学習理論（Kolb）に詳しいコーチです。学び方のタイプを他の診断と統合し、本人が次の一手を取れるよう日本語で解説します。';
     const user = [
-      '以下は学習タイプの4次元スコア（0〜100）です。',
+      '以下は「学び方のタイプ」の4次元スコア（0〜100）です。',
       'それぞれの意味、組み合わせのプロファイル、強みと弱みを述べた上で、',
       '他の診断スコアと突き合わせて「相乗効果が出ている部分」「ねじれている（衝突している）部分」を指摘してください。',
       '最後に、今週から試せる小さなアクションを1つ提案してください。',
       '全体で500字程度にまとめてください。',
       '',
-      '## 学習タイプスコア',
+      '## 学び方のタイプ スコア',
       kolbPayload,
       '',
       buildCrossReferences('kolb'),
@@ -1271,6 +1403,9 @@
       save(KOLB_KEY, state.kolbAssessments);
     } catch (err) {
       out.textContent = 'エラー: ' + err.message;
+      flash('AI呼び出しに失敗しました', 'error');
+    } finally {
+      if (btn) btn.classList.remove('loading');
     }
   }
 
@@ -1460,6 +1595,7 @@
       introEl.classList.remove('hidden');
       showResult(record);
       drawHistory();
+      renderDiagBadges();
     }
 
     function showResult(record) {
@@ -1511,12 +1647,14 @@
 
     async function runAI(record) {
       if (!state.settings.apiKey) {
-        alert('設定タブでAPIキーを登録してください。');
+        flash('設定タブでAPIキーを登録してください', 'error');
         return;
       }
       const out = resultEl.querySelector('.ai-out');
+      const btn = resultEl.querySelector('.ai-btn');
       out.style.display = 'block';
       out.textContent = '分析中...';
+      if (btn) btn.classList.add('loading');
       const payload = dims.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join('\n');
       try {
         const text = await callClaude(cfg.aiSystem, cfg.aiUser(payload, record.scores));
@@ -1525,6 +1663,9 @@
         save(key, cfg.list());
       } catch (err) {
         out.textContent = 'エラー: ' + err.message;
+        flash('AI呼び出しに失敗しました', 'error');
+      } finally {
+        if (btn) btn.classList.remove('loading');
       }
     }
 
@@ -1711,6 +1852,7 @@
     state.johariEditingId = session.id;
     showJohariResult(session);
     renderJohariHistory();
+    renderDiagBadges();
     flash('保存しました');
   });
 
@@ -1791,12 +1933,14 @@
 
   async function runJohariAICommentary(session) {
     if (!state.settings.apiKey) {
-      alert('設定タブでAPIキーを登録してください。');
+      flash('設定タブでAPIキーを登録してください', 'error');
       return;
     }
     const out = document.getElementById('johari-ai-output');
+    const btn = document.getElementById('johari-ai-comment');
     out.style.display = 'block';
     out.textContent = '分析中...';
+    if (btn) btn.classList.add('loading');
     const w = computeJohariWindows(session);
     const payload = [
       `対象: ${session.scope || '全体'}`,
@@ -1823,6 +1967,9 @@
       save(JOHARI_KEY, state.johariSessions);
     } catch (err) {
       out.textContent = 'エラー: ' + err.message;
+      flash('AI呼び出しに失敗しました', 'error');
+    } finally {
+      if (btn) btn.classList.remove('loading');
     }
   }
 
@@ -1899,7 +2046,7 @@
 
   async function runSummary() {
     if (!state.settings.apiKey) {
-      alert('設定タブでAPIキーを登録してください。');
+      flash('設定タブでAPIキーを登録してください', 'error');
       return;
     }
     if (!state.currentPerson) {
@@ -1958,7 +2105,9 @@
       payloadParts.join('\n\n'),
     ].join('\n');
 
-    document.getElementById('summary-run').disabled = true;
+    const runBtn = document.getElementById('summary-run');
+    runBtn.disabled = true;
+    runBtn.classList.add('loading');
     status.textContent = '統合分析中...';
     try {
       const text = await callClaude(system, userPrompt);
@@ -1978,8 +2127,10 @@
       renderSummaryHistory();
     } catch (err) {
       status.textContent = 'エラー: ' + err.message;
+      flash('AI呼び出しに失敗しました', 'error');
     } finally {
-      document.getElementById('summary-run').disabled = false;
+      runBtn.disabled = false;
+      runBtn.classList.remove('loading');
     }
   }
 
@@ -2082,4 +2233,5 @@
   renderThinkingHistory();
   renderJohari();
   renderSummary();
+  renderDiagBadges();
 })();
