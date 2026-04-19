@@ -7,8 +7,6 @@
   const THINKING_KEY = 'nayami-thinking-v1';
   const JOHARI_KEY = 'nayami-johari-v1';
   const SUMMARY_KEY = 'nayami-summary-v1';
-  const PEOPLE_KEY = 'diag-people-v1';
-  const CURRENT_PERSON_KEY = 'diag-current-person-v1';
 
   const JOHARI_TRAITS = [
     '明るい', '静か', '親切', '几帳面', '大胆', '慎重', '創造的', '論理的', '共感的', '独立心が強い',
@@ -217,8 +215,6 @@
 
   const state = {
     settings: load(SETTINGS_KEY, { apiKey: '', model: 'claude-sonnet-4-6' }),
-    people: load(PEOPLE_KEY, []),
-    currentPerson: load(CURRENT_PERSON_KEY, ''),
     socialAssessments: load(SOCIAL_KEY, []),
     effortAssessments: load(EFFORT_KEY, []),
     kolbAssessments: load(KOLB_KEY, []),
@@ -233,8 +229,6 @@
     thinkingQuiz: null,
     johariDraft: { selfTraits: [], othersTraits: [], extraSelf: [], extraOthers: [] },
     johariEditingId: null,
-    historyOnlyCurrent: {}, // per-diagnostic: boolean
-    summaryOnlyCurrent: false,
   };
 
   function load(key, fallback) {
@@ -328,8 +322,6 @@
 
   document.getElementById('export-btn').addEventListener('click', () => {
     const blob = new Blob([JSON.stringify({
-      people: state.people,
-      currentPerson: state.currentPerson,
       socialAssessments: state.socialAssessments,
       effortAssessments: state.effortAssessments,
       kolbAssessments: state.kolbAssessments,
@@ -352,8 +344,6 @@
     try {
       const text = await file.text();
       const data = JSON.parse(text);
-      if (Array.isArray(data.people))            { state.people = data.people; save(PEOPLE_KEY, state.people); }
-      if (typeof data.currentPerson === 'string'){ state.currentPerson = data.currentPerson; save(CURRENT_PERSON_KEY, state.currentPerson); }
       if (Array.isArray(data.socialAssessments)) { state.socialAssessments = data.socialAssessments; save(SOCIAL_KEY, state.socialAssessments); }
       if (Array.isArray(data.effortAssessments)) { state.effortAssessments = data.effortAssessments; save(EFFORT_KEY, state.effortAssessments); }
       if (Array.isArray(data.kolbAssessments))   { state.kolbAssessments = data.kolbAssessments; save(KOLB_KEY, state.kolbAssessments); }
@@ -362,7 +352,6 @@
       if (Array.isArray(data.johariSessions))    { state.johariSessions = data.johariSessions; save(JOHARI_KEY, state.johariSessions); }
       if (Array.isArray(data.summaryAnalyses))   { state.summaryAnalyses = data.summaryAnalyses; save(SUMMARY_KEY, state.summaryAnalyses); }
       flash('インポートしました');
-      renderPersonBar();
       renderSocialHistory();
       renderEffortHistory();
       renderKolbHistory();
@@ -378,8 +367,6 @@
 
   document.getElementById('clear-btn').addEventListener('click', () => {
     if (!confirm('すべての診断データと人物を削除します。よろしいですか？')) return;
-    state.people = [];
-    state.currentPerson = '';
     state.socialAssessments = [];
     state.effortAssessments = [];
     state.kolbAssessments = [];
@@ -389,8 +376,6 @@
     state.johariDraft = { selfTraits: [], othersTraits: [], extraSelf: [], extraOthers: [] };
     state.johariEditingId = null;
     state.summaryAnalyses = [];
-    save(PEOPLE_KEY, state.people);
-    save(CURRENT_PERSON_KEY, state.currentPerson);
     save(SOCIAL_KEY, state.socialAssessments);
     save(EFFORT_KEY, state.effortAssessments);
     save(KOLB_KEY, state.kolbAssessments);
@@ -398,7 +383,6 @@
     save(THINKING_KEY, state.thinkingAssessments);
     save(JOHARI_KEY, state.johariSessions);
     save(SUMMARY_KEY, state.summaryAnalyses);
-    renderPersonBar();
     renderSocialHistory();
     renderEffortHistory();
     renderKolbHistory();
@@ -408,217 +392,6 @@
     renderSummary();
     flash('削除しました');
   });
-
-  // ---------- Person management ----------
-  const personSelect = document.getElementById('person-select');
-  const personNewBtn = document.getElementById('person-new-btn');
-  const personNewWrap = document.getElementById('person-new-wrap');
-  const personNewName = document.getElementById('person-new-name');
-  const personNewSave = document.getElementById('person-new-save');
-  const personNewCancel = document.getElementById('person-new-cancel');
-  const personRenameBtn = document.getElementById('person-rename');
-  const personDeleteBtn = document.getElementById('person-delete');
-
-  function allPersonNames() {
-    const s = new Set(state.people.map(p => p.name));
-    // include names from assessments not in registry
-    const lists = [
-      state.socialAssessments, state.effortAssessments, state.kolbAssessments,
-      state.valuesAssessments, state.thinkingAssessments, state.johariSessions,
-    ];
-    for (const list of lists) for (const r of list) if (r.personName) s.add(r.personName);
-    return Array.from(s).sort();
-  }
-
-  function renderPersonBar() {
-    const names = allPersonNames();
-    // sync state.people with discovered names
-    for (const n of names) {
-      if (!state.people.some(p => p.name === n)) {
-        state.people.push({ name: n, createdAt: new Date().toISOString() });
-      }
-    }
-    save(PEOPLE_KEY, state.people);
-
-    const current = state.currentPerson;
-    personSelect.innerHTML = '<option value="">— 選択 —</option>' +
-      names.map(n => `<option value="${escapeAttr(n)}" ${n === current ? 'selected' : ''}>${escapeHtml(n)}</option>`).join('');
-    personRenameBtn.disabled = !current;
-    personDeleteBtn.disabled = !current;
-    const bar = document.querySelector('.person-bar');
-    if (bar) bar.classList.toggle('empty', !current);
-  }
-
-  personSelect.addEventListener('change', () => {
-    state.currentPerson = personSelect.value;
-    save(CURRENT_PERSON_KEY, state.currentPerson);
-    personRenameBtn.disabled = !state.currentPerson;
-    personDeleteBtn.disabled = !state.currentPerson;
-    // refresh history views (filter may change)
-    refreshAllHistories();
-  });
-
-  personNewBtn.addEventListener('click', () => {
-    personNewWrap.classList.remove('hidden');
-    personNewName.focus();
-  });
-  personNewCancel.addEventListener('click', () => {
-    personNewWrap.classList.add('hidden');
-    personNewName.value = '';
-  });
-  personNewSave.addEventListener('click', addNewPerson);
-  personNewName.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addNewPerson(); } });
-
-  function addNewPerson() {
-    const name = personNewName.value.trim();
-    if (!name) return;
-    if (!state.people.some(p => p.name === name)) {
-      state.people.push({ name, createdAt: new Date().toISOString() });
-      save(PEOPLE_KEY, state.people);
-    }
-    state.currentPerson = name;
-    save(CURRENT_PERSON_KEY, state.currentPerson);
-    personNewName.value = '';
-    personNewWrap.classList.add('hidden');
-    renderPersonBar();
-    refreshAllHistories();
-    flash(`「${name}」を選択中`);
-  }
-
-  personRenameBtn.addEventListener('click', () => {
-    const oldName = state.currentPerson;
-    if (!oldName) return;
-    const newName = prompt(`「${oldName}」の名前を変更します。新しい名前:`, oldName);
-    if (!newName || newName.trim() === '' || newName === oldName) return;
-    const trimmed = newName.trim();
-    // Update registry
-    const p = state.people.find(x => x.name === oldName);
-    if (p) p.name = trimmed;
-    // Dedupe if newName already exists
-    const seen = new Set();
-    state.people = state.people.filter(x => (seen.has(x.name) ? false : seen.add(x.name) && true));
-    save(PEOPLE_KEY, state.people);
-    // Rename across all assessment records
-    const lists = [
-      { list: state.socialAssessments, key: SOCIAL_KEY },
-      { list: state.effortAssessments, key: EFFORT_KEY },
-      { list: state.kolbAssessments, key: KOLB_KEY },
-      { list: state.valuesAssessments, key: VALUES_KEY },
-      { list: state.thinkingAssessments, key: THINKING_KEY },
-      { list: state.johariSessions, key: JOHARI_KEY },
-      { list: state.summaryAnalyses, key: SUMMARY_KEY },
-    ];
-    for (const { list, key } of lists) {
-      let changed = false;
-      for (const r of list) {
-        if (r.personName === oldName) { r.personName = trimmed; changed = true; }
-        if (key === SUMMARY_KEY && r.name === oldName) { r.name = trimmed; changed = true; }
-      }
-      if (changed) save(key, list);
-    }
-    state.currentPerson = trimmed;
-    save(CURRENT_PERSON_KEY, state.currentPerson);
-    renderPersonBar();
-    refreshAllHistories();
-    flash('名前を変更しました');
-  });
-
-  personDeleteBtn.addEventListener('click', () => {
-    const name = state.currentPerson;
-    if (!name) return;
-    if (!confirm(`「${name}」の全ての診断記録を削除します。元に戻せません。よろしいですか？`)) return;
-    const filterOut = (list, key) => {
-      const kept = list.filter(r => (r.personName || (key === SUMMARY_KEY ? r.name : '')) !== name && r.name !== name);
-      if (kept.length !== list.length) save(key, kept);
-      return kept;
-    };
-    state.socialAssessments  = filterOut(state.socialAssessments,  SOCIAL_KEY);
-    state.effortAssessments  = filterOut(state.effortAssessments,  EFFORT_KEY);
-    state.kolbAssessments    = filterOut(state.kolbAssessments,    KOLB_KEY);
-    state.valuesAssessments  = filterOut(state.valuesAssessments,  VALUES_KEY);
-    state.thinkingAssessments= filterOut(state.thinkingAssessments,THINKING_KEY);
-    state.johariSessions     = filterOut(state.johariSessions,     JOHARI_KEY);
-    state.summaryAnalyses    = state.summaryAnalyses.filter(r => r.name !== name);
-    save(SUMMARY_KEY, state.summaryAnalyses);
-    state.people = state.people.filter(p => p.name !== name);
-    save(PEOPLE_KEY, state.people);
-    state.currentPerson = '';
-    save(CURRENT_PERSON_KEY, state.currentPerson);
-    renderPersonBar();
-    refreshAllHistories();
-    flash(`「${name}」のデータを削除しました`);
-  });
-
-  // History filter checkboxes (per-diagnostic)
-  document.querySelectorAll('.history-only-current').forEach(cb => {
-    cb.addEventListener('change', () => {
-      state.historyOnlyCurrent[cb.dataset.target] = cb.checked;
-      refreshAllHistories();
-    });
-  });
-  const summaryOnlyCurrentEl = document.getElementById('summary-only-current');
-  if (summaryOnlyCurrentEl) {
-    summaryOnlyCurrentEl.addEventListener('change', () => {
-      state.summaryOnlyCurrent = summaryOnlyCurrentEl.checked;
-      renderSummary();
-    });
-  }
-
-  function refreshAllHistories() {
-    renderSocialHistory();
-    renderEffortHistory();
-    renderKolbHistory();
-    renderValuesHistory();
-    renderThinkingHistory();
-    renderJohari();
-    renderSummary();
-    renderDiagBadges();
-  }
-
-  function renderDiagBadges() {
-    const lists = {
-      social: state.socialAssessments,
-      effort: state.effortAssessments,
-      kolb: state.kolbAssessments,
-      values: state.valuesAssessments,
-      thinking: state.thinkingAssessments,
-      johari: state.johariSessions,
-    };
-    document.querySelectorAll('.diag-tabs .sub-tab').forEach(btn => {
-      const sub = btn.dataset.sub;
-      const list = lists[sub] || [];
-      let badge = btn.querySelector('.st-badge');
-      if (!state.currentPerson) {
-        if (badge) badge.remove();
-        return;
-      }
-      const hasData = list.some(r => r.personName === state.currentPerson);
-      if (hasData) {
-        if (!badge) {
-          badge = document.createElement('span');
-          badge.className = 'st-badge';
-          btn.appendChild(badge);
-        }
-        badge.textContent = '✓ 受診済み';
-      } else if (badge) {
-        badge.remove();
-      }
-    });
-  }
-
-  // Guard: ensure user has selected a person before starting a quiz
-  function requirePerson() {
-    if (state.currentPerson) return true;
-    alert('先に上部の「現在の人物」を選択するか、「＋ 新しい人物」で追加してください。');
-    return false;
-  }
-
-  // Filter helper for histories
-  function filterByCurrent(records, target) {
-    if (!state.historyOnlyCurrent[target]) return records;
-    if (!state.currentPerson) return records;
-    return records.filter(r => r.personName === state.currentPerson);
-  }
 
   // ---------- Helpers ----------
   function formatDate(iso) {
@@ -710,7 +483,7 @@
   const quizProgressText = document.getElementById('quiz-progress-text');
 
   document.getElementById('social-start').addEventListener('click', () => {
-    if (!requirePerson()) return;
+
     state.quiz = { idx: 0, answers: new Array(SOCIAL_QUESTIONS.length).fill(null) };
     socialIntro.classList.add('hidden');
     socialResult.classList.add('hidden');
@@ -764,7 +537,7 @@
     const scores = computeSocialScores(state.quiz.answers);
     const record = {
       id: 'sa_' + uid(),
-      personName: state.currentPerson || '',
+
       date: new Date().toISOString(),
       answers: state.quiz.answers.slice(),
       scores,
@@ -778,7 +551,6 @@
     socialIntro.classList.remove('hidden');
     showSocialResult(record);
     renderSocialHistory();
-    renderDiagBadges();
   }
 
   function computeSocialScores(answers) {
@@ -947,7 +719,7 @@
   function renderSocialHistory() {
     const ul = document.getElementById('social-history');
     if (!ul) return;
-    const items = filterByCurrent(state.socialAssessments, 'social');
+    const items = state.socialAssessments.slice();
     if (!items.length) {
       ul.innerHTML = '<li class="muted">該当する履歴はありません。</li>';
       return;
@@ -959,7 +731,7 @@
           <span class="mini-bar-fill" style="height:${r.scores[d.key]}%;background:${d.color}"></span>
         </span>`).join('');
       return `<li data-id="${r.id}">
-        <div class="h-meta"><b class="person-badge">${escapeHtml(r.personName || '無名')}</b> · ${formatDate(r.date)} · 平均 ${avg}</div>
+        <div class="h-meta">${formatDate(r.date)} · 平均 ${avg}</div>
         <div class="mini-bars">${bars}</div>
         <div class="actions" style="margin-top:6px">
           <button class="sa-view" data-id="${r.id}">結果を表示</button>
@@ -992,7 +764,7 @@
   const effortProgressText = document.getElementById('effort-progress-text');
 
   document.getElementById('effort-start').addEventListener('click', () => {
-    if (!requirePerson()) return;
+
     state.effortQuiz = { idx: 0, answers: new Array(EFFORT_QUESTIONS.length).fill(null) };
     effortIntro.classList.add('hidden');
     effortResult.classList.add('hidden');
@@ -1045,7 +817,7 @@
     const scores = computeDimensionScores(state.effortQuiz.answers, EFFORT_QUESTIONS, EFFORT_DIMENSIONS);
     const record = {
       id: 'ea_' + uid(),
-      personName: state.currentPerson || '',
+
       date: new Date().toISOString(),
       answers: state.effortQuiz.answers.slice(),
       scores,
@@ -1059,7 +831,6 @@
     effortIntro.classList.remove('hidden');
     showEffortResult(record);
     renderEffortHistory();
-    renderDiagBadges();
   }
 
   function showEffortResult(record) {
@@ -1175,7 +946,7 @@
   function renderEffortHistory() {
     const ul = document.getElementById('effort-history');
     if (!ul) return;
-    const items = filterByCurrent(state.effortAssessments, 'effort');
+    const items = state.effortAssessments.slice();
     if (!items.length) {
       ul.innerHTML = '<li class="muted">該当する履歴はありません。</li>';
       return;
@@ -1187,7 +958,7 @@
           <span class="mini-bar-fill" style="height:${r.scores[d.key]}%;background:${d.color}"></span>
         </span>`).join('');
       return `<li data-id="${r.id}">
-        <div class="h-meta"><b class="person-badge">${escapeHtml(r.personName || '無名')}</b> · ${formatDate(r.date)} · 平均 ${avg}</div>
+        <div class="h-meta">${formatDate(r.date)} · 平均 ${avg}</div>
         <div class="mini-bars">${bars}</div>
         <div class="actions" style="margin-top:6px">
           <button class="ea-view" data-id="${r.id}">結果を表示</button>
@@ -1246,7 +1017,7 @@
   const kolbProgressText = document.getElementById('kolb-progress-text');
 
   document.getElementById('kolb-start').addEventListener('click', () => {
-    if (!requirePerson()) return;
+
     state.kolbQuiz = { idx: 0, answers: new Array(KOLB_QUESTIONS.length).fill(null) };
     kolbIntro.classList.add('hidden');
     kolbResult.classList.add('hidden');
@@ -1299,7 +1070,7 @@
     const scores = computeDimensionScores(state.kolbQuiz.answers, KOLB_QUESTIONS, KOLB_DIMENSIONS);
     const record = {
       id: 'ka_' + uid(),
-      personName: state.currentPerson || '',
+
       date: new Date().toISOString(),
       answers: state.kolbQuiz.answers.slice(),
       scores,
@@ -1313,7 +1084,6 @@
     kolbIntro.classList.remove('hidden');
     showKolbResult(record);
     renderKolbHistory();
-    renderDiagBadges();
   }
 
   function showKolbResult(record) {
@@ -1412,7 +1182,7 @@
   function renderKolbHistory() {
     const ul = document.getElementById('kolb-history');
     if (!ul) return;
-    const items = filterByCurrent(state.kolbAssessments, 'kolb');
+    const items = state.kolbAssessments.slice();
     if (!items.length) {
       ul.innerHTML = '<li class="muted">該当する履歴はありません。</li>';
       return;
@@ -1424,7 +1194,7 @@
           <span class="mini-bar-fill" style="height:${r.scores[d.key]}%;background:${d.color}"></span>
         </span>`).join('');
       return `<li data-id="${r.id}">
-        <div class="h-meta"><b class="person-badge">${escapeHtml(r.personName || '無名')}</b> · ${formatDate(r.date)} · 最高: <b style="color:${top.color}">${escapeHtml(top.label)}</b></div>
+        <div class="h-meta">${formatDate(r.date)} · 最高: <b style="color:${top.color}">${escapeHtml(top.label)}</b></div>
         <div class="mini-bars">${bars}</div>
         <div class="actions" style="margin-top:6px">
           <button class="ka-view" data-id="${r.id}">結果を表示</button>
@@ -1529,7 +1299,7 @@
     const progressText = document.getElementById(`${prefix}-progress-text`);
 
     document.getElementById(`${prefix}-start`).addEventListener('click', () => {
-      if (!requirePerson()) return;
+
       cfg.setQuizState({ idx: 0, answers: new Array(questions.length).fill(null) });
       introEl.classList.add('hidden');
       resultEl.classList.add('hidden');
@@ -1581,7 +1351,7 @@
       const scores = computeDimensionScores(q.answers, questions, dims);
       const record = {
         id: `${prefix.slice(0, 1)}a_` + uid(),
-        personName: state.currentPerson || '',
+
         date: new Date().toISOString(),
         answers: q.answers.slice(),
         scores,
@@ -1595,7 +1365,6 @@
       introEl.classList.remove('hidden');
       showResult(record);
       drawHistory();
-      renderDiagBadges();
     }
 
     function showResult(record) {
@@ -1672,7 +1441,7 @@
     function drawHistory() {
       const ul = document.getElementById(`${prefix}-history`);
       if (!ul) return;
-      const list = filterByCurrent(cfg.list(), prefix);
+      const list = cfg.list().slice();
       if (!list.length) {
         ul.innerHTML = '<li class="muted">該当する履歴はありません。</li>';
         return;
@@ -1684,7 +1453,7 @@
             <span class="mini-bar-fill" style="height:${r.scores[d.key]}%;background:${d.color}"></span>
           </span>`).join('');
         return `<li data-id="${r.id}">
-          <div class="h-meta"><b class="person-badge">${escapeHtml(r.personName || '無名')}</b> · ${formatDate(r.date)} · 最高: <b style="color:${top.color}">${escapeHtml(top.label)}</b></div>
+          <div class="h-meta">${formatDate(r.date)} · 最高: <b style="color:${top.color}">${escapeHtml(top.label)}</b></div>
           <div class="mini-bars">${bars}</div>
           <div class="actions" style="margin-top:6px">
             <button class="hview" data-id="${r.id}">結果を表示</button>
@@ -1821,7 +1590,7 @@
   });
 
   document.getElementById('johari-save').addEventListener('click', () => {
-    if (!requirePerson()) return;
+
     const draft = state.johariDraft;
     if (!draft.selfTraits.length && !draft.othersTraits.length) {
       alert('少なくとも片方のリストを選んでください。');
@@ -1832,7 +1601,7 @@
       : null;
     const session = {
       id: state.johariEditingId || 'jo_' + uid(),
-      personName: (existing && existing.personName) || state.currentPerson || '',
+
       date: new Date().toISOString(),
       scope: document.getElementById('johari-scope').value.trim() || '全体',
       notes: document.getElementById('johari-notes').value.trim(),
@@ -1852,7 +1621,6 @@
     state.johariEditingId = session.id;
     showJohariResult(session);
     renderJohariHistory();
-    renderDiagBadges();
     flash('保存しました');
   });
 
@@ -1985,26 +1753,12 @@
   }
 
   // Latest record for a specific person; if no person selected, return global latest.
-  function latestForPerson(list, personName) {
-    if (!personName) return list[0] || null;
-    return list.find(r => r.personName === personName) || null;
-  }
-
   function renderSummary() {
-    const personInfo = document.getElementById('summary-person-info');
-    if (personInfo) {
-      if (state.currentPerson) {
-        personInfo.innerHTML = `<b>${escapeHtml(state.currentPerson)}</b> さんの最新スコアを使います。`;
-      } else {
-        personInfo.textContent = '上部の「現在の人物」を選択してください。選ばないまま実行すると、全員分の最新スコアが混ざります。';
-      }
-    }
-
     const snap = document.getElementById('summary-snapshot');
     if (!snap) return;
     const cards = [];
     for (const d of summaryDiagnostics()) {
-      const latest = latestForPerson(d.list, state.currentPerson);
+      const latest = d.list[0];
       if (!latest) {
         cards.push(`<div class="snap-card empty"><div class="snap-label">${escapeHtml(d.label)}</div><div class="snap-empty">未診断</div></div>`);
         continue;
@@ -2021,7 +1775,7 @@
         <div class="snap-meta muted">平均 ${avg} · 最高 <b style="color:${top.color}">${escapeHtml(top.label)}</b></div>
       </div>`);
     }
-    const johari = latestForPerson(state.johariSessions, state.currentPerson);
+    const johari = state.johariSessions[0];
     if (johari) {
       const w = computeJohariWindows(johari);
       cards.push(`<div class="snap-card">
@@ -2042,26 +1796,21 @@
     if (!t) return;
     navigator.clipboard.writeText(t).then(() => flash('コピーしました'));
   });
-  document.getElementById('summary-filter').addEventListener('input', renderSummaryHistory);
 
   async function runSummary() {
     if (!state.settings.apiKey) {
       flash('設定タブでAPIキーを登録してください', 'error');
       return;
     }
-    if (!state.currentPerson) {
-      if (!confirm('現在の人物が選択されていません。全診断の最新スコアを混ぜて実行しますか？')) return;
-    }
     const out = document.getElementById('summary-output');
     const status = document.getElementById('summary-status');
     out.textContent = '';
-    const name = state.currentPerson || '（全体）';
 
     const payloadParts = [];
-    const snapshot = { name, diagnostics: {} };
+    const snapshot = { diagnostics: {} };
 
     for (const d of summaryDiagnostics()) {
-      const latest = latestForPerson(d.list, state.currentPerson);
+      const latest = d.list[0];
       if (!latest) {
         payloadParts.push(`## ${d.label}\n（未診断）`);
         snapshot.diagnostics[d.key] = null;
@@ -2071,7 +1820,7 @@
       payloadParts.push(`## ${d.label}（${formatDate(latest.date)}）\n${dims}`);
       snapshot.diagnostics[d.key] = { scores: latest.scores, date: latest.date };
     }
-    const johari = latestForPerson(state.johariSessions, state.currentPerson);
+    const johari = state.johariSessions[0];
     if (johari) {
       const w = computeJohariWindows(johari);
       payloadParts.push(`## 自分と他者の見え方（${johari.scope || '全体'} / ${formatDate(johari.date)}）
@@ -2092,7 +1841,7 @@
     ].join('\n');
 
     const userPrompt = [
-      `以下は「${name}」さんの診断データです。これらを統合的に分析してください。`,
+      '以下は自分自身の診断データです。これらを統合的に分析してください。',
       '',
       '出力には以下を含めてください（マークダウンの見出しで区切る）:',
       '## 1. 人物プロファイル（200字程度の物語的な要約）',
@@ -2114,7 +1863,6 @@
       out.textContent = text;
       const record = {
         id: 'sum_' + uid(),
-        name,
         date: new Date().toISOString(),
         snapshot,
         output: text,
@@ -2123,7 +1871,7 @@
       state.summaryAnalyses.unshift(record);
       state.summaryAnalyses = state.summaryAnalyses.slice(0, 50);
       save(SUMMARY_KEY, state.summaryAnalyses);
-      status.textContent = `完了 (${name}・${formatDate(record.date)})`;
+      status.textContent = `完了 (${formatDate(record.date)})`;
       renderSummaryHistory();
     } catch (err) {
       status.textContent = 'エラー: ' + err.message;
@@ -2137,24 +1885,17 @@
   function renderSummaryHistory() {
     const ul = document.getElementById('summary-history');
     if (!ul) return;
-    const filterEl = document.getElementById('summary-filter');
-    const q = (filterEl ? filterEl.value : '').trim().toLowerCase();
-    let items = state.summaryAnalyses.slice();
-    if (q) items = items.filter(r => (r.name || '').toLowerCase().includes(q));
-    if (state.summaryOnlyCurrent && state.currentPerson) {
-      items = items.filter(r => r.name === state.currentPerson);
-    }
+    const items = state.summaryAnalyses.slice();
     if (!items.length) {
-      ul.innerHTML = '<li class="muted">該当する履歴はありません。</li>';
+      ul.innerHTML = '<li class="muted">まだレポートはありません。</li>';
       return;
     }
     ul.innerHTML = items.map(r => `
       <li data-id="${r.id}">
-        <div class="h-meta"><b class="person-badge">${escapeHtml(r.name || '無名')}</b> · ${formatDate(r.date)}</div>
+        <div class="h-meta">${formatDate(r.date)}</div>
         <div class="h-preview">${escapeHtml(r.output).slice(0, 200)}…</div>
         <div class="actions" style="margin-top:6px">
           <button class="sum-view" data-id="${r.id}">結果を表示</button>
-          <button class="sum-rename" data-id="${r.id}">名前を変更</button>
           <button class="sum-del danger" data-id="${r.id}">削除</button>
         </div>
       </li>
@@ -2164,19 +1905,8 @@
         const r = state.summaryAnalyses.find(x => x.id === b.dataset.id);
         if (!r) return;
         document.getElementById('summary-output').textContent = r.output;
-        document.getElementById('summary-status').textContent = `履歴を表示中 (${r.name || '無名'} · ${formatDate(r.date)})`;
+        document.getElementById('summary-status').textContent = `履歴を表示中 (${formatDate(r.date)})`;
         window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-    });
-    ul.querySelectorAll('.sum-rename').forEach(b => {
-      b.addEventListener('click', () => {
-        const r = state.summaryAnalyses.find(x => x.id === b.dataset.id);
-        if (!r) return;
-        const newName = prompt('新しい名前:', r.name || '');
-        if (!newName || !newName.trim()) return;
-        r.name = newName.trim();
-        save(SUMMARY_KEY, state.summaryAnalyses);
-        renderSummaryHistory();
       });
     });
     ul.querySelectorAll('.sum-del').forEach(b => {
@@ -2192,7 +1922,7 @@
   function renderJohariHistory() {
     const ul = document.getElementById('johari-history');
     if (!ul) return;
-    const items = filterByCurrent(state.johariSessions, 'johari');
+    const items = state.johariSessions.slice();
     if (!items.length) {
       ul.innerHTML = '<li class="muted">該当する履歴はありません。</li>';
       return;
@@ -2200,7 +1930,7 @@
     ul.innerHTML = items.map(s => {
       const w = computeJohariWindows(s);
       return `<li data-id="${s.id}" class="${state.johariEditingId === s.id ? 'active' : ''}">
-        <div class="h-meta"><b class="person-badge">${escapeHtml(s.personName || '無名')}</b> · ${escapeHtml(s.scope || '全体')} · ${formatDate(s.date)}</div>
+        <div class="h-meta">${escapeHtml(s.scope || '全体')} · ${formatDate(s.date)}</div>
         <div class="muted" style="font-size:11px;margin-top:2px">開放 ${w.open.length} / 盲点 ${w.blind.length} / 秘密 ${w.hidden.length}</div>
         <div class="actions" style="margin-top:6px">
           <button class="jo-view" data-id="${s.id}">結果を表示</button>
@@ -2225,7 +1955,6 @@
     });
   }
 
-  renderPersonBar();
   renderSocialHistory();
   renderEffortHistory();
   renderKolbHistory();
@@ -2233,5 +1962,4 @@
   renderThinkingHistory();
   renderJohari();
   renderSummary();
-  renderDiagBadges();
 })();

@@ -28,25 +28,6 @@
     </nav>
   </header>
 
-  <div class="person-bar">
-    <label class="person-label">
-      現在の人物
-      <select id="person-select">
-        <option value="">— 選択 —</option>
-      </select>
-    </label>
-    <button id="person-new-btn">＋ 新しい人物</button>
-    <span id="person-new-wrap" class="hidden">
-      <input type="text" id="person-new-name" placeholder="名前" maxlength="40" />
-      <button id="person-new-save" class="primary">追加</button>
-      <button id="person-new-cancel">キャンセル</button>
-    </span>
-    <span class="person-actions">
-      <button id="person-rename" disabled>名前を変更</button>
-      <button id="person-delete" class="danger" disabled>この人物のデータを削除</button>
-    </span>
-  </div>
-
   <main>
 
 
@@ -124,9 +105,6 @@
       <div id="social-result" class="hidden"></div>
 
       <h3>診断履歴</h3>
-      <div class="history-controls">
-        <label class="inline"><input type="checkbox" class="history-only-current" data-target="social" /> 現在の人物のみ</label>
-      </div>
       <ul id="social-history" class="social-history"></ul>
     </section>
 
@@ -172,9 +150,6 @@
       <div id="effort-result" class="hidden"></div>
 
       <h3>診断履歴</h3>
-      <div class="history-controls">
-        <label class="inline"><input type="checkbox" class="history-only-current" data-target="effort" /> 現在の人物のみ</label>
-      </div>
       <ul id="effort-history" class="social-history"></ul>
     </section>
 
@@ -219,9 +194,6 @@
       <div id="kolb-result" class="hidden"></div>
 
       <h3>診断履歴</h3>
-      <div class="history-controls">
-        <label class="inline"><input type="checkbox" class="history-only-current" data-target="kolb" /> 現在の人物のみ</label>
-      </div>
       <ul id="kolb-history" class="social-history"></ul>
     </section>
 
@@ -267,9 +239,6 @@
       <div id="values-result" class="hidden"></div>
 
       <h3>診断履歴</h3>
-      <div class="history-controls">
-        <label class="inline"><input type="checkbox" class="history-only-current" data-target="values" /> 現在の人物のみ</label>
-      </div>
       <ul id="values-history" class="social-history"></ul>
     </section>
 
@@ -315,9 +284,6 @@
       <div id="thinking-result" class="hidden"></div>
 
       <h3>診断履歴</h3>
-      <div class="history-controls">
-        <label class="inline"><input type="checkbox" class="history-only-current" data-target="thinking" /> 現在の人物のみ</label>
-      </div>
       <ul id="thinking-history" class="social-history"></ul>
     </section>
 
@@ -373,9 +339,6 @@
       <div id="johari-result" class="hidden"></div>
 
       <h3>履歴</h3>
-      <div class="history-controls">
-        <label class="inline"><input type="checkbox" class="history-only-current" data-target="johari" /> 現在の人物のみ</label>
-      </div>
       <ul id="johari-history" class="social-history"></ul>
     </section>
 
@@ -383,10 +346,7 @@
 
     <section id="tab-summary" class="panel">
       <h2>総合レポート</h2>
-      <p class="muted">上部で選択中の「現在の人物」の、受けた診断をすべて束ねて、一人の人物像としてAIに読み解いてもらいます。強み・葛藤・次の一歩まで、人物ごとのレポートとして履歴に残ります。</p>
-
-      <h3>レポート対象</h3>
-      <div id="summary-person-info" class="muted">上部の「現在の人物」を選択してください。</div>
+      <p class="muted">受けた6つの診断の最新スコアをすべて束ねて、一人の人物像としてAIに読み解いてもらいます。強み・葛藤・次の一歩まで、レポートとして履歴に残ります。</p>
 
       <h3>含まれる最新スコア</h3>
       <div id="summary-snapshot" class="summary-snapshot"></div>
@@ -399,11 +359,7 @@
       <div id="summary-status" class="muted"></div>
       <article id="summary-output" class="ai-output"></article>
 
-      <h3>レポート履歴（全員分）</h3>
-      <div class="filters">
-        <input type="search" id="summary-filter" placeholder="名前で絞り込み" />
-        <label class="inline"><input type="checkbox" id="summary-only-current" /> 現在の人物のみ</label>
-      </div>
+      <h3>レポート履歴</h3>
       <ul id="summary-history" class="social-history"></ul>
     </section>
 
