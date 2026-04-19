@@ -10,6 +10,7 @@
 <body>
   <div id="welcome" class="welcome-overlay hidden">
     <div class="welcome-card">
+      <button type="button" class="welcome-close" onclick="document.getElementById('welcome').classList.add('hidden'); document.body.style.overflow = ''; try { localStorage.setItem('prism-welcomed-v1','1'); } catch(e){}" aria-label="閉じる">×</button>
       <svg class="logo-prism logo-big" viewBox="0 0 24 24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
            fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round">
         <path d="M12 3 L21.5 20 L2.5 20 Z"/>
@@ -48,7 +49,10 @@
       <p class="muted welcome-note">データはすべてこのブラウザ内（localStorage）にのみ保存されます。AI分析時だけ Anthropic API に送信されます。</p>
 
       <div class="actions welcome-actions">
-        <button id="welcome-start" class="primary">始める</button>
+        <button type="button" id="welcome-start" class="primary"
+                onclick="document.getElementById('welcome').classList.add('hidden'); document.body.style.overflow = ''; try { localStorage.setItem('prism-welcomed-v1','1'); } catch(e){}">
+          始める
+        </button>
       </div>
     </div>
   </div>
@@ -432,7 +436,7 @@
 
       <h3>使い方</h3>
       <div class="actions">
-        <button id="show-welcome">使い方をもう一度見る</button>
+        <button id="show-welcome" onclick="document.getElementById('welcome').classList.remove('hidden'); document.body.style.overflow = 'hidden';">使い方をもう一度見る</button>
       </div>
 
       <h3>データ管理</h3>
@@ -452,19 +456,26 @@
   <div id="toast" class="toast hidden"></div>
 
   <script>
-    // --- Welcome overlay (runs independently of main app.js so it always works) ---
+    // Welcome overlay: show on first visit; buttons have their own inline onclick handlers
     (function(){
-      var WK = 'prism-welcomed-v1';
-      function show(){ var el = document.getElementById('welcome'); if(!el) return; el.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
-      function hide(){ var el = document.getElementById('welcome'); if(!el) return; el.classList.add('hidden'); document.body.style.overflow = ''; try { localStorage.setItem(WK, '1'); } catch(e){} }
-      document.addEventListener('click', function(e){
-        if (e.target.closest && e.target.closest('#welcome-start')) { e.preventDefault(); hide(); return; }
-        if (e.target.closest && e.target.closest('#show-welcome')) { e.preventDefault(); show(); return; }
-        // click outside card → dismiss
-        var overlay = document.getElementById('welcome');
-        if (overlay && e.target === overlay) hide();
+      try {
+        if (!localStorage.getItem('prism-welcomed-v1')) {
+          var el = document.getElementById('welcome');
+          if (el) { el.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+        }
+      } catch(e) {
+        var el = document.getElementById('welcome');
+        if (el) el.classList.remove('hidden');
+      }
+      // Click outside card dismisses
+      var overlay = document.getElementById('welcome');
+      if (overlay) overlay.addEventListener('click', function(e){
+        if (e.target === overlay) {
+          overlay.classList.add('hidden');
+          document.body.style.overflow = '';
+          try { localStorage.setItem('prism-welcomed-v1','1'); } catch(e){}
+        }
       });
-      try { if (!localStorage.getItem(WK)) show(); } catch(e) { show(); }
     })();
   </script>
   <script src="app.js"></script>

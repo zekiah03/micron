@@ -389,6 +389,26 @@ button.danger:hover { background: #fee2e2; }
   width: 100%;
   box-shadow: 0 12px 32px rgba(0,0,0,0.18);
   text-align: left;
+  position: relative;
+}
+.welcome-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 50%;
+}
+.welcome-close:hover {
+  background: #f3f4f6;
+  color: var(--ink);
 }
 .welcome-card .logo-big {
   display: block;
