@@ -3,371 +3,44 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>悩みの種 分析ツール</title>
+  <title>診断ツール</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="topbar">
-    <h1>悩みの種 <span class="sub">AI分析ツール</span></h1>
+    <h1>診断ツール <span class="sub">多人数・統合分析</span></h1>
     <nav class="tabs">
-      <button class="tab active" data-tab="input">記録</button>
-      <button class="tab" data-tab="list">一覧</button>
-      <button class="tab" data-tab="stats">統計</button>
-      <button class="tab" data-tab="ai">AI分析</button>
-      <button class="tab" data-tab="graph">図解</button>
-      <button class="tab" data-tab="process">進める</button>
-      <button class="tab" data-tab="diagnoses">診断</button>
+      <button class="tab active" data-tab="diagnoses">診断</button>
       <button class="tab" data-tab="summary">総合分析</button>
-      <button class="tab" data-tab="axes">軸の設定</button>
       <button class="tab" data-tab="settings">設定</button>
     </nav>
   </header>
 
+  <div class="person-bar">
+    <label class="person-label">
+      現在の人物
+      <select id="person-select">
+        <option value="">— 選択 —</option>
+      </select>
+    </label>
+    <button id="person-new-btn">＋ 新しい人物</button>
+    <span id="person-new-wrap" class="hidden">
+      <input type="text" id="person-new-name" placeholder="名前" maxlength="40" />
+      <button id="person-new-save" class="primary">追加</button>
+      <button id="person-new-cancel">キャンセル</button>
+    </span>
+    <span class="person-actions">
+      <button id="person-rename" disabled>名前を変更</button>
+      <button id="person-delete" class="danger" disabled>この人物のデータを削除</button>
+    </span>
+  </div>
+
   <main>
-    <section id="tab-input" class="panel active">
-      <h2>新しい悩みの種を記録</h2>
-      <form id="seed-form">
-        <label>
-          タイトル
-          <input type="text" name="title" required maxlength="120" placeholder="例: 朝の時間が足りない" />
-        </label>
-        <label>
-          詳細・背景
-          <textarea name="description" rows="5" placeholder="どんな状況で、何を感じたか、思いつく原因など自由に"></textarea>
-        </label>
-        <div class="row">
-          <label>
-            カテゴリ
-            <select name="category">
-              <option value="幸せ・比較">幸せ・比較</option>
-              <option value="年齢と経験">年齢と経験</option>
-              <option value="人間関係">人間関係</option>
-              <option value="外見">外見</option>
-              <option value="家族">家族</option>
-              <option value="仕事">仕事</option>
-              <option value="健康">健康</option>
-              <option value="お金">お金</option>
-              <option value="学び">学び</option>
-              <option value="将来">将来</option>
-              <option value="解決に向けて">解決に向けて</option>
-              <option value="その他">その他</option>
-            </select>
-          </label>
-          <label>
-            強さ (1〜10)
-            <input type="number" name="intensity" min="1" max="10" value="5" required />
-          </label>
-        </div>
-        <label>
-          タグ (カンマ区切り)
-          <input type="text" name="tags" placeholder="例: 朝, 集中, 家族" />
-        </label>
-        <label>
-          気づき・リフレーミング（任意）
-          <textarea name="insight" rows="3" placeholder="後から見返して気づいたこと、自分への問い直し、別の捉え方など"></textarea>
-        </label>
 
-        <details class="axis-group" open>
-          <summary>構造軸（任意）</summary>
-          <div class="axis-grid">
-            <label>
-              帰属（誰の問題か）
-              <select name="attribution">
-                <option value="">—</option>
-                <option value="本人">本人</option>
-                <option value="他者">他者</option>
-                <option value="環境">環境（制度・時代・運）</option>
-                <option value="複合">複合</option>
-              </select>
-            </label>
-            <label>
-              コントロール可能性
-              <select name="controllability">
-                <option value="">—</option>
-                <option value="可">可（自分で変えられる）</option>
-                <option value="部分的">部分的</option>
-                <option value="不可">不可（他人次第・変えられない）</option>
-              </select>
-            </label>
-            <label>
-              時間軸
-              <select name="timeFrame">
-                <option value="">—</option>
-                <option value="過去">過去（反芻）</option>
-                <option value="現在">現在進行</option>
-                <option value="未来">未来（予期不安）</option>
-              </select>
-            </label>
-            <label>
-              深さ層（層A/B/C）
-              <select name="depth">
-                <option value="">—</option>
-                <option value="表層">表層（層C: 具体的な悩み・出来事）</option>
-                <option value="中層">中層（層B: 思考・行動の癖）</option>
-                <option value="核心">核心（層A: 自己への根本信念）</option>
-              </select>
-            </label>
-            <label>
-              介入点（どこで断ち切るか）
-              <select name="interventionPoint">
-                <option value="">—</option>
-                <option value="入力制御">入力制御（刺激を減らす・避ける）</option>
-                <option value="解釈遅延">解釈遅延（意味づけを保留）</option>
-                <option value="感情切断">感情切断（感情→行動の連鎖を止める）</option>
-                <option value="行動固定">行動固定（反射を別の行動に置き換える）</option>
-                <option value="結果再定義">結果再定義（結果の意味を捉え直す）</option>
-              </select>
-            </label>
-          </div>
-        </details>
 
-        <details class="axis-group" id="custom-axes-details">
-          <summary>カスタム軸（<span id="custom-axes-count">0</span>）</summary>
-          <div id="custom-axes-fields"></div>
-          <p class="muted">軸は「軸の設定」タブで追加・編集できます。</p>
-        </details>
 
-        <details class="axis-group" id="reasons-details" open>
-          <summary>理由・つながり（<span id="reasons-count">0</span>）</summary>
-          <p class="muted">この悩みや各要素に「なぜ？」を書き足していきます。書いた理由は他の理由と紐付けでき、「図解」タブで繋がりを確認できます。</p>
-          <div id="reasons-in-form"></div>
-          <div class="actions">
-            <button type="button" id="add-reason-btn">＋ 理由を追加</button>
-          </div>
-        </details>
 
-        <div class="actions">
-          <button type="submit" class="primary">保存</button>
-          <button type="reset">クリア</button>
-        </div>
-      </form>
-    </section>
 
-    <section id="tab-list" class="panel">
-      <div class="list-header">
-        <h2>記録一覧</h2>
-        <div class="filters">
-          <input type="search" id="filter-q" placeholder="キーワード検索" />
-          <select id="filter-cat"><option value="">全カテゴリ</option></select>
-          <select id="sort">
-            <option value="date-desc">新しい順</option>
-            <option value="date-asc">古い順</option>
-            <option value="intensity-desc">強さ順</option>
-          </select>
-        </div>
-      </div>
-      <ul id="seed-list"></ul>
-      <p id="empty-list" class="muted">まだ記録がありません。「記録」タブから追加してください。</p>
-    </section>
-
-    <section id="tab-stats" class="panel">
-      <h2>統計</h2>
-      <div class="stats-grid">
-        <div class="card"><div class="card-label">総件数</div><div id="stat-count" class="card-value">0</div></div>
-        <div class="card"><div class="card-label">平均強さ</div><div id="stat-avg" class="card-value">-</div></div>
-        <div class="card"><div class="card-label">今月の追加</div><div id="stat-month" class="card-value">0</div></div>
-      </div>
-      <h3>カテゴリ別</h3>
-      <div id="chart-cat" class="bars"></div>
-      <h3>強さの分布</h3>
-      <div id="chart-intensity" class="bars"></div>
-      <h3>直近14日の推移</h3>
-      <div id="chart-timeline" class="bars timeline"></div>
-    </section>
-
-    <section id="tab-ai" class="panel">
-      <h2>AIと一緒に分析</h2>
-      <p class="muted">記録した悩みの種をClaudeに送り、パターン・根本原因・次のアクションを整理します。APIキーは「設定」タブから登録してください。ブラウザのlocalStorageにのみ保存されます。</p>
-      <div class="ai-controls">
-        <label>
-          分析の観点
-          <select id="ai-mode">
-            <option value="pattern">共通パターンと構造の発見</option>
-            <option value="root">根本原因の深掘り</option>
-            <option value="dialog">問いかけ（深掘り質問）</option>
-            <option value="action">次に取れるアクションの提案</option>
-            <option value="reframe">リフレーミング（視点の転換）</option>
-            <option value="unravel">解き明かす（多層構造で整理）</option>
-            <option value="suggest-reasons">理由ネットワーク提案（図解に追加）</option>
-            <option value="reclassify-depth">深さ層（層A/B/C）を再分類</option>
-            <option value="intervention-map">介入点マップ（どこで断ち切るか）</option>
-            <option value="custom">カスタム指示</option>
-          </select>
-        </label>
-        <label id="ai-custom-wrap" class="hidden">
-          カスタム指示
-          <textarea id="ai-custom" rows="3" placeholder="例: 仕事関連の悩みだけに絞って、来週試せる小さな一歩を3つ提案して"></textarea>
-        </label>
-        <label>
-          対象
-          <select id="ai-scope">
-            <option value="all">すべての記録</option>
-            <option value="recent30">直近30件</option>
-            <option value="high">強さ7以上</option>
-          </select>
-        </label>
-        <div class="actions">
-          <button id="ai-run" class="primary">分析する</button>
-          <button id="ai-copy" type="button">結果をコピー</button>
-        </div>
-      </div>
-      <div id="ai-status" class="muted"></div>
-      <article id="ai-output" class="ai-output"></article>
-      <div id="ai-suggest-preview"></div>
-      <h3>過去の分析履歴</h3>
-      <ul id="ai-history"></ul>
-    </section>
-
-    <section id="tab-graph" class="panel">
-      <h2>図解</h2>
-      <div class="graph-controls">
-        <label>
-          ビュー
-          <select id="graph-view">
-            <option value="force">ネットワーク（悩み⇄理由）</option>
-            <option value="matrix">2×2マトリクス（帰属×コントロール）</option>
-          </select>
-        </label>
-        <label>
-          表示
-          <select id="graph-filter">
-            <option value="all">すべて</option>
-            <option value="high">強さ7以上の悩みのみ</option>
-            <option value="reasons">理由ネットワークのみ</option>
-          </select>
-        </label>
-        <label>
-          カテゴリ
-          <select id="graph-cat"><option value="">全カテゴリ</option></select>
-        </label>
-        <button id="graph-relayout">再配置</button>
-        <button id="graph-reset-positions">位置リセット</button>
-        <span class="muted" id="graph-info"></span>
-      </div>
-      <div class="graph-wrap">
-        <svg id="graph-svg" viewBox="0 0 900 600"></svg>
-        <aside id="graph-panel">
-          <p class="muted">ノードをクリックすると詳細が表示されます。ドラッグで位置を変更できます。</p>
-        </aside>
-      </div>
-      <p class="muted">● 悩み（大きさ=強さ、色=カテゴリ） ／ ▭ 理由 ／ 実線=悩み→理由 ／ 破線=理由→より深い理由</p>
-    </section>
-
-    <section id="tab-process" class="panel">
-      <nav class="sub-tabs">
-        <button class="sub-tab active" data-parent="process" data-sub="sessions">セッション</button>
-        <button class="sub-tab" data-parent="process" data-sub="actions">アクション</button>
-        <button class="sub-tab" data-parent="process" data-sub="works">ワーク</button>
-      </nav>
-
-    <section id="tab-sessions" class="sub-panel active" data-sub="sessions">
-      <h2>セッション（対話・議事録）</h2>
-      <p class="muted">長文の対話メモをセクション単位で保存し、記録や理由と紐付けて振り返れます。</p>
-      <div class="session-layout">
-        <aside class="session-sidebar">
-          <div class="actions">
-            <button id="new-session-btn" class="primary">＋ 新規セッション</button>
-          </div>
-          <ul id="sessions-list" class="session-list"></ul>
-        </aside>
-        <main id="session-detail" class="session-detail">
-          <p class="muted">左のリストからセッションを選択するか、「＋ 新規セッション」を押してください。</p>
-        </main>
-      </div>
-    </section>
-
-    <section id="tab-actions" class="sub-panel" data-sub="actions">
-      <h2>アクション（存在実感の3経路）</h2>
-      <p class="muted">「存在していい」→「存在している」への転換を、3つの経路で試行します。何をやって、どう効いたか、続けるかを記録します。</p>
-
-      <details class="axis-group">
-        <summary>3つの存在経路の説明</summary>
-        <ul class="axis-list builtin">
-          <li><b>身体経路</b>: 感覚の名指し、身体を動かす、五感の強化（今ここを身体で感じる）</li>
-          <li><b>痕跡経路</b>: 行動記録、物理的痕跡、空間の個人化（自分の存在を物理世界に残す）</li>
-          <li><b>関係経路</b>: 応答のある関係、応答する側に立つ、植物やペット（他者に応答される／する体験）</li>
-        </ul>
-      </details>
-
-      <div class="path-tabs">
-        <button class="path-tab active" data-path="all">すべて</button>
-        <button class="path-tab" data-path="身体">身体経路</button>
-        <button class="path-tab" data-path="痕跡">痕跡経路</button>
-        <button class="path-tab" data-path="関係">関係経路</button>
-      </div>
-
-      <form id="action-form">
-        <div class="row">
-          <label>
-            経路
-            <select name="path" required>
-              <option value="身体">身体経路</option>
-              <option value="痕跡">痕跡経路</option>
-              <option value="関係">関係経路</option>
-            </select>
-          </label>
-          <label>
-            日付
-            <input type="date" name="date" />
-          </label>
-        </div>
-        <label>
-          試したこと
-          <input type="text" name="description" required maxlength="120" placeholder="例: 朝の散歩で5感を1つずつ名指しする" />
-        </label>
-        <label>
-          メモ（やってみてどうだったか）
-          <textarea name="notes" rows="2"></textarea>
-        </label>
-        <div class="row">
-          <label>
-            効果（1=効かない〜5=はっきり効く）
-            <input type="number" name="effectRating" min="1" max="5" value="3" />
-          </label>
-          <label>
-            状態
-            <select name="status">
-              <option value="trying">試行中</option>
-              <option value="continue">続ける</option>
-              <option value="stop">やめる</option>
-            </select>
-          </label>
-        </div>
-        <label>
-          紐付ける悩み（任意）
-          <select name="seedIds" multiple size="4" id="action-seed-select"></select>
-        </label>
-        <div class="actions">
-          <button type="submit" class="primary">保存</button>
-          <button type="reset">クリア</button>
-        </div>
-      </form>
-
-      <h3>ログ</h3>
-      <ul id="actions-list" class="actions-list"></ul>
-    </section>
-
-    <section id="tab-works" class="sub-panel" data-sub="works">
-      <h2>ワーク（設計課題）</h2>
-      <p class="muted">未解決の問い・設計課題を「ワーク」として立てて、探求ノートとサブタスクで進めます。セッション議事録の §16〜17 のような内容をここに置けます。</p>
-
-      <div class="path-tabs">
-        <button class="work-tab active" data-status="all">すべて</button>
-        <button class="work-tab" data-status="open">未着手</button>
-        <button class="work-tab" data-status="in_progress">進行中</button>
-        <button class="work-tab" data-status="done">完了</button>
-      </div>
-
-      <div class="actions">
-        <button id="new-work-btn" class="primary">＋ 新しいワーク</button>
-      </div>
-
-      <ul id="works-list" class="works-list"></ul>
-
-      <article id="work-detail" class="work-detail hidden"></article>
-    </section>
-
-    </section><!-- /tab-process -->
 
     <section id="tab-diagnoses" class="panel">
       <nav class="sub-tabs">
@@ -421,6 +94,9 @@
       <div id="social-result" class="hidden"></div>
 
       <h3>診断履歴</h3>
+      <div class="history-controls">
+        <label class="inline"><input type="checkbox" class="history-only-current" data-target="social" /> 現在の人物のみ</label>
+      </div>
       <ul id="social-history" class="social-history"></ul>
     </section>
 
@@ -466,6 +142,9 @@
       <div id="effort-result" class="hidden"></div>
 
       <h3>診断履歴</h3>
+      <div class="history-controls">
+        <label class="inline"><input type="checkbox" class="history-only-current" data-target="effort" /> 現在の人物のみ</label>
+      </div>
       <ul id="effort-history" class="social-history"></ul>
     </section>
 
@@ -510,6 +189,9 @@
       <div id="kolb-result" class="hidden"></div>
 
       <h3>診断履歴</h3>
+      <div class="history-controls">
+        <label class="inline"><input type="checkbox" class="history-only-current" data-target="kolb" /> 現在の人物のみ</label>
+      </div>
       <ul id="kolb-history" class="social-history"></ul>
     </section>
 
@@ -555,6 +237,9 @@
       <div id="values-result" class="hidden"></div>
 
       <h3>診断履歴</h3>
+      <div class="history-controls">
+        <label class="inline"><input type="checkbox" class="history-only-current" data-target="values" /> 現在の人物のみ</label>
+      </div>
       <ul id="values-history" class="social-history"></ul>
     </section>
 
@@ -600,6 +285,9 @@
       <div id="thinking-result" class="hidden"></div>
 
       <h3>診断履歴</h3>
+      <div class="history-controls">
+        <label class="inline"><input type="checkbox" class="history-only-current" data-target="thinking" /> 現在の人物のみ</label>
+      </div>
       <ul id="thinking-history" class="social-history"></ul>
     </section>
 
@@ -655,6 +343,9 @@
       <div id="johari-result" class="hidden"></div>
 
       <h3>履歴</h3>
+      <div class="history-controls">
+        <label class="inline"><input type="checkbox" class="history-only-current" data-target="johari" /> 現在の人物のみ</label>
+      </div>
       <ul id="johari-history" class="social-history"></ul>
     </section>
 
@@ -662,21 +353,12 @@
 
     <section id="tab-summary" class="panel">
       <h2>総合分析</h2>
-      <p class="muted">名前を入れて、各診断の最新スコア／悩みの種／理由ネットワークを束ねてClaudeに渡し、一人の人物像として統合解析します。結果は名前付きで履歴保存されます。</p>
+      <p class="muted">上部で選択中の「現在の人物」の各診断スコアを束ねてClaudeに渡し、一人の人物像として統合解析します。結果は人物ごとに履歴保存されます。</p>
 
-      <div class="summary-controls">
-        <label>
-          名前
-          <input type="text" id="summary-name" placeholder="例: 自分 / 〇〇さん" />
-        </label>
-        <div class="summary-incl">
-          <label class="inline"><input type="checkbox" id="incl-seeds" checked /> 悩みの種を含める</label>
-          <label class="inline"><input type="checkbox" id="incl-reasons" checked /> 理由ネットワークを含める</label>
-          <label class="inline"><input type="checkbox" id="incl-sessions" /> セッション議事録も含める</label>
-        </div>
-      </div>
+      <h3>対象人物</h3>
+      <div id="summary-person-info" class="muted">上部の「現在の人物」を選択してください。</div>
 
-      <h3>含まれる最新スコア</h3>
+      <h3>含まれる最新スコア（この人の）</h3>
       <div id="summary-snapshot" class="summary-snapshot"></div>
 
       <div class="actions">
@@ -687,113 +369,14 @@
       <div id="summary-status" class="muted"></div>
       <article id="summary-output" class="ai-output"></article>
 
-      <h3>分析履歴</h3>
+      <h3>分析履歴（全員分）</h3>
       <div class="filters">
         <input type="search" id="summary-filter" placeholder="名前で絞り込み" />
+        <label class="inline"><input type="checkbox" id="summary-only-current" /> 現在の人物のみ</label>
       </div>
       <ul id="summary-history" class="social-history"></ul>
     </section>
 
-    <section id="tab-axes" class="panel">
-      <h2>軸の設定</h2>
-      <p class="muted">悩みを点数化・図解するための観点を自分で追加できます。数値（スライダー）、選択肢、自由入力から選べます。</p>
-
-      <h3>組み込み軸</h3>
-      <ul class="axis-list builtin">
-        <li><b>熱量</b>（数値 1〜10）: いまの強さ・エネルギー</li>
-        <li><b>帰属</b>（選択）: 本人 / 他者 / 環境 / 複合</li>
-        <li><b>コントロール可能性</b>（選択）: 可 / 部分的 / 不可</li>
-        <li><b>時間軸</b>（選択）: 過去 / 現在 / 未来</li>
-        <li><b>深さ層</b>（選択）: 表層（層C: 具体的な悩み） / 中層（層B: 思考・行動の癖） / 核心（層A: 自己への根本信念）</li>
-        <li><b>介入点</b>（選択）: 入力制御 / 解釈遅延 / 感情切断 / 行動固定 / 結果再定義</li>
-      </ul>
-
-      <details class="axis-group">
-        <summary>層Aを維持するループと5つの介入点</summary>
-        <div class="loop-diagram">
-          <div class="loop-step">入力</div>
-          <div class="loop-arrow">→</div>
-          <div class="loop-step">解釈</div>
-          <div class="loop-arrow">→</div>
-          <div class="loop-step">感情</div>
-          <div class="loop-arrow">→</div>
-          <div class="loop-step">行動</div>
-          <div class="loop-arrow">→</div>
-          <div class="loop-step">結果</div>
-          <div class="loop-arrow">→</div>
-          <div class="loop-step">信念強化</div>
-        </div>
-        <ul class="axis-list builtin">
-          <li><b>入力制御</b>: 刺激そのものを減らす・避ける（SNSを切る、特定の場面を避ける等）</li>
-          <li><b>解釈遅延</b>: 意味づけを保留する（「これが本当にそうか」を保留）</li>
-          <li><b>感情切断</b>: 感情から自動で発動する行動の連鎖を止める（一呼吸入れる）</li>
-          <li><b>行動固定</b>: 反射的な行動を別の行動に置き換える（憎しみが湧いたら散歩に出る等）</li>
-          <li><b>結果再定義</b>: 結果の意味を捉え直す（「失敗」ではなく「試行」）</li>
-        </ul>
-      </details>
-
-      <details class="axis-group">
-        <summary>層A/B/C モデル（セッションからの定義）</summary>
-        <ul class="axis-list builtin">
-          <li><b>層A（核心）</b>: 「ありのままでは愛されない」のような、幼少期からの自己への根本信念。解体するものではなく、気づいた瞬間に同化が解ける。</li>
-          <li><b>層B（中層）</b>: 比較・自己否定・欲求の抑圧といった思考と行動の癖。層Aを維持するループを作っている。</li>
-          <li><b>層C（表層）</b>: 外見、人間関係、始めるのが遅い等の具体的な悩み。Cだけ潰してもCが再生産される。</li>
-        </ul>
-        <p class="muted">AIに既存記録を層A/B/Cに再分類してもらうには、「AI分析」→「深さ層（層A/B/C）を再分類」を使います。</p>
-      </details>
-
-      <h3>カスタム軸</h3>
-      <ul id="custom-axes-list" class="axis-list"></ul>
-
-      <details class="axis-group">
-        <summary>新しい軸を追加</summary>
-        <form id="axis-form">
-          <label>
-            軸の名前
-            <input type="text" name="name" required maxlength="40" placeholder="例: 身体症状 / 価値観衝突 / 慢性度" />
-          </label>
-          <label>
-            種類
-            <select name="type">
-              <option value="select">選択肢</option>
-              <option value="number">数値（範囲）</option>
-              <option value="text">自由入力</option>
-            </select>
-          </label>
-          <div id="axis-options-wrap">
-            <label>
-              選択肢（カンマ区切り）
-              <input type="text" name="options" placeholder="例: あり, なし" />
-            </label>
-          </div>
-          <div id="axis-number-wrap" class="hidden">
-            <div class="row">
-              <label>最小値<input type="number" name="min" value="1" /></label>
-              <label>最大値<input type="number" name="max" value="10" /></label>
-            </div>
-          </div>
-          <label>
-            説明（任意）
-            <input type="text" name="description" placeholder="この軸が何を測るか、後から思い出せるメモ" />
-          </label>
-          <div class="actions">
-            <button type="submit" class="primary">追加</button>
-            <button type="reset">クリア</button>
-          </div>
-        </form>
-      </details>
-
-      <h3>よく使う軸のプリセット</h3>
-      <div class="actions preset-btns">
-        <button data-preset="direction">方向（外向き↔内向き）</button>
-        <button data-preset="emotion">感情の色（怒り↔悲しみ）</button>
-        <button data-preset="polarity">極性（+→- / -→- / -→+ / +→+）</button>
-        <button data-preset="chronicity">慢性度</button>
-        <button data-preset="valueConflict">価値観の衝突</button>
-        <button data-preset="body">身体への影響</button>
-        <button data-preset="meta">メタ感情</button>
-      </div>
-    </section>
 
     <section id="tab-settings" class="panel">
       <h2>設定</h2>
@@ -820,32 +403,13 @@
           JSONをインポート
           <input type="file" id="import-file" accept="application/json" hidden />
         </label>
-        <button id="load-sample-btn">サンプル（自分の悩みの種）を読み込む</button>
         <button id="clear-btn" class="danger">すべて削除</button>
       </div>
       <p class="muted">データはこのブラウザのlocalStorageにのみ保存されます。サーバーには送信されません（AI分析時のみAnthropic APIへ送信）。</p>
     </section>
   </main>
 
-  <template id="seed-item-template">
-    <li class="seed-item">
-      <div class="seed-head">
-        <span class="seed-title"></span>
-        <span class="seed-meta"></span>
-      </div>
-      <div class="seed-desc"></div>
-      <div class="seed-insight"></div>
-      <div class="seed-foot">
-        <span class="seed-tags"></span>
-        <span class="seed-actions">
-          <button class="edit-btn">編集</button>
-          <button class="del-btn">削除</button>
-        </span>
-      </div>
-    </li>
-  </template>
 
-  <script src="sample-data.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

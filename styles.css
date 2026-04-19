@@ -308,6 +308,74 @@ button.danger:hover { background: #fee2e2; }
 
 .hidden { display: none; }
 
+/* --- Person bar --- */
+.person-bar {
+  background: #eef2ff;
+  border-bottom: 1px solid #c7d2fe;
+  padding: 10px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  position: sticky;
+  top: 77px;
+  z-index: 9;
+}
+.person-label {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #3730a3;
+}
+.person-bar select,
+.person-bar input[type=text] {
+  margin: 0;
+  width: auto;
+  min-width: 160px;
+  font-size: 13px;
+  padding: 6px 10px;
+}
+.person-bar button {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.person-bar #person-new-wrap {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.person-bar .person-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+.person-badge {
+  display: inline-block;
+  background: #3730a3;
+  color: #fff;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.history-controls {
+  margin: 6px 0;
+  font-size: 12px;
+}
+.history-controls .inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  color: var(--muted);
+  font-weight: normal;
+  font-size: 12px;
+}
+.history-controls input[type=checkbox] { margin: 0 4px 0 0; }
+
 /* --- Axis UI --- */
 .axis-group {
   margin: 14px 0;
