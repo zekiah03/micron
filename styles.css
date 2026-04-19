@@ -32,14 +32,33 @@ body {
 
 .topbar h1 {
   margin: 0 0 12px;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .topbar .sub {
   font-size: 13px;
   color: var(--muted);
   font-weight: 400;
   margin-left: 8px;
+  letter-spacing: 0;
+}
+.logo-prism {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  position: relative;
+  flex-shrink: 0;
+}
+.logo-prism::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(50% 6%, 94% 88%, 6% 88%);
+  background: linear-gradient(135deg, #ef4444 0%, #f59e0b 20%, #10b981 45%, #3b82f6 70%, #8b5cf6 95%);
 }
 
 .tabs {
