@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>診断ツール</title>
+  <title>自己理解ノート</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="topbar">
-    <h1>診断ツール <span class="sub">多人数・統合分析</span></h1>
+    <h1>自己理解ノート <span class="sub">診断を通して自分を知る</span></h1>
     <nav class="tabs">
-      <button class="tab active" data-tab="diagnoses">診断</button>
-      <button class="tab" data-tab="summary">総合分析</button>
+      <button class="tab active" data-tab="diagnoses">診断を受ける</button>
+      <button class="tab" data-tab="summary">総合レポート</button>
       <button class="tab" data-tab="settings">設定</button>
     </nav>
   </header>
@@ -43,27 +43,45 @@
 
 
     <section id="tab-diagnoses" class="panel">
-      <nav class="sub-tabs">
-        <button class="sub-tab active" data-parent="diagnoses" data-sub="social">社会性</button>
-        <button class="sub-tab" data-parent="diagnoses" data-sub="effort">努力</button>
-        <button class="sub-tab" data-parent="diagnoses" data-sub="kolb">学習タイプ</button>
-        <button class="sub-tab" data-parent="diagnoses" data-sub="values">価値観</button>
-        <button class="sub-tab" data-parent="diagnoses" data-sub="thinking">思考スタイル</button>
-        <button class="sub-tab" data-parent="diagnoses" data-sub="johari">ジョハリの窓</button>
+      <nav class="sub-tabs diag-tabs">
+        <button class="sub-tab active" data-parent="diagnoses" data-sub="social">
+          <span class="st-title">人との関わり方</span>
+          <span class="st-desc">会話・共感・協調・主張・適応の5つの視点</span>
+        </button>
+        <button class="sub-tab" data-parent="diagnoses" data-sub="effort">
+          <span class="st-title">努力スタイル</span>
+          <span class="st-desc">量・質・設計・選択・持続でどう頑張るかを見る</span>
+        </button>
+        <button class="sub-tab" data-parent="diagnoses" data-sub="kolb">
+          <span class="st-title">学び方のタイプ</span>
+          <span class="st-desc">なぜ／なに／どうやって／今すぐ の4タイプ</span>
+        </button>
+        <button class="sub-tab" data-parent="diagnoses" data-sub="values">
+          <span class="st-title">大切にしているもの</span>
+          <span class="st-desc">自律・達成・関係・安定・成長の5つの価値観</span>
+        </button>
+        <button class="sub-tab" data-parent="diagnoses" data-sub="thinking">
+          <span class="st-title">考え方のクセ</span>
+          <span class="st-desc">論理・直感・創造・体系・全体の5つの思考軸</span>
+        </button>
+        <button class="sub-tab" data-parent="diagnoses" data-sub="johari">
+          <span class="st-title">自分と他者の見え方</span>
+          <span class="st-desc">自分と周りの認識のズレを4つの窓で整理</span>
+        </button>
       </nav>
 
     <section id="tab-social" class="sub-panel active" data-sub="social">
-      <h2>社会性診断</h2>
-      <p class="muted">MBTIライクな4択質問（全25問）で、社会性の5次元をプロファイルします。ブラウザ内で完結し、履歴も残せます。</p>
+      <h2>人との関わり方</h2>
+      <p class="muted">他の人とどう関わるか、あなたらしいパターンを5つの視点から見ていきます。全25問、「はい／どちらかといえばはい／どちらかといえばいいえ／いいえ」の4択。5〜8分ほどで終わります。</p>
 
       <details class="axis-group">
-        <summary>5つの次元の説明</summary>
+        <summary>5つの視点の説明</summary>
         <ul class="axis-list builtin">
-          <li><b>コミュニケーション能力</b>: 話す・聞く・非言語で関わる力</li>
-          <li><b>共感力</b>: 相手の気持ちを理解し寄り添う力</li>
-          <li><b>協調性</b>: 役割分担・調整・チームワーク</li>
-          <li><b>自己主張力</b>: 自分の意見を相手を尊重しつつ伝える力</li>
-          <li><b>社会的適応力</b>: 状況に合わせて柔軟に振る舞う力</li>
+          <li><b>コミュニケーション</b>: 話す・聞く・表情やしぐさで関わる力</li>
+          <li><b>共感力</b>: 相手の気持ちを感じ取り、寄り添う力</li>
+          <li><b>協調性</b>: 役割を分担して、チームで動く力</li>
+          <li><b>自己主張力</b>: 相手を大切にしながら、自分の意見を伝える力</li>
+          <li><b>社会的適応力</b>: 状況に合わせて振る舞いを変えられる柔軟さ</li>
         </ul>
       </details>
 
@@ -101,17 +119,17 @@
     </section>
 
     <section id="tab-effort" class="sub-panel" data-sub="effort">
-      <h2>努力診断</h2>
-      <p class="muted">「量／質／設計／選択／持続」の5次元で努力スタイルをプロファイルします（全25問・4択）。</p>
+      <h2>努力スタイル</h2>
+      <p class="muted">頑張り方には人それぞれの癖があります。量で押し切るタイプ、工夫を重ねるタイプ、コツコツ続けるタイプ…あなたはどんな努力スタイルですか？ 5つの側面で見ていきます。全25問・4択。</p>
 
       <details class="axis-group">
-        <summary>5つの次元の説明</summary>
+        <summary>5つの側面の説明</summary>
         <ul class="axis-list builtin">
-          <li><b>量</b>: 時間・回数・労力を投下する基礎力</li>
-          <li><b>質</b>: やり方を工夫する・フィードバックを取り込む力（deliberate practice）</li>
+          <li><b>量</b>: 時間・回数・労力を積み上げる力</li>
+          <li><b>質</b>: やり方を工夫する・フィードバックを取り込む力</li>
           <li><b>設計</b>: ゴールから逆算して計画を立てる力</li>
-          <li><b>選択</b>: 「何に努力するか」を選び、筋の悪い努力を降りる判断力</li>
-          <li><b>持続</b>: 恒毅力（grit）。燃え尽きず長期間続ける力</li>
+          <li><b>選択</b>: 「何に努力するか」を選び、合わないときは方向転換できる力</li>
+          <li><b>持続</b>: 燃え尽きずに長期間続ける力</li>
         </ul>
       </details>
 
@@ -149,16 +167,16 @@
     </section>
 
     <section id="tab-kolb" class="sub-panel" data-sub="kolb">
-      <h2>学習タイプ診断（Kolb）</h2>
-      <p class="muted">David Kolbの経験学習サイクルを基にした「なぜ／なに／どうやって／今すぐ」の4タイプ診断（全20問・4択）。</p>
+      <h2>学び方のタイプ</h2>
+      <p class="muted">新しいことを学ぶとき、まず何から入りたい？ 目的から？ データから？ 手順から？ それともとにかくやってみる？ 入り口のクセを4つのタイプで見ていきます。全20問・4択。(心理学者 David Kolb の経験学習理論をもとにしています)</p>
 
       <details class="axis-group">
         <summary>4タイプの説明</summary>
         <ul class="axis-list builtin">
-          <li><b>なぜタイプ</b>（Why / 理論・目的重視）: 「これをやる意味は？」が明確だと動ける。Diverging寄り。</li>
-          <li><b>なにタイプ</b>（What / 事実・データ重視）: 根拠と体系が揃うと安心して進める。Assimilating寄り。</li>
-          <li><b>どうやってタイプ</b>（How / 手順・プロセス重視）: 明確なステップで着実に実行。Converging寄り。</li>
-          <li><b>今すぐタイプ</b>（Now/If / 行動・実践重視）: まず試して結果から学ぶ。Accommodating寄り。</li>
+          <li><b>なぜタイプ</b>: 「これをやる意味は？」が明確だと動ける。長期ビジョン重視。</li>
+          <li><b>なにタイプ</b>: データや根拠が揃うと安心して進める。事実重視。</li>
+          <li><b>どうやってタイプ</b>: 手順・ステップが明確だと着実に実行できる。プロセス重視。</li>
+          <li><b>今すぐタイプ</b>: まず試してみて、結果から学ぶ。行動重視。</li>
         </ul>
       </details>
 
@@ -196,17 +214,17 @@
     </section>
 
     <section id="tab-values" class="sub-panel" data-sub="values">
-      <h2>価値観診断</h2>
-      <p class="muted">「自律／達成／関係／安定／成長」の5次元で何を大切にしているかを可視化（全25問・4択）。</p>
+      <h2>大切にしているもの</h2>
+      <p class="muted">何を軸に生きているか、何が満たされると元気になるか、何が欠けると苦しいか。あなたの価値観を5つの視点で見ていきます。全25問・4択。</p>
 
       <details class="axis-group">
-        <summary>5つの次元の説明</summary>
+        <summary>5つの価値観の説明</summary>
         <ul class="axis-list builtin">
-          <li><b>自律</b>: 自分で決めたい・束縛を嫌う</li>
-          <li><b>達成</b>: 成果・結果を出すことに意味を感じる</li>
-          <li><b>関係</b>: 人との繋がりを大事にする</li>
-          <li><b>安定</b>: 予測可能性・安心を求める</li>
-          <li><b>成長</b>: 新しい刺激・挑戦を求める</li>
+          <li><b>自律</b>: 自分で決めたい、束縛されたくない</li>
+          <li><b>達成</b>: 成果や結果が出ると手応えを感じる</li>
+          <li><b>関係</b>: 人とのつながりが心の支えになる</li>
+          <li><b>安定</b>: 予測できる日常に安心を感じる</li>
+          <li><b>成長</b>: 新しい刺激・挑戦に惹かれる</li>
         </ul>
       </details>
 
@@ -244,17 +262,17 @@
     </section>
 
     <section id="tab-thinking" class="sub-panel" data-sub="thinking">
-      <h2>思考スタイル診断</h2>
-      <p class="muted">「論理／直感／創造／体系／全体」の5次元で考え方の癖を可視化（全25問・4択）。</p>
+      <h2>考え方のクセ</h2>
+      <p class="muted">物事をどう捉えるクセがあるか。論理的に追いかける？ 直感で掴む？ 枠の外に飛ぶ？ きれいに整理する？ 全体像から見る？ 5つの思考軸で見ていきます。全25問・4択。</p>
 
       <details class="axis-group">
-        <summary>5つの次元の説明</summary>
+        <summary>5つの思考軸の説明</summary>
         <ul class="axis-list builtin">
-          <li><b>論理</b>: 筋道立てて分析する</li>
+          <li><b>論理</b>: 筋道を立てて分析する</li>
           <li><b>直感</b>: 感覚で素早く掴む</li>
           <li><b>創造</b>: 既存の枠から外れて発想する</li>
           <li><b>体系</b>: 順序立てて整理する</li>
-          <li><b>全体</b>: 大きな絵で捉える</li>
+          <li><b>全体</b>: 大きな絵で物事を捉える</li>
         </ul>
       </details>
 
@@ -292,16 +310,16 @@
     </section>
 
     <section id="tab-johari" class="sub-panel" data-sub="johari">
-      <h2>ジョハリの窓</h2>
-      <p class="muted">「自分から見た自分」と「他者から見た自分（フィードバック）」を選び、4つの窓に自動振り分けします。</p>
+      <h2>自分と他者の見え方</h2>
+      <p class="muted">「自分が思っている自分」と「他の人から見えている自分」を照らし合わせると、4つの領域が見えてきます。自己理解と人間関係を深めるためのワークです。<br/><span class="muted" style="font-size:11px">(心理学モデル「ジョハリの窓」を元にしています)</span></p>
 
       <details class="axis-group">
-        <summary>4つの窓の説明</summary>
+        <summary>4つの領域の説明</summary>
         <ul class="axis-list builtin">
-          <li><b>開放の窓</b>: 自分も他者も知っている部分。広いほど信頼関係が築きやすい。</li>
-          <li><b>盲点の窓</b>: 自分は知らないが他者は知っている部分。フィードバックで縮められる。</li>
-          <li><b>秘密の窓</b>: 自分は知っているが他者には伝えていない部分。適度な開示で関係が深まる。</li>
-          <li><b>未知の窓</b>: どちらも気づいていない可能性。新しい挑戦・自己探求で発見される領域。</li>
+          <li><b>開放領域</b>: 自分も他の人も知っている部分。ここが広いほど信頼関係が築きやすい。</li>
+          <li><b>盲点領域</b>: 自分は気づいていないが、他の人からは見えている部分。フィードバックで気づける。</li>
+          <li><b>秘密領域</b>: 自分は知っているが、他の人に伝えていない部分。適度な開示で関係が深まる。</li>
+          <li><b>未知領域</b>: どちらもまだ気づいていない可能性。新しい挑戦や対話で発見される部分。</li>
         </ul>
       </details>
 
@@ -352,24 +370,24 @@
     </section><!-- /tab-diagnoses -->
 
     <section id="tab-summary" class="panel">
-      <h2>総合分析</h2>
-      <p class="muted">上部で選択中の「現在の人物」の各診断スコアを束ねてClaudeに渡し、一人の人物像として統合解析します。結果は人物ごとに履歴保存されます。</p>
+      <h2>総合レポート</h2>
+      <p class="muted">上部で選択中の「現在の人物」の、受けた診断をすべて束ねて、一人の人物像としてAIに読み解いてもらいます。強み・葛藤・次の一歩まで、人物ごとのレポートとして履歴に残ります。</p>
 
-      <h3>対象人物</h3>
+      <h3>レポート対象</h3>
       <div id="summary-person-info" class="muted">上部の「現在の人物」を選択してください。</div>
 
-      <h3>含まれる最新スコア（この人の）</h3>
+      <h3>含まれる最新スコア</h3>
       <div id="summary-snapshot" class="summary-snapshot"></div>
 
       <div class="actions">
-        <button id="summary-run" class="primary">AIで総合分析を実行</button>
+        <button id="summary-run" class="primary">AIでレポートを作成</button>
         <button id="summary-copy">結果をコピー</button>
       </div>
 
       <div id="summary-status" class="muted"></div>
       <article id="summary-output" class="ai-output"></article>
 
-      <h3>分析履歴（全員分）</h3>
+      <h3>レポート履歴（全員分）</h3>
       <div class="filters">
         <input type="search" id="summary-filter" placeholder="名前で絞り込み" />
         <label class="inline"><input type="checkbox" id="summary-only-current" /> 現在の人物のみ</label>

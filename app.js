@@ -714,7 +714,7 @@
         </div>
         <div class="result-interpret">${escapeHtml(interpretSocial(scores, high, low, avg))}</div>
         <div class="actions">
-          <button id="social-ai-comment">AIで深掘りコメント</button>
+          <button id="social-ai-comment">AIに詳しく解説してもらう</button>
           <button id="social-retry">もう一度受ける</button>
         </div>
         <div id="social-ai-output" class="ai-output" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
@@ -803,7 +803,7 @@
     out.style.display = 'block';
     out.textContent = '分析中...';
     const payload = SOCIAL_DIMENSIONS.map(d => `${d.label}: ${record.scores[d.key]}`).join('\n');
-    const system = 'あなたは思慮深い心理カウンセラーです。MBTI 風の簡易診断の結果を、決めつけず、本人の自己理解に役立つ形で日本語で解説します。';
+    const system = 'あなたは思慮深い心理カウンセラーです。自己診断の結果を、決めつけず、本人の自己理解に役立つ形で日本語で解説します。';
     const user = [
       '以下は社会性の5次元スコアです（0〜100）。',
       'それぞれの意味合い、全体のプロファイル、アンバランスがある場合はその構造、伸ばすヒント、注意点を400字程度でまとめてください。',
@@ -949,7 +949,7 @@
     effortResult.innerHTML = `
       <div class="result-card">
         <div class="result-head">
-          <h3>努力プロファイル: <span style="color:${high.color}">${escapeHtml(type.name)}</span></h3>
+          <h3>努力スタイル: <span style="color:${high.color}">${escapeHtml(type.name)}</span></h3>
           <span class="muted">${escapeHtml(formatDate(record.date))}</span>
         </div>
         <div class="result-grid">
@@ -971,7 +971,7 @@
         </div>
         <div class="result-interpret">${escapeHtml(type.description)} ${escapeHtml(interpretEffort(high, low))}</div>
         <div class="actions">
-          <button id="effort-ai-comment">AIで深掘りコメント</button>
+          <button id="effort-ai-comment">AIに詳しく解説してもらう</button>
           <button id="effort-retry">もう一度受ける</button>
         </div>
         <div id="effort-ai-output" class="ai-output" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
@@ -1085,11 +1085,11 @@
   // ---------- Cross-reference helper for AI ----------
   function buildCrossReferences(except) {
     const sections = [
-      { key: 'social',   label: '社会性',     dims: SOCIAL_DIMENSIONS,   list: state.socialAssessments },
-      { key: 'effort',   label: '努力',       dims: EFFORT_DIMENSIONS,   list: state.effortAssessments },
-      { key: 'kolb',     label: '学習タイプ', dims: KOLB_DIMENSIONS,     list: state.kolbAssessments },
-      { key: 'values',   label: '価値観',     dims: VALUES_DIMENSIONS,   list: state.valuesAssessments },
-      { key: 'thinking', label: '思考スタイル', dims: THINKING_DIMENSIONS, list: state.thinkingAssessments },
+      { key: 'social',   label: '人との関わり方',     dims: SOCIAL_DIMENSIONS,   list: state.socialAssessments },
+      { key: 'effort',   label: '努力スタイル',       dims: EFFORT_DIMENSIONS,   list: state.effortAssessments },
+      { key: 'kolb',     label: '学び方のタイプ',     dims: KOLB_DIMENSIONS,     list: state.kolbAssessments },
+      { key: 'values',   label: '大切にしているもの', dims: VALUES_DIMENSIONS,   list: state.valuesAssessments },
+      { key: 'thinking', label: '考え方のクセ',       dims: THINKING_DIMENSIONS, list: state.thinkingAssessments },
     ];
     const parts = [];
     for (const s of sections) {
@@ -1101,9 +1101,9 @@
     if (except !== 'johari' && state.johariSessions[0]) {
       const j = state.johariSessions[0];
       const w = computeJohariWindows(j);
-      parts.push(`## 直近のジョハリの窓\n開放: ${w.open.length}個 / 盲点: ${w.blind.length}個 / 秘密: ${w.hidden.length}個 / 未知の余地: ${w.unknown.length}個` +
-        (w.blind.length ? `\n盲点のトレイト例: ${w.blind.slice(0, 5).join(', ')}` : '') +
-        (w.hidden.length ? `\n秘密のトレイト例: ${w.hidden.slice(0, 5).join(', ')}` : ''));
+      parts.push(`## 直近の「自分と他者の見え方」\n開放: ${w.open.length}個 / 盲点: ${w.blind.length}個 / 秘密: ${w.hidden.length}個 / 未知の余地: ${w.unknown.length}個` +
+        (w.blind.length ? `\n盲点（他者だけが認識）の例: ${w.blind.slice(0, 5).join(', ')}` : '') +
+        (w.hidden.length ? `\n秘密（自分だけが認識）の例: ${w.hidden.slice(0, 5).join(', ')}` : ''));
     }
     return parts.length ? parts.join('\n\n') : '（他の診断はまだ受けていません）';
   }
@@ -1221,7 +1221,7 @@
         </div>
         <div class="result-interpret">${escapeHtml(advice)}</div>
         <div class="actions">
-          <button id="kolb-ai-comment">AIで深掘りコメント（社会性・努力との関連も）</button>
+          <button id="kolb-ai-comment">AIに詳しく解説してもらう（他の診断との関連も）</button>
           <button id="kolb-retry">もう一度受ける</button>
         </div>
         <div id="kolb-ai-output" class="ai-output" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
@@ -1334,7 +1334,7 @@
       stability:   'あなたは「予測可能性」が安心の源。変化のストレスが大きいので、変化を避けるのではなく、小さなステップに分解して試すと適応コストが下がります。',
       growth:      'あなたは「成長・刺激」が燃料。同じことの繰り返しで失速しやすいので、3ヶ月ごとに学習対象を意識的に変える運用が合います。',
     })[top] || '',
-    aiSystem: 'あなたは価値観研究（Schwartzら）に詳しいコーチです。価値観プロファイルを他の診断と統合して、本人が大事にしているものと現在の生き方のズレを優しく指摘します。',
+    aiSystem: 'あなたは価値観研究に詳しいコーチです。「大切にしているもの」のプロファイルを他の診断と統合して、本人が大事にしているものと現在の生き方のズレを優しく指摘します。',
     aiUser: (payload, scores) => [
       '以下は価値観の5次元スコア（0〜100）です。',
       '何を大切にしているかのプロファイル、価値観間の葛藤の可能性（例: 自律↑ × 関係↑ → 自立と繋がりの両立緊張）、',
@@ -1475,7 +1475,7 @@
       resultEl.innerHTML = `
         <div class="result-card">
           <div class="result-head">
-            <h3>${escapeHtml(prefix === 'values' ? '価値観プロファイル' : '思考スタイル')}: <span style="color:${profile.color}">${escapeHtml(profile.name)}</span></h3>
+            <h3>${escapeHtml(prefix === 'values' ? '大切にしているもの' : '考え方のクセ')}: <span style="color:${profile.color}">${escapeHtml(profile.name)}</span></h3>
             <span class="muted">${escapeHtml(formatDate(record.date))}</span>
           </div>
           <div class="result-grid">
@@ -1497,7 +1497,7 @@
           </div>
           <div class="result-interpret">${escapeHtml(advice)}</div>
           <div class="actions">
-            <button class="ai-btn" data-id="${record.id}">AIで深掘りコメント（他診断との関連も）</button>
+            <button class="ai-btn" data-id="${record.id}">AIに詳しく解説してもらう（他の診断との関連も）</button>
             <button class="retry-btn">もう一度受ける</button>
           </div>
           <div class="ai-output ai-out" data-id="${record.id}" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
@@ -1726,7 +1726,7 @@
     resEl.innerHTML = `
       <div class="result-card">
         <div class="result-head">
-          <h3>ジョハリの窓: ${escapeHtml(session.scope || '全体')}</h3>
+          <h3>自分と他者の見え方: ${escapeHtml(session.scope || '全体')}</h3>
           <span class="muted">${escapeHtml(formatDate(session.date))}</span>
         </div>
         <div class="johari-grid">
@@ -1749,7 +1749,7 @@
         </div>
         <div class="result-interpret">${escapeHtml(interpret)}</div>
         <div class="actions">
-          <button id="johari-ai-comment">AIで深掘りコメント（他診断との関連も）</button>
+          <button id="johari-ai-comment">AIに詳しく解説してもらう（他の診断との関連も）</button>
           <button id="johari-edit">この内容を編集する</button>
         </div>
         <div id="johari-ai-output" class="ai-output" style="${session.aiCommentary ? '' : 'display:none'}">${escapeHtml(session.aiCommentary || '')}</div>
@@ -1805,9 +1805,9 @@
       `秘密（自分だけが認識）: ${w.hidden.join(', ') || 'なし'}`,
       `未知（どちらも未選択）: ${w.unknown.length}個`,
     ].join('\n');
-    const system = 'あなたはジョハリの窓を使ったコーチングに詳しい心理カウンセラーです。本人の窓のバランスと他診断を統合して、次の一歩を優しく日本語で示します。';
+    const system = 'あなたはジョハリの窓モデルを使ったコーチングに詳しい心理カウンセラーです。本人の自己認識と他者からの見え方のズレを統合的に読み解き、次の一歩を優しく日本語で示します。';
     const user = [
-      '以下はジョハリの窓の集計です。',
+      '以下は「自分から見た自分」と「他者から見た自分」の集計です（ジョハリの窓モデル）。',
       '4つの窓のバランスから読み取れる「他者との関係の現在地」を一文でまとめ、',
       '盲点・秘密のトレイトに具体的に触れながら、開放の窓を広げるための小さな実験を1つ提案してください。',
       '他の診断スコアがあれば、整合・矛盾を指摘してください（500字程度）。',
@@ -1829,11 +1829,11 @@
   // ---------- Summary (comprehensive) analysis ----------
   function summaryDiagnostics() {
     return [
-      { key: 'social',   label: '社会性',     dims: SOCIAL_DIMENSIONS,   list: state.socialAssessments },
-      { key: 'effort',   label: '努力',       dims: EFFORT_DIMENSIONS,   list: state.effortAssessments },
-      { key: 'kolb',     label: '学習タイプ', dims: KOLB_DIMENSIONS,     list: state.kolbAssessments },
-      { key: 'values',   label: '価値観',     dims: VALUES_DIMENSIONS,   list: state.valuesAssessments },
-      { key: 'thinking', label: '思考スタイル', dims: THINKING_DIMENSIONS, list: state.thinkingAssessments },
+      { key: 'social',   label: '人との関わり方',     dims: SOCIAL_DIMENSIONS,   list: state.socialAssessments },
+      { key: 'effort',   label: '努力スタイル',       dims: EFFORT_DIMENSIONS,   list: state.effortAssessments },
+      { key: 'kolb',     label: '学び方のタイプ',     dims: KOLB_DIMENSIONS,     list: state.kolbAssessments },
+      { key: 'values',   label: '大切にしているもの', dims: VALUES_DIMENSIONS,   list: state.valuesAssessments },
+      { key: 'thinking', label: '考え方のクセ',       dims: THINKING_DIMENSIONS, list: state.thinkingAssessments },
     ];
   }
 
@@ -1878,12 +1878,12 @@
     if (johari) {
       const w = computeJohariWindows(johari);
       cards.push(`<div class="snap-card">
-        <div class="snap-label">ジョハリの窓</div>
+        <div class="snap-label">自分と他者の見え方</div>
         <div class="snap-meta">開放 ${w.open.length} / 盲点 ${w.blind.length} / 秘密 ${w.hidden.length}</div>
         <div class="muted" style="font-size:11px">${escapeHtml(johari.scope || '全体')}</div>
       </div>`);
     } else {
-      cards.push(`<div class="snap-card empty"><div class="snap-label">ジョハリの窓</div><div class="snap-empty">未診断</div></div>`);
+      cards.push(`<div class="snap-card empty"><div class="snap-label">自分と他者の見え方</div><div class="snap-empty">未診断</div></div>`);
     }
     snap.innerHTML = cards.join('');
     renderSummaryHistory();
@@ -1927,14 +1927,14 @@
     const johari = latestForPerson(state.johariSessions, state.currentPerson);
     if (johari) {
       const w = computeJohariWindows(johari);
-      payloadParts.push(`## ジョハリの窓（${johari.scope || '全体'} / ${formatDate(johari.date)}）
-開放: ${w.open.join(', ') || 'なし'}
-盲点: ${w.blind.join(', ') || 'なし'}
-秘密: ${w.hidden.join(', ') || 'なし'}
+      payloadParts.push(`## 自分と他者の見え方（${johari.scope || '全体'} / ${formatDate(johari.date)}）
+開放（自他共通）: ${w.open.join(', ') || 'なし'}
+盲点（他者だけ）: ${w.blind.join(', ') || 'なし'}
+秘密（自分だけ）: ${w.hidden.join(', ') || 'なし'}
 未知の余地: ${w.unknown.length}個`);
       snapshot.diagnostics.johari = { open: w.open, blind: w.blind, hidden: w.hidden, unknownCount: w.unknown.length, scope: johari.scope, date: johari.date };
     } else {
-      payloadParts.push('## ジョハリの窓\n（未診断）');
+      payloadParts.push('## 自分と他者の見え方\n（未診断）');
       snapshot.diagnostics.johari = null;
     }
 
