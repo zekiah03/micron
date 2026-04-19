@@ -451,6 +451,22 @@
 
   <div id="toast" class="toast hidden"></div>
 
+  <script>
+    // --- Welcome overlay (runs independently of main app.js so it always works) ---
+    (function(){
+      var WK = 'prism-welcomed-v1';
+      function show(){ var el = document.getElementById('welcome'); if(!el) return; el.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+      function hide(){ var el = document.getElementById('welcome'); if(!el) return; el.classList.add('hidden'); document.body.style.overflow = ''; try { localStorage.setItem(WK, '1'); } catch(e){} }
+      document.addEventListener('click', function(e){
+        if (e.target.closest && e.target.closest('#welcome-start')) { e.preventDefault(); hide(); return; }
+        if (e.target.closest && e.target.closest('#show-welcome')) { e.preventDefault(); show(); return; }
+        // click outside card → dismiss
+        var overlay = document.getElementById('welcome');
+        if (overlay && e.target === overlay) hide();
+      });
+      try { if (!localStorage.getItem(WK)) show(); } catch(e) { show(); }
+    })();
+  </script>
   <script src="app.js"></script>
 </body>
 </html>

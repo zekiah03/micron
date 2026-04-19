@@ -7,7 +7,6 @@
   const THINKING_KEY = 'nayami-thinking-v1';
   const JOHARI_KEY = 'nayami-johari-v1';
   const SUMMARY_KEY = 'nayami-summary-v1';
-  const WELCOME_KEY = 'prism-welcomed-v1';
 
   const JOHARI_TRAITS = [
     '明るい', '静か', '親切', '几帳面', '大胆', '慎重', '創造的', '論理的', '共感的', '独立心が強い',
@@ -1963,22 +1962,4 @@
   renderThinkingHistory();
   renderJohari();
   renderSummary();
-
-  // ---------- Welcome / Intro ----------
-  const welcomeEl = document.getElementById('welcome');
-  function showWelcome() {
-    welcomeEl.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-  }
-  function hideWelcome() {
-    welcomeEl.classList.add('hidden');
-    document.body.style.overflow = '';
-    try { localStorage.setItem(WELCOME_KEY, '1'); } catch {}
-  }
-  document.getElementById('welcome-start').addEventListener('click', hideWelcome);
-  welcomeEl.addEventListener('click', (e) => {
-    if (e.target === welcomeEl) hideWelcome();
-  });
-  document.getElementById('show-welcome').addEventListener('click', showWelcome);
-  if (!localStorage.getItem(WELCOME_KEY)) showWelcome();
 })();
