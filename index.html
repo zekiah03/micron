@@ -13,7 +13,7 @@
   <meta name="twitter:title" content="Prism — 自分を6つの角度から見る" />
   <meta name="twitter:description" content="6つの診断であなたを多面的にプロファイル。AIが統合レポートを作成します。" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23000%22%20stroke%3D%22%23000%22%20stroke-width%3D%222%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%203%20L21.5%2020%20L2.5%2020%20Z%22%20fill%3D%22none%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2211%22%20r%3D%221.15%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%2214.6%22%20cy%3D%2212.5%22%20r%3D%221.15%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%2214.6%22%20cy%3D%2215.5%22%20r%3D%221.15%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2217%22%20r%3D%221.15%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%229.4%22%20cy%3D%2215.5%22%20r%3D%221.15%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%229.4%22%20cy%3D%2212.5%22%20r%3D%221.15%22%20stroke%3D%22none%22%2F%3E%3C%2Fsvg%3E" />
-  <link rel="stylesheet" href="styles.css?v=5" />
+  <link rel="stylesheet" href="styles.css?v=6" />
 </head>
 <body>
   <div id="welcome" class="welcome-overlay hidden">
@@ -115,6 +115,18 @@
         <button class="sub-tab" data-parent="diagnoses" data-sub="johari">
           <span class="st-title">自分と他者の見え方</span>
           <span class="st-desc">自分と周りの認識のズレを4つの窓で整理</span>
+        </button>
+        <button class="sub-tab" data-parent="diagnoses" data-sub="mindfulness">
+          <span class="st-title">マインドフルネス</span>
+          <span class="st-desc">気づき・受容・観察の3側面で「今ここ」を見る</span>
+        </button>
+        <button class="sub-tab" data-parent="diagnoses" data-sub="timeperspective">
+          <span class="st-title">時間展望</span>
+          <span class="st-desc">過去・現在・未来のどこに意識が向くか（5次元）</span>
+        </button>
+        <button class="sub-tab" data-parent="diagnoses" data-sub="resilience">
+          <span class="st-title">レジリエンス</span>
+          <span class="st-desc">適応・粘り・楽観の3側面で回復力を見る</span>
         </button>
       </nav>
 
@@ -397,6 +409,94 @@
       <ul id="johari-history" class="social-history"></ul>
     </section>
 
+    <!-- ===== Extension modules (Phase 2) ===== -->
+
+    <section id="tab-mindfulness" class="sub-panel" data-sub="mindfulness">
+      <h2>マインドフルネス</h2>
+      <p class="muted">「今この瞬間」への気づき・受容・観察の3つの側面で、心の在り方を見ます。全12問・4択。</p>
+      <details class="axis-group">
+        <summary>3つの側面</summary>
+        <ul class="axis-list builtin">
+          <li><b>気づき</b>: 今この瞬間に意識が向いている度合い</li>
+          <li><b>受容</b>: 評価せず体験を受け入れる力</li>
+          <li><b>観察</b>: 内面の動きを距離を置いて見守る力</li>
+        </ul>
+      </details>
+      <div id="mindfulness-intro"><div class="actions"><button id="mindfulness-start" class="primary">診断を開始する</button></div></div>
+      <div id="mindfulness-quiz" class="hidden">
+        <div class="quiz-progress"><div class="quiz-progress-bar"><div id="mindfulness-progress-fill"></div></div><span id="mindfulness-progress-text"></span></div>
+        <div class="quiz-question" id="mindfulness-question"></div>
+        <div class="quiz-choices">
+          <button class="mindfulness-choice" data-val="4">はい</button>
+          <button class="mindfulness-choice" data-val="3">どちらかといえばはい</button>
+          <button class="mindfulness-choice" data-val="2">どちらかといえばいいえ</button>
+          <button class="mindfulness-choice" data-val="1">いいえ</button>
+        </div>
+        <div class="actions"><button id="mindfulness-back">← 前の質問</button><button id="mindfulness-cancel">中断</button></div>
+      </div>
+      <div id="mindfulness-result" class="hidden"></div>
+      <h3>診断履歴</h3>
+      <ul id="mindfulness-history" class="social-history"></ul>
+    </section>
+
+    <section id="tab-timeperspective" class="sub-panel" data-sub="timeperspective">
+      <h2>時間展望</h2>
+      <p class="muted">「過去・現在・未来」のどこに意識が向いているか。Zimbardo の時間展望理論に基づく5次元プロファイル。全15問・4択。</p>
+      <details class="axis-group">
+        <summary>5つの次元</summary>
+        <ul class="axis-list builtin">
+          <li><b>過去否定</b>: 過去の失敗や後悔への傾倒</li>
+          <li><b>過去肯定</b>: 過去への温かい愛着</li>
+          <li><b>現在快楽</b>: 今の楽しみを優先</li>
+          <li><b>現在運命</b>: 流れに身を任せる</li>
+          <li><b>未来志向</b>: 計画と目標を中心に置く</li>
+        </ul>
+      </details>
+      <div id="timeperspective-intro"><div class="actions"><button id="timeperspective-start" class="primary">診断を開始する</button></div></div>
+      <div id="timeperspective-quiz" class="hidden">
+        <div class="quiz-progress"><div class="quiz-progress-bar"><div id="timeperspective-progress-fill"></div></div><span id="timeperspective-progress-text"></span></div>
+        <div class="quiz-question" id="timeperspective-question"></div>
+        <div class="quiz-choices">
+          <button class="timeperspective-choice" data-val="4">はい</button>
+          <button class="timeperspective-choice" data-val="3">どちらかといえばはい</button>
+          <button class="timeperspective-choice" data-val="2">どちらかといえばいいえ</button>
+          <button class="timeperspective-choice" data-val="1">いいえ</button>
+        </div>
+        <div class="actions"><button id="timeperspective-back">← 前の質問</button><button id="timeperspective-cancel">中断</button></div>
+      </div>
+      <div id="timeperspective-result" class="hidden"></div>
+      <h3>診断履歴</h3>
+      <ul id="timeperspective-history" class="social-history"></ul>
+    </section>
+
+    <section id="tab-resilience" class="sub-panel" data-sub="resilience">
+      <h2>レジリエンス</h2>
+      <p class="muted">困難からの回復力を「適応力・粘り強さ・楽観性」の3側面で測ります。全12問・4択。</p>
+      <details class="axis-group">
+        <summary>3つの側面</summary>
+        <ul class="axis-list builtin">
+          <li><b>適応力</b>: 変化への柔軟な対応</li>
+          <li><b>粘り強さ</b>: 困難を乗り越える持続力</li>
+          <li><b>楽観性</b>: 前向きに捉える傾向</li>
+        </ul>
+      </details>
+      <div id="resilience-intro"><div class="actions"><button id="resilience-start" class="primary">診断を開始する</button></div></div>
+      <div id="resilience-quiz" class="hidden">
+        <div class="quiz-progress"><div class="quiz-progress-bar"><div id="resilience-progress-fill"></div></div><span id="resilience-progress-text"></span></div>
+        <div class="quiz-question" id="resilience-question"></div>
+        <div class="quiz-choices">
+          <button class="resilience-choice" data-val="4">はい</button>
+          <button class="resilience-choice" data-val="3">どちらかといえばはい</button>
+          <button class="resilience-choice" data-val="2">どちらかといえばいいえ</button>
+          <button class="resilience-choice" data-val="1">いいえ</button>
+        </div>
+        <div class="actions"><button id="resilience-back">← 前の質問</button><button id="resilience-cancel">中断</button></div>
+      </div>
+      <div id="resilience-result" class="hidden"></div>
+      <h3>診断履歴</h3>
+      <ul id="resilience-history" class="social-history"></ul>
+    </section>
+
     </section><!-- /tab-diagnoses -->
 
     <section id="tab-summary" class="panel">
@@ -494,6 +594,6 @@
       }
     })();
   </script>
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>

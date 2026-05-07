@@ -1083,7 +1083,13 @@ button.loading::after {
 #effort-progress-fill,
 #kolb-progress-fill,
 #values-progress-fill,
-#thinking-progress-fill {
+#thinking-progress-fill,
+#mindfulness-progress-fill,
+#timeperspective-progress-fill,
+#resilience-progress-fill,
+#mindset-progress-fill,
+#regfocus-progress-fill,
+#attachment-progress-fill {
   height: 100%;
   width: 0;
   background: var(--brand);
@@ -1172,7 +1178,9 @@ button.loading::after {
   font-weight: 600;
 }
 
-.values-choice, .thinking-choice {
+.values-choice, .thinking-choice,
+.mindfulness-choice, .timeperspective-choice, .resilience-choice,
+.mindset-choice, .regfocus-choice, .attachment-choice {
   padding: 14px 16px;
   font-size: 14px;
   text-align: left;
@@ -1183,8 +1191,14 @@ button.loading::after {
   font-family: inherit;
   transition: all 0.1s;
 }
-.values-choice:hover, .thinking-choice:hover { border-color: var(--brand); background: #f5f3ff; }
-.values-choice.selected, .thinking-choice.selected {
+.values-choice:hover, .thinking-choice:hover,
+.mindfulness-choice:hover, .timeperspective-choice:hover, .resilience-choice:hover,
+.mindset-choice:hover, .regfocus-choice:hover, .attachment-choice:hover {
+  border-color: var(--brand); background: #f5f3ff;
+}
+.values-choice.selected, .thinking-choice.selected,
+.mindfulness-choice.selected, .timeperspective-choice.selected, .resilience-choice.selected,
+.mindset-choice.selected, .regfocus-choice.selected, .attachment-choice.selected {
   border-color: var(--brand);
   background: #eef2ff;
   color: var(--brand);

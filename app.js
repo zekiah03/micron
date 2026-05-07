@@ -7,6 +7,13 @@
   const THINKING_KEY = 'nayami-thinking-v1';
   const JOHARI_KEY = 'nayami-johari-v1';
   const SUMMARY_KEY = 'nayami-summary-v1';
+  // Extension modules (THEORY.md §7)
+  const MINDFULNESS_KEY = 'prism-mindfulness-v1';
+  const TIMEPERSP_KEY = 'prism-timeperspective-v1';
+  const RESILIENCE_KEY = 'prism-resilience-v1';
+  const MINDSET_KEY = 'prism-mindset-v1';
+  const REGFOCUS_KEY = 'prism-regfocus-v1';
+  const ATTACHMENT_KEY = 'prism-attachment-v1';
 
   const JOHARI_TRAITS = [
     '明るい', '静か', '親切', '几帳面', '大胆', '慎重', '創造的', '論理的', '共感的', '独立心が強い',
@@ -213,6 +220,76 @@
     { dim: 'adaptation', text: '多様な世代・文化の人とも関係を築ける' },
   ];
 
+  // ===== Extension modules (Phase 2 of THEORY.md §7) =====
+
+  // マインドフルネス (Mindfulness) — 3 dim
+  const MINDFULNESS_DIMENSIONS = [
+    { key: 'awareness',   label: '気づき', color: '#06b6d4', description: '今この瞬間に意識が向いている' },
+    { key: 'acceptance',  label: '受容',   color: '#10b981', description: '評価せず体験を受け入れる' },
+    { key: 'observation', label: '観察',   color: '#8b5cf6', description: '内面の動きを見守る' },
+  ];
+  const MINDFULNESS_QUESTIONS = [
+    { dim: 'awareness', text: '今この瞬間にしていることに意識を向けられる' },
+    { dim: 'awareness', text: '食事のとき、味や食感をしっかり感じて食べる' },
+    { dim: 'awareness', text: '歩いているとき、体の動きや周囲を意識できる' },
+    { dim: 'awareness', text: '考え事に飲み込まれずに、今に戻ってこられる' },
+    { dim: 'acceptance', text: '不快な感情も否定せず、そのまま受け入れられる' },
+    { dim: 'acceptance', text: '失敗した自分を責めず、ありのまま見つめられる' },
+    { dim: 'acceptance', text: '感情を「良い／悪い」と評価せず、ただ感じる' },
+    { dim: 'acceptance', text: '思い通りにならない状況でも、抗わず受け止められる' },
+    { dim: 'observation', text: '頭に浮かぶ考えを、距離を置いて眺められる' },
+    { dim: 'observation', text: '体の感覚（呼吸・緊張・温度）に気づくことが多い' },
+    { dim: 'observation', text: '感情が湧いた時、それを観察する余裕がある' },
+    { dim: 'observation', text: '反応する前に、自分の内面に気づくことができる' },
+  ];
+
+  // 時間展望 (Time Perspective, ZTPI-15 inspired) — 5 dim
+  const TIMEPERSP_DIMENSIONS = [
+    { key: 'past_neg',  label: '過去否定', color: '#6b7280', description: '過去への後悔・否定的記憶' },
+    { key: 'past_pos',  label: '過去肯定', color: '#10b981', description: '過去への温かい愛着' },
+    { key: 'present_h', label: '現在快楽', color: '#f59e0b', description: '今この瞬間の楽しみを優先' },
+    { key: 'present_f', label: '現在運命', color: '#8b5cf6', description: '運命や流れに身を任せる' },
+    { key: 'future',    label: '未来志向', color: '#3b82f6', description: '計画・目標・将来を中心に置く' },
+  ];
+  const TIMEPERSP_QUESTIONS = [
+    { dim: 'past_neg', text: '過去の失敗や後悔を思い出してしまうことが多い' },
+    { dim: 'past_neg', text: 'やらなかったことを引きずって悩むことがある' },
+    { dim: 'past_neg', text: '昔の出来事が今でも心に重くのしかかる' },
+    { dim: 'past_pos', text: '昔の良い思い出を懐かしく思い出すことが多い' },
+    { dim: 'past_pos', text: '過去の家族や友人との時間を温かく振り返れる' },
+    { dim: 'past_pos', text: 'これまでの経験全体を肯定的に受け止めている' },
+    { dim: 'present_h', text: '今この瞬間を楽しむことを優先する' },
+    { dim: 'present_h', text: '気の向いた時に、好きなことをする' },
+    { dim: 'present_h', text: '将来のことより、今の楽しさが大事だ' },
+    { dim: 'present_f', text: '人生の多くは運命や流れで決まると思う' },
+    { dim: 'present_f', text: '計画してもどうせ思い通りにはならない' },
+    { dim: 'present_f', text: '結局、なるようにしかならないと感じる' },
+    { dim: 'future', text: '将来のために今を計画的に使っている' },
+    { dim: 'future', text: '長期目標を立てて行動している' },
+    { dim: 'future', text: '今の選択が未来にどう影響するかを意識する' },
+  ];
+
+  // レジリエンス (Resilience) — 3 dim
+  const RESILIENCE_DIMENSIONS = [
+    { key: 'adaptation',  label: '適応力',   color: '#06b6d4', description: '変化への柔軟な対応' },
+    { key: 'persistence', label: '粘り強さ', color: '#ef4444', description: '困難を乗り越える持続力' },
+    { key: 'optimism',    label: '楽観性',   color: '#f59e0b', description: '前向きに捉える傾向' },
+  ];
+  const RESILIENCE_QUESTIONS = [
+    { dim: 'adaptation', text: '予想外のことが起きても、すぐに気持ちを切り替えられる' },
+    { dim: 'adaptation', text: '変化に柔軟に対応できる方だ' },
+    { dim: 'adaptation', text: 'うまくいかない時、別のやり方を試せる' },
+    { dim: 'adaptation', text: '環境が変わってもそれに合わせていける' },
+    { dim: 'persistence', text: '困難にぶつかっても粘り強く続けられる' },
+    { dim: 'persistence', text: 'つらい時期でも諦めずに踏みとどまれる' },
+    { dim: 'persistence', text: '失敗しても立ち直って再挑戦できる' },
+    { dim: 'persistence', text: 'プレッシャーがかかってもタフに対処できる' },
+    { dim: 'optimism', text: '困難な状況でも何か良い面を見いだせる' },
+    { dim: 'optimism', text: '長い目で見ればうまくいくと信じられる' },
+    { dim: 'optimism', text: 'ピンチをチャンスに変える発想ができる' },
+    { dim: 'optimism', text: '自分には乗り越える力があると感じる' },
+  ];
+
   const state = {
     settings: load(SETTINGS_KEY, { apiKey: '', model: 'claude-sonnet-4-6' }),
     socialAssessments: load(SOCIAL_KEY, []),
@@ -222,11 +299,23 @@
     thinkingAssessments: load(THINKING_KEY, []),
     johariSessions: load(JOHARI_KEY, []),
     summaryAnalyses: load(SUMMARY_KEY, []),
+    mindfulnessAssessments: load(MINDFULNESS_KEY, []),
+    timePerspectiveAssessments: load(TIMEPERSP_KEY, []),
+    resilienceAssessments: load(RESILIENCE_KEY, []),
+    mindsetAssessments: load(MINDSET_KEY, []),
+    regFocusAssessments: load(REGFOCUS_KEY, []),
+    attachmentAssessments: load(ATTACHMENT_KEY, []),
     quiz: null,
     effortQuiz: null,
     kolbQuiz: null,
     valuesQuiz: null,
     thinkingQuiz: null,
+    mindfulnessQuiz: null,
+    timePerspectiveQuiz: null,
+    resilienceQuiz: null,
+    mindsetQuiz: null,
+    regFocusQuiz: null,
+    attachmentQuiz: null,
     johariDraft: { selfTraits: [], othersTraits: [], extraSelf: [], extraOthers: [] },
     johariEditingId: null,
   };
@@ -248,12 +337,18 @@
 
   // ---------- Tabs ----------
   const subRender = {
-    social:   renderSocialHistory,
-    effort:   renderEffortHistory,
-    kolb:     renderKolbHistory,
-    values:   renderValuesHistory,
-    thinking: renderThinkingHistory,
-    johari:   renderJohari,
+    social:          renderSocialHistory,
+    effort:          renderEffortHistory,
+    kolb:            renderKolbHistory,
+    values:          renderValuesHistory,
+    thinking:        renderThinkingHistory,
+    johari:          renderJohari,
+    mindfulness:     renderMindfulnessHistory,
+    timeperspective: renderTimePerspectiveHistory,
+    resilience:      renderResilienceHistory,
+    mindset:         renderMindsetHistory,
+    regfocus:        renderRegFocusHistory,
+    attachment:      renderAttachmentHistory,
   };
   const subState = { diagnoses: 'social' };
 
@@ -329,6 +424,12 @@
       thinkingAssessments: state.thinkingAssessments,
       johariSessions: state.johariSessions,
       summaryAnalyses: state.summaryAnalyses,
+      mindfulnessAssessments: state.mindfulnessAssessments,
+      timePerspectiveAssessments: state.timePerspectiveAssessments,
+      resilienceAssessments: state.resilienceAssessments,
+      mindsetAssessments: state.mindsetAssessments,
+      regFocusAssessments: state.regFocusAssessments,
+      attachmentAssessments: state.attachmentAssessments,
     }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -351,6 +452,12 @@
       if (Array.isArray(data.thinkingAssessments)){ state.thinkingAssessments = data.thinkingAssessments; save(THINKING_KEY, state.thinkingAssessments); }
       if (Array.isArray(data.johariSessions))    { state.johariSessions = data.johariSessions; save(JOHARI_KEY, state.johariSessions); }
       if (Array.isArray(data.summaryAnalyses))   { state.summaryAnalyses = data.summaryAnalyses; save(SUMMARY_KEY, state.summaryAnalyses); }
+      if (Array.isArray(data.mindfulnessAssessments))      { state.mindfulnessAssessments = data.mindfulnessAssessments; save(MINDFULNESS_KEY, state.mindfulnessAssessments); }
+      if (Array.isArray(data.timePerspectiveAssessments))  { state.timePerspectiveAssessments = data.timePerspectiveAssessments; save(TIMEPERSP_KEY, state.timePerspectiveAssessments); }
+      if (Array.isArray(data.resilienceAssessments))       { state.resilienceAssessments = data.resilienceAssessments; save(RESILIENCE_KEY, state.resilienceAssessments); }
+      if (Array.isArray(data.mindsetAssessments))          { state.mindsetAssessments = data.mindsetAssessments; save(MINDSET_KEY, state.mindsetAssessments); }
+      if (Array.isArray(data.regFocusAssessments))         { state.regFocusAssessments = data.regFocusAssessments; save(REGFOCUS_KEY, state.regFocusAssessments); }
+      if (Array.isArray(data.attachmentAssessments))       { state.attachmentAssessments = data.attachmentAssessments; save(ATTACHMENT_KEY, state.attachmentAssessments); }
       flash('インポートしました');
       renderSocialHistory();
       renderEffortHistory();
@@ -359,6 +466,12 @@
       renderThinkingHistory();
       renderJohari();
       renderSummary();
+      renderMindfulnessHistory();
+      renderTimePerspectiveHistory();
+      renderResilienceHistory();
+      renderMindsetHistory();
+      renderRegFocusHistory();
+      renderAttachmentHistory();
     } catch (err) {
       alert('インポートに失敗しました: ' + err.message);
     }
@@ -376,6 +489,12 @@
     state.johariDraft = { selfTraits: [], othersTraits: [], extraSelf: [], extraOthers: [] };
     state.johariEditingId = null;
     state.summaryAnalyses = [];
+    state.mindfulnessAssessments = [];
+    state.timePerspectiveAssessments = [];
+    state.resilienceAssessments = [];
+    state.mindsetAssessments = [];
+    state.regFocusAssessments = [];
+    state.attachmentAssessments = [];
     save(SOCIAL_KEY, state.socialAssessments);
     save(EFFORT_KEY, state.effortAssessments);
     save(KOLB_KEY, state.kolbAssessments);
@@ -383,6 +502,12 @@
     save(THINKING_KEY, state.thinkingAssessments);
     save(JOHARI_KEY, state.johariSessions);
     save(SUMMARY_KEY, state.summaryAnalyses);
+    save(MINDFULNESS_KEY, state.mindfulnessAssessments);
+    save(TIMEPERSP_KEY, state.timePerspectiveAssessments);
+    save(RESILIENCE_KEY, state.resilienceAssessments);
+    save(MINDSET_KEY, state.mindsetAssessments);
+    save(REGFOCUS_KEY, state.regFocusAssessments);
+    save(ATTACHMENT_KEY, state.attachmentAssessments);
     renderSocialHistory();
     renderEffortHistory();
     renderKolbHistory();
@@ -390,6 +515,12 @@
     renderThinkingHistory();
     renderJohari();
     renderSummary();
+    renderMindfulnessHistory();
+    renderTimePerspectiveHistory();
+    renderResilienceHistory();
+    renderMindsetHistory();
+    renderRegFocusHistory();
+    renderAttachmentHistory();
     flash('削除しました');
   });
 
@@ -985,11 +1116,14 @@
   // ---------- Cross-reference helper for AI ----------
   function buildCrossReferences(except) {
     const sections = [
-      { key: 'social',   label: '人との関わり方',     dims: SOCIAL_DIMENSIONS,   list: state.socialAssessments },
-      { key: 'effort',   label: '努力スタイル',       dims: EFFORT_DIMENSIONS,   list: state.effortAssessments },
-      { key: 'kolb',     label: '学び方のタイプ',     dims: KOLB_DIMENSIONS,     list: state.kolbAssessments },
-      { key: 'values',   label: '大切にしているもの', dims: VALUES_DIMENSIONS,   list: state.valuesAssessments },
-      { key: 'thinking', label: '考え方のクセ',       dims: THINKING_DIMENSIONS, list: state.thinkingAssessments },
+      { key: 'social',          label: '人との関わり方',     dims: SOCIAL_DIMENSIONS,      list: state.socialAssessments },
+      { key: 'effort',          label: '努力スタイル',       dims: EFFORT_DIMENSIONS,      list: state.effortAssessments },
+      { key: 'kolb',            label: '学び方のタイプ',     dims: KOLB_DIMENSIONS,        list: state.kolbAssessments },
+      { key: 'values',          label: '大切にしているもの', dims: VALUES_DIMENSIONS,      list: state.valuesAssessments },
+      { key: 'thinking',        label: '考え方のクセ',       dims: THINKING_DIMENSIONS,    list: state.thinkingAssessments },
+      { key: 'mindfulness',     label: 'マインドフルネス',   dims: MINDFULNESS_DIMENSIONS, list: state.mindfulnessAssessments },
+      { key: 'timeperspective', label: '時間展望',           dims: TIMEPERSP_DIMENSIONS,   list: state.timePerspectiveAssessments },
+      { key: 'resilience',      label: 'レジリエンス',       dims: RESILIENCE_DIMENSIONS,  list: state.resilienceAssessments },
     ];
     const parts = [];
     for (const s of sections) {
@@ -1288,6 +1422,104 @@
     ].join('\n'),
   });
 
+  // ---------- Mindfulness (Phase 2) ----------
+  bindAssessment({
+    prefix: 'mindfulness',
+    key: MINDFULNESS_KEY,
+    dims: MINDFULNESS_DIMENSIONS,
+    questions: MINDFULNESS_QUESTIONS,
+    list: () => state.mindfulnessAssessments,
+    setList: (v) => { state.mindfulnessAssessments = v; },
+    quizState: () => state.mindfulnessQuiz,
+    setQuizState: (v) => { state.mindfulnessQuiz = v; },
+    qLabelSuffix: '',
+    profileFn: (high, second, low, balanced) => balanced
+      ? { name: 'バランス型', color: high.color }
+      : { name: `${high.label}優位型`, color: high.color },
+    adviceFn: (top) => ({
+      awareness:   '「気づき」が強み。ふだん見えないものに目が向くタイプ。考えに飲まれた時の戻り方を意識的に身につけると、生活全般で安定が増します。',
+      acceptance:  '「受容」が強み。感情を否定せず受け止められる素地がある。受け入れすぎて行動を起こさない停滞には注意。',
+      observation: '「観察」が強み。内面と距離を取れるメタ認知タイプ。ただし「観察するだけで関わらない」傾向に注意。実験的な行動に結びつけると効きます。',
+    })[top] || '',
+    aiSystem: 'あなたはマインドフルネスに詳しいコーチです。気づき・受容・観察の3次元プロファイルを優しく解説します。',
+    aiUser: (payload, scores) => [
+      '以下は「マインドフルネス」の3次元スコア（0〜100）です。',
+      '気づき・受容・観察のバランスから読み取れる現状、強みと盲点、',
+      '今週から試せる短いエクササイズ（数分）を1つ提案してください（400字程度）。',
+      '',
+      '## マインドフルネス スコア',
+      payload,
+      '',
+      buildCrossReferences('mindfulness'),
+    ].join('\n'),
+  });
+
+  // ---------- Time Perspective (Phase 2) ----------
+  bindAssessment({
+    prefix: 'timeperspective',
+    key: TIMEPERSP_KEY,
+    dims: TIMEPERSP_DIMENSIONS,
+    questions: TIMEPERSP_QUESTIONS,
+    list: () => state.timePerspectiveAssessments,
+    setList: (v) => { state.timePerspectiveAssessments = v; },
+    quizState: () => state.timePerspectiveQuiz,
+    setQuizState: (v) => { state.timePerspectiveQuiz = v; },
+    qLabelSuffix: '',
+    profileFn: (high, second, low, balanced) => balanced
+      ? { name: 'バランス型', color: high.color }
+      : { name: `${high.label}優位型`, color: high.color },
+    adviceFn: (top) => ({
+      past_neg:  '過去の否定的記憶への意識が強め。反芻が苦しさを生んでいる可能性。「過去肯定」を増やすワーク（感謝日記など）が効きやすい。',
+      past_pos:  '過去への温かい愛着が強い。地続きの自己感がある一方、現在の挑戦から目が逸れることも。今の行動への意識づけを。',
+      present_h: '今の楽しみを優先するタイプ。短期の幸福感は高いが、長期目標が後回しになりやすい。週1で「未来志向」の時間を確保すると補強されます。',
+      present_f: '運命や流れに身を任せる傾向。受け入れの力は強いが、変えられる範囲を見逃しやすい。「自分で動かせる小さな部分」を意識すると変化が起こります。',
+      future:    '未来志向が強い。計画力・先見性は強み。一方で「今この瞬間」を犠牲にしすぎる傾向。マインドフルネス系のリセット時間を入れると持続します。',
+    })[top] || '',
+    aiSystem: 'あなたはZimbardoの時間展望理論に詳しいコーチです。過去・現在・未来への意識配分を5次元で読み解きます。',
+    aiUser: (payload, scores) => [
+      '以下は「時間展望」の5次元スコア（0〜100）です。',
+      '時間意識のバランス、偏りから読める日常パターン、',
+      '時間展望のリバランスに役立つ具体的な習慣を1つ提案してください（500字程度）。',
+      '',
+      '## 時間展望 スコア',
+      payload,
+      '',
+      buildCrossReferences('timeperspective'),
+    ].join('\n'),
+  });
+
+  // ---------- Resilience (Phase 2) ----------
+  bindAssessment({
+    prefix: 'resilience',
+    key: RESILIENCE_KEY,
+    dims: RESILIENCE_DIMENSIONS,
+    questions: RESILIENCE_QUESTIONS,
+    list: () => state.resilienceAssessments,
+    setList: (v) => { state.resilienceAssessments = v; },
+    quizState: () => state.resilienceQuiz,
+    setQuizState: (v) => { state.resilienceQuiz = v; },
+    qLabelSuffix: '',
+    profileFn: (high, second, low, balanced) => balanced
+      ? { name: 'バランス型', color: high.color }
+      : { name: `${high.label}型`, color: high.color },
+    adviceFn: (top) => ({
+      adaptation:  '適応力が強み。状況変化への切り替えが速いタイプ。ただし「合わせすぎ」で軸を失うリスクも。価値観との接続を保つことを意識。',
+      persistence: '粘り強さが強み。困難でも踏みとどまれる。一方で粘りすぎて疲弊するリスクがあるので、撤退ラインを事前に決めておくと持続性が増します。',
+      optimism:    '楽観性が強み。前向きな解釈で困難を乗り越える。リアリティチェックを意識的に入れると、現実逃避と希望の混同を防げます。',
+    })[top] || '',
+    aiSystem: 'あなたはレジリエンス研究に詳しいコーチです。適応力・粘り強さ・楽観性の3次元から、利用者の回復パターンを読み解きます。',
+    aiUser: (payload, scores) => [
+      '以下は「レジリエンス」の3次元スコア（0〜100）です。',
+      '困難への対処スタイル、強みと脆弱なポイント、',
+      '今週から始められる小さな回復習慣を1つ提案してください（400字程度）。',
+      '',
+      '## レジリエンス スコア',
+      payload,
+      '',
+      buildCrossReferences('resilience'),
+    ].join('\n'),
+  });
+
   // Generic assessment binder used by Values and Thinking
   function bindAssessment(cfg) {
     const { prefix, key, dims, questions } = cfg;
@@ -1479,12 +1711,17 @@
 
     // expose history renderer
     cfg.renderHistory = drawHistory;
-    if (prefix === 'values') window.__renderValuesHistory = drawHistory;
-    if (prefix === 'thinking') window.__renderThinkingHistory = drawHistory;
+    window['__render_' + prefix + '_History'] = drawHistory;
   }
 
-  function renderValuesHistory() { window.__renderValuesHistory && window.__renderValuesHistory(); }
-  function renderThinkingHistory() { window.__renderThinkingHistory && window.__renderThinkingHistory(); }
+  function renderValuesHistory() { window['__render_values_History'] && window['__render_values_History'](); }
+  function renderThinkingHistory() { window['__render_thinking_History'] && window['__render_thinking_History'](); }
+  function renderMindfulnessHistory() { window['__render_mindfulness_History'] && window['__render_mindfulness_History'](); }
+  function renderTimePerspectiveHistory() { window['__render_timeperspective_History'] && window['__render_timeperspective_History'](); }
+  function renderResilienceHistory() { window['__render_resilience_History'] && window['__render_resilience_History'](); }
+  function renderMindsetHistory() { window['__render_mindset_History'] && window['__render_mindset_History'](); }
+  function renderRegFocusHistory() { window['__render_regfocus_History'] && window['__render_regfocus_History'](); }
+  function renderAttachmentHistory() { window['__render_attachment_History'] && window['__render_attachment_History'](); }
 
   // ---------- Johari Window ----------
   function getAllJohariTraits(draft = state.johariDraft) {
@@ -1744,12 +1981,18 @@
   // ---------- Summary (comprehensive) analysis ----------
   // 三層モデル: 各診断がどの層に属するか (THEORY.md §4)
   const LAYER_MAP = {
-    values:   { layer: 1, label: '信念層',     name: '大切にしているもの (価値観)' },
-    thinking: { layer: 2, label: '認知行動層', name: '考え方のクセ (思考スタイル)' },
-    kolb:     { layer: 2, label: '認知行動層', name: '学び方のタイプ (Kolb)' },
-    social:   { layer: 3, label: '表現層',     name: '人との関わり方' },
-    effort:   { layer: 3, label: '表現層',     name: '努力スタイル' },
-    johari:   { layer: 'meta', label: 'メタ視点', name: '自分と他者の見え方' },
+    values:           { layer: 1, label: '信念層',     name: '大切にしているもの (価値観)' },
+    timeperspective:  { layer: 1, label: '信念層',     name: '時間展望' },
+    thinking:         { layer: 2, label: '認知行動層', name: '考え方のクセ (思考スタイル)' },
+    kolb:             { layer: 2, label: '認知行動層', name: '学び方のタイプ (Kolb)' },
+    mindset:          { layer: 2, label: '認知行動層', name: 'マインドセット' },
+    regfocus:         { layer: 2, label: '認知行動層', name: '制御焦点' },
+    mindfulness:      { layer: 2, label: '認知行動層', name: 'マインドフルネス' },
+    social:           { layer: 3, label: '表現層',     name: '人との関わり方' },
+    effort:           { layer: 3, label: '表現層',     name: '努力スタイル' },
+    resilience:       { layer: 3, label: '表現層',     name: 'レジリエンス' },
+    attachment:       { layer: 3, label: '表現層',     name: '愛着スタイル' },
+    johari:           { layer: 'meta', label: 'メタ視点', name: '自分と他者の見え方' },
   };
 
   // ねじれパターン (THEORY.md §6.2)
@@ -1816,11 +2059,14 @@
 
   function summaryDiagnostics() {
     return [
-      { key: 'social',   label: '人との関わり方',     dims: SOCIAL_DIMENSIONS,   list: state.socialAssessments },
-      { key: 'effort',   label: '努力スタイル',       dims: EFFORT_DIMENSIONS,   list: state.effortAssessments },
-      { key: 'kolb',     label: '学び方のタイプ',     dims: KOLB_DIMENSIONS,     list: state.kolbAssessments },
-      { key: 'values',   label: '大切にしているもの', dims: VALUES_DIMENSIONS,   list: state.valuesAssessments },
-      { key: 'thinking', label: '考え方のクセ',       dims: THINKING_DIMENSIONS, list: state.thinkingAssessments },
+      { key: 'social',          label: '人との関わり方',     dims: SOCIAL_DIMENSIONS,      list: state.socialAssessments },
+      { key: 'effort',          label: '努力スタイル',       dims: EFFORT_DIMENSIONS,      list: state.effortAssessments },
+      { key: 'kolb',            label: '学び方のタイプ',     dims: KOLB_DIMENSIONS,        list: state.kolbAssessments },
+      { key: 'values',          label: '大切にしているもの', dims: VALUES_DIMENSIONS,      list: state.valuesAssessments },
+      { key: 'thinking',        label: '考え方のクセ',       dims: THINKING_DIMENSIONS,    list: state.thinkingAssessments },
+      { key: 'mindfulness',     label: 'マインドフルネス',   dims: MINDFULNESS_DIMENSIONS, list: state.mindfulnessAssessments },
+      { key: 'timeperspective', label: '時間展望',           dims: TIMEPERSP_DIMENSIONS,   list: state.timePerspectiveAssessments },
+      { key: 'resilience',      label: 'レジリエンス',       dims: RESILIENCE_DIMENSIONS,  list: state.resilienceAssessments },
     ];
   }
 
@@ -2118,4 +2364,10 @@
   renderThinkingHistory();
   renderJohari();
   renderSummary();
+  renderMindfulnessHistory();
+  renderTimePerspectiveHistory();
+  renderResilienceHistory();
+  renderMindsetHistory();
+  renderRegFocusHistory();
+  renderAttachmentHistory();
 })();
