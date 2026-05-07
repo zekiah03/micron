@@ -290,6 +290,66 @@
     { dim: 'optimism', text: '自分には乗り越える力があると感じる' },
   ];
 
+  // マインドセット (Dweck 2006) — 2 dim
+  const MINDSET_DIMENSIONS = [
+    { key: 'growth', label: '成長型', color: '#10b981', description: '能力は努力で伸びると信じる' },
+    { key: 'fixed',  label: '固定型', color: '#6b7280', description: '能力は生まれつきだと感じる' },
+  ];
+  const MINDSET_QUESTIONS = [
+    { dim: 'growth', text: '人の能力は努力で大きく伸びると思う' },
+    { dim: 'growth', text: '失敗は学びの機会だと感じる' },
+    { dim: 'growth', text: '苦手なことでも訓練で得意になれる' },
+    { dim: 'growth', text: '挑戦には自分を成長させる価値がある' },
+    { dim: 'fixed', text: '人の知能や才能は生まれつきほぼ決まっている' },
+    { dim: 'fixed', text: '失敗すると自分の能力が低いと感じる' },
+    { dim: 'fixed', text: '苦手なことは無理にやらない方がいい' },
+    { dim: 'fixed', text: '才能のないことに時間をかけても意味がない' },
+  ];
+
+  // 制御焦点 (Higgins 1997) — 2 dim
+  const REGFOCUS_DIMENSIONS = [
+    { key: 'promotion', label: '促進焦点', color: '#3b82f6', description: '理想・成長・利益を求める' },
+    { key: 'prevention', label: '予防焦点', color: '#ef4444', description: '損失・失敗・義務違反を避ける' },
+  ];
+  const REGFOCUS_QUESTIONS = [
+    { dim: 'promotion', text: '達成したい目標がたくさんある' },
+    { dim: 'promotion', text: '成長や向上を強く意識して動く' },
+    { dim: 'promotion', text: '良い結果が出ることに意識が向く' },
+    { dim: 'promotion', text: '夢や理想に近づくことに動機を感じる' },
+    { dim: 'promotion', text: '可能性を広げる選択を選びがちだ' },
+    { dim: 'promotion', text: 'チャンスは積極的につかみに行く' },
+    { dim: 'prevention', text: '失敗しないように慎重に動く' },
+    { dim: 'prevention', text: 'ミスや損失を避けることを意識する' },
+    { dim: 'prevention', text: '責任や義務を果たすことを重視する' },
+    { dim: 'prevention', text: 'リスクを取るより安全策を選ぶ' },
+    { dim: 'prevention', text: '間違えないことを最優先にする' },
+    { dim: 'prevention', text: 'やるべきこと（should）に意識が向く' },
+  ];
+
+  // 愛着スタイル (Bartholomew & Horowitz 1991) — 2 dim → 4 categories
+  const ATTACHMENT_DIMENSIONS = [
+    { key: 'anxiety',   label: '不安', color: '#ef4444', description: '関係喪失への恐れ' },
+    { key: 'avoidance', label: '回避', color: '#6b7280', description: '親密さからの距離' },
+  ];
+  const ATTACHMENT_QUESTIONS = [
+    { dim: 'anxiety', text: '相手から愛されているか不安になることがある' },
+    { dim: 'anxiety', text: '近しい人と離れていると落ち着かない' },
+    { dim: 'anxiety', text: '相手の気持ちを失うことを恐れている' },
+    { dim: 'anxiety', text: '関係が壊れる兆しに過敏に反応してしまう' },
+    { dim: 'anxiety', text: '自分は十分に愛されていないと感じる' },
+    { dim: 'anxiety', text: '一人になると不安が強くなる' },
+    { dim: 'anxiety', text: '関係を確かめたくて連絡を頻繁に取りたくなる' },
+    { dim: 'anxiety', text: '相手の反応が遅いと拒絶された気がする' },
+    { dim: 'avoidance', text: '人に頼らず自分で何でも解決する方が落ち着く' },
+    { dim: 'avoidance', text: '感情を人に見せるのは苦手だ' },
+    { dim: 'avoidance', text: '近づきすぎる関係は窮屈に感じる' },
+    { dim: 'avoidance', text: '弱みを人に話すのに抵抗がある' },
+    { dim: 'avoidance', text: '深い関係は重荷に感じることがある' },
+    { dim: 'avoidance', text: '一人の時間が確保されないと耐えられない' },
+    { dim: 'avoidance', text: '相手に頼られすぎると引いてしまう' },
+    { dim: 'avoidance', text: '感情的な話題を避けたくなる' },
+  ];
+
   const state = {
     settings: load(SETTINGS_KEY, { apiKey: '', model: 'claude-sonnet-4-6' }),
     socialAssessments: load(SOCIAL_KEY, []),
@@ -771,7 +831,15 @@
 
   function renderSocialRadar(scores) { return renderRadarSvg(scores, SOCIAL_DIMENSIONS); }
 
-  function renderRadarSvg(scores, dims) {
+  function renderRadarSvg(scores, dims, opts) {
+    // Special 4-quadrant chart for 2-axis categorical (e.g., attachment)
+    if (opts && opts.chartType === 'quadrant' && dims.length === 2) {
+      return renderQuadrantSvg(scores, dims, opts);
+    }
+    // 2 dims: horizontal bars instead of degenerate radar
+    if (dims.length === 2) {
+      return renderBarsSvg(scores, dims);
+    }
     const cx = 130, cy = 130, R = 100;
     const n = dims.length;
     const pts = dims.map((d, i) => {
@@ -796,6 +864,51 @@
     const shape = `<polygon points="${pts.map(p => p.join(',')).join(' ')}" fill="#6366f1" fill-opacity="0.25" stroke="#6366f1" stroke-width="2"/>`;
     const dots = pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="#6366f1"/>`).join('');
     return `<svg class="radar-svg" viewBox="0 0 260 260">${gridRings}${axes}${shape}${dots}</svg>`;
+  }
+
+  // 2-dim 専用: 横棒グラフ (Mindset / Regulatory Focus)
+  function renderBarsSvg(scores, dims) {
+    const W = 260, H = 200;
+    const padL = 70, padR = 30, padT = 20, padB = 20;
+    const barH = 30;
+    const gap = 20;
+    const items = dims.map((d, i) => {
+      const v = scores[d.key];
+      const x0 = padL;
+      const y = padT + i * (barH + gap);
+      const fullW = W - padL - padR;
+      const w = (v / 100) * fullW;
+      return `
+        <text x="${padL - 8}" y="${y + barH / 2 + 4}" text-anchor="end" font-size="12" fill="${d.color}" font-weight="600">${escapeHtml(d.label)}</text>
+        <rect x="${x0}" y="${y}" width="${fullW}" height="${barH}" rx="6" ry="6" fill="#f3f4f6"/>
+        <rect x="${x0}" y="${y}" width="${w}" height="${barH}" rx="6" ry="6" fill="${d.color}" fill-opacity="0.85"/>
+        <text x="${x0 + w + 6}" y="${y + barH / 2 + 4}" font-size="12" fill="#1f2430" font-weight="600">${v}</text>
+      `;
+    }).join('');
+    return `<svg class="radar-svg" viewBox="0 0 ${W} ${H}">${items}</svg>`;
+  }
+
+  // 4-quadrant chart for Attachment (anxiety × avoidance)
+  function renderQuadrantSvg(scores, dims, opts) {
+    const W = 260, H = 260;
+    const cx = W / 2, cy = H / 2;
+    const padding = 24;
+    const gridSize = W - padding * 2;
+    const x = padding + (scores[dims[0].key] / 100) * gridSize;
+    const y = padding + ((100 - scores[dims[1].key]) / 100) * gridSize;
+    const labels = (opts && opts.quadrantLabels) || ['', '', '', ''];
+    return `<svg class="radar-svg" viewBox="0 0 ${W} ${H}">
+      <rect x="${padding}" y="${padding}" width="${gridSize}" height="${gridSize}" fill="none" stroke="#e5e7eb" stroke-width="1"/>
+      <line x1="${cx}" y1="${padding}" x2="${cx}" y2="${H - padding}" stroke="#e5e7eb" stroke-dasharray="3 3"/>
+      <line x1="${padding}" y1="${cy}" x2="${W - padding}" y2="${cy}" stroke="#e5e7eb" stroke-dasharray="3 3"/>
+      <text x="${padding + gridSize/4}" y="${padding + 14}" text-anchor="middle" font-size="11" fill="#6b7280">${escapeHtml(labels[0] || '')}</text>
+      <text x="${padding + gridSize*3/4}" y="${padding + 14}" text-anchor="middle" font-size="11" fill="#6b7280">${escapeHtml(labels[1] || '')}</text>
+      <text x="${padding + gridSize/4}" y="${H - padding - 4}" text-anchor="middle" font-size="11" fill="#6b7280">${escapeHtml(labels[2] || '')}</text>
+      <text x="${padding + gridSize*3/4}" y="${H - padding - 4}" text-anchor="middle" font-size="11" fill="#6b7280">${escapeHtml(labels[3] || '')}</text>
+      <text x="${cx}" y="${H - 4}" text-anchor="middle" font-size="11" fill="${dims[0].color}" font-weight="600">→ ${escapeHtml(dims[0].label)}</text>
+      <text x="14" y="${cy}" text-anchor="middle" font-size="11" fill="${dims[1].color}" font-weight="600" transform="rotate(-90 14 ${cy})">→ ${escapeHtml(dims[1].label)}</text>
+      <circle cx="${x}" cy="${y}" r="6" fill="#6366f1" stroke="#fff" stroke-width="2"/>
+    </svg>`;
   }
 
   function computeDimensionScores(answers, questions, dims) {
@@ -1124,6 +1237,9 @@
       { key: 'mindfulness',     label: 'マインドフルネス',   dims: MINDFULNESS_DIMENSIONS, list: state.mindfulnessAssessments },
       { key: 'timeperspective', label: '時間展望',           dims: TIMEPERSP_DIMENSIONS,   list: state.timePerspectiveAssessments },
       { key: 'resilience',      label: 'レジリエンス',       dims: RESILIENCE_DIMENSIONS,  list: state.resilienceAssessments },
+      { key: 'mindset',         label: 'マインドセット',     dims: MINDSET_DIMENSIONS,     list: state.mindsetAssessments },
+      { key: 'regfocus',        label: '制御焦点',           dims: REGFOCUS_DIMENSIONS,    list: state.regFocusAssessments },
+      { key: 'attachment',      label: '愛着スタイル',       dims: ATTACHMENT_DIMENSIONS,  list: state.attachmentAssessments },
     ];
     const parts = [];
     for (const s of sections) {
@@ -1520,6 +1636,120 @@
     ].join('\n'),
   });
 
+  // ---------- Mindset (Phase 2) ----------
+  bindAssessment({
+    prefix: 'mindset',
+    key: MINDSET_KEY,
+    dims: MINDSET_DIMENSIONS,
+    questions: MINDSET_QUESTIONS,
+    list: () => state.mindsetAssessments,
+    setList: (v) => { state.mindsetAssessments = v; },
+    quizState: () => state.mindsetQuiz,
+    setQuizState: (v) => { state.mindsetQuiz = v; },
+    profileFn: (high, second, low, balanced) => {
+      // 成長型 vs 固定型
+      // We invert: profile based on which is higher
+      return { name: `${high.label}優位`, color: high.color };
+    },
+    adviceFn: (top) => ({
+      growth: '成長型マインドセットが優位。能力は伸びると信じている分、努力を肯定的に解釈できる。失敗を学びと捉える習慣が身についています。',
+      fixed:  '固定型マインドセットが優位。「能力は決まっている」という信念は、安心の源にもなる一方、挑戦回避や失敗への過剰反応につながる可能性。「これまでの成長を3つ書き出す」など、可塑性を実感する練習が効きます。',
+    })[top] || '',
+    aiSystem: 'あなたはCarol Dweckのマインドセット理論に詳しいコーチです。成長型／固定型の傾向を優しく解説します。',
+    aiUser: (payload, scores) => [
+      '以下は「マインドセット」の2次元スコア（0〜100）です。',
+      '成長型と固定型のどちらが優位か、生活への影響、',
+      'もしバランスが偏っていれば修正方向と具体的アクションを示してください（350字程度）。',
+      '',
+      '## マインドセット スコア',
+      payload,
+      '',
+      buildCrossReferences('mindset'),
+    ].join('\n'),
+  });
+
+  // ---------- Regulatory Focus (Phase 2) ----------
+  bindAssessment({
+    prefix: 'regfocus',
+    key: REGFOCUS_KEY,
+    dims: REGFOCUS_DIMENSIONS,
+    questions: REGFOCUS_QUESTIONS,
+    list: () => state.regFocusAssessments,
+    setList: (v) => { state.regFocusAssessments = v; },
+    quizState: () => state.regFocusQuiz,
+    setQuizState: (v) => { state.regFocusQuiz = v; },
+    profileFn: (high, second, low, balanced) => balanced
+      ? { name: '両焦点バランス型', color: high.color }
+      : { name: `${high.label}優位`, color: high.color },
+    adviceFn: (top) => ({
+      promotion:  '促進焦点が優位。理想・成長・利益にエネルギーが向くタイプ。リスク取りの結果として失敗するときの落ち込みが大きい傾向。「達成したい」と「避けたい」を意識的に分けると、安定した推進力になります。',
+      prevention: '予防焦点が優位。損失回避と義務遂行に強み。安全策で結果を出すタイプ。一方、新しい可能性を見落としがちなので、月1で「もしこの制約がなかったら？」と問いかける時間を持つと視野が開きます。',
+    })[top] || '',
+    aiSystem: 'あなたはHigginsの制御焦点理論に詳しいコーチです。促進焦点／予防焦点の傾向を解説します。',
+    aiUser: (payload, scores) => [
+      '以下は「制御焦点」の2次元スコア（0〜100）です。',
+      '促進焦点／予防焦点のバランス、それぞれが日常でどう発現するか、',
+      '今の偏りに合うエネルギーマネジメントを1つ提案してください（400字程度）。',
+      '',
+      '## 制御焦点 スコア',
+      payload,
+      '',
+      buildCrossReferences('regfocus'),
+    ].join('\n'),
+  });
+
+  // ---------- Attachment Style (Phase 2) ----------
+  bindAssessment({
+    prefix: 'attachment',
+    key: ATTACHMENT_KEY,
+    dims: ATTACHMENT_DIMENSIONS,
+    questions: ATTACHMENT_QUESTIONS,
+    list: () => state.attachmentAssessments,
+    setList: (v) => { state.attachmentAssessments = v; },
+    quizState: () => state.attachmentQuiz,
+    setQuizState: (v) => { state.attachmentQuiz = v; },
+    chartType: 'quadrant',
+    quadrantLabels: ['とらわれ型', '恐怖回避型', '安定型', '拒絶回避型'],
+    // 4-category: anxiety low/high × avoidance low/high
+    profileFn: (high, second, low, balanced) => {
+      // We need access to scores. Use scoreMap.
+      // bindAssessment passes high/second/low (sorted by score).
+      // For quadrant categorization, derive from the actual scores (passed via cfg.scoreClassifier if defined).
+      // Use closure trick: bindAssessment will call profileFn with scores via second arg if available.
+      // For simplicity here, just use top dim name with a note.
+      return null; // placeholder, override with custom resultExtraFn if available
+    },
+    classifyFn: (scores) => {
+      const a = scores.anxiety || 0;
+      const v = scores.avoidance || 0;
+      const aHi = a >= 50;
+      const vHi = v >= 50;
+      if (!aHi && !vHi) return { name: '安定型 (Secure)', color: '#10b981', desc: '低不安・低回避。関係に安心感を持ち、適切な距離で関われるタイプ。' };
+      if (aHi && !vHi)  return { name: 'とらわれ型 (Preoccupied)', color: '#ef4444', desc: '高不安・低回避。関係を求めるが失うことへの恐れが強いタイプ。' };
+      if (!aHi && vHi)  return { name: '拒絶回避型 (Dismissive)', color: '#6b7280', desc: '低不安・高回避。自立を重視し、親密さから距離を取るタイプ。' };
+      return { name: '恐怖回避型 (Fearful)', color: '#8b5cf6', desc: '高不安・高回避。関係を求めながらも怖くて避けるタイプ。' };
+    },
+    adviceFn: () => '',
+    aiSystem: 'あなたはBartholomew & Horowitzの愛着スタイル理論に詳しい心理カウンセラーです。不安と回避の2軸から関係性のパターンを解説します。',
+    aiUser: (payload, scores) => {
+      const a = scores.anxiety || 0, v = scores.avoidance || 0;
+      const cat = (a >= 50 && v >= 50) ? '恐怖回避型'
+                : (a >= 50 && v < 50) ? 'とらわれ型'
+                : (a < 50 && v >= 50) ? '拒絶回避型'
+                : '安定型';
+      return [
+        `以下は「愛着スタイル」の2軸スコア（0〜100）です。判定: ${cat}`,
+        '愛着スタイルがどう関係性に表れるか、強みと注意点、',
+        '関係を育てるために今週試せる小さな一歩を示してください（400字程度）。',
+        '',
+        '## 愛着スタイル スコア',
+        payload,
+        '',
+        buildCrossReferences('attachment'),
+      ].join('\n');
+    },
+  });
+
   // Generic assessment binder used by Values and Thinking
   function bindAssessment(cfg) {
     const { prefix, key, dims, questions } = cfg;
@@ -1606,17 +1836,27 @@
       const high = sorted[0], second = sorted[1], low = sorted[sorted.length - 1];
       const avg = Math.round(dims.reduce((s, d) => s + scores[d.key], 0) / dims.length);
       const balanced = (scores[high.key] - scores[low.key]) <= 15;
-      const profile = cfg.profileFn(high, second, low, balanced);
-      const advice = cfg.adviceFn(high.key);
+      // classifyFn (attachment) takes precedence over profileFn
+      const profile = (cfg.classifyFn && cfg.classifyFn(scores))
+                    || cfg.profileFn(high, second, low, balanced);
+      const advice = profile.desc || cfg.adviceFn(high.key);
+
+      const titleMap = {
+        values: '大切にしているもの', thinking: '考え方のクセ',
+        mindfulness: 'マインドフルネス', timeperspective: '時間展望',
+        resilience: 'レジリエンス', mindset: 'マインドセット',
+        regfocus: '制御焦点', attachment: '愛着スタイル',
+      };
+      const title = titleMap[prefix] || prefix;
 
       resultEl.innerHTML = `
         <div class="result-card">
           <div class="result-head">
-            <h3>${escapeHtml(prefix === 'values' ? '大切にしているもの' : '考え方のクセ')}: <span style="color:${profile.color}">${escapeHtml(profile.name)}</span></h3>
+            <h3>${escapeHtml(title)}: <span style="color:${profile.color}">${escapeHtml(profile.name)}</span></h3>
             <span class="muted">${escapeHtml(formatDate(record.date))}</span>
           </div>
           <div class="result-grid">
-            ${renderRadarSvg(scores, dims)}
+            ${renderRadarSvg(scores, dims, { chartType: cfg.chartType, quadrantLabels: cfg.quadrantLabels })}
             <div class="result-scores">
               ${dims.map(d => `
                 <div class="score-row">
@@ -2049,6 +2289,36 @@
       },
       hint: '自分は知っているが他者には見せていない部分が多め。安全な相手への適度な開示で関係が深まる余地。',
     },
+    {
+      id: 'mindset-effort-gap',
+      label: 'マインドセット⇄努力 不一致',
+      check: (s) => (s.mindset?.fixed ?? 0) >= 60 && (s.effort?.endurance ?? 100) <= 40,
+      hint: '能力を固定的に捉える信念が強く、持続的な努力が止まりやすい構造。「成長型」を意識する練習が効きやすい。',
+    },
+    {
+      id: 'regfocus-anxiety',
+      label: '予防焦点と不安の連動',
+      check: (s) => (s.regfocus?.prevention ?? 0) >= 70 && (s.attachment?.anxiety ?? 0) >= 60,
+      hint: '予防焦点が強く、関係性の不安も高め。失敗回避と関係喪失の恐れが二重で動いている可能性。',
+    },
+    {
+      id: 'avoidance-relation',
+      label: '愛着回避⇄関係価値の葛藤',
+      check: (s) => (s.attachment?.avoidance ?? 0) >= 60 && (s.values?.relation ?? 0) >= 70,
+      hint: '関係を大切にしたい気持ちと、近づくことへの距離感の両方が強い。「関係を求めながら距離を取る」というジレンマ。',
+    },
+    {
+      id: 'past-future-imbalance',
+      label: '時間展望の偏り（過去否定×未来不在）',
+      check: (s) => (s.timeperspective?.past_neg ?? 0) >= 70 && (s.timeperspective?.future ?? 100) <= 40,
+      hint: '過去の後悔への意識が強く、未来への計画的視点が弱い。反芻ループにエネルギーが取られている可能性。',
+    },
+    {
+      id: 'low-resilience-high-stress',
+      label: 'レジリエンス低×予防焦点高',
+      check: (s) => (s.resilience?.persistence ?? 100) <= 40 && (s.regfocus?.prevention ?? 0) >= 70,
+      hint: '失敗回避志向が強い一方で、困難からの回復力が弱め。プレッシャーが慢性化しやすい構造。',
+    },
   ];
 
   function detectTensions(scoreMap) {
@@ -2067,6 +2337,9 @@
       { key: 'mindfulness',     label: 'マインドフルネス',   dims: MINDFULNESS_DIMENSIONS, list: state.mindfulnessAssessments },
       { key: 'timeperspective', label: '時間展望',           dims: TIMEPERSP_DIMENSIONS,   list: state.timePerspectiveAssessments },
       { key: 'resilience',      label: 'レジリエンス',       dims: RESILIENCE_DIMENSIONS,  list: state.resilienceAssessments },
+      { key: 'mindset',         label: 'マインドセット',     dims: MINDSET_DIMENSIONS,     list: state.mindsetAssessments },
+      { key: 'regfocus',        label: '制御焦点',           dims: REGFOCUS_DIMENSIONS,    list: state.regFocusAssessments },
+      { key: 'attachment',      label: '愛着スタイル',       dims: ATTACHMENT_DIMENSIONS,  list: state.attachmentAssessments },
     ];
   }
 

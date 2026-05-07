@@ -13,7 +13,7 @@
   <meta name="twitter:title" content="Prism — 自分を6つの角度から見る" />
   <meta name="twitter:description" content="6つの診断であなたを多面的にプロファイル。AIが統合レポートを作成します。" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23000%22%20stroke%3D%22%23000%22%20stroke-width%3D%222%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%203%20L21.5%2020%20L2.5%2020%20Z%22%20fill%3D%22none%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2211%22%20r%3D%221.15%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%2214.6%22%20cy%3D%2212.5%22%20r%3D%221.15%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%2214.6%22%20cy%3D%2215.5%22%20r%3D%221.15%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2217%22%20r%3D%221.15%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%229.4%22%20cy%3D%2215.5%22%20r%3D%221.15%22%20stroke%3D%22none%22%2F%3E%3Ccircle%20cx%3D%229.4%22%20cy%3D%2212.5%22%20r%3D%221.15%22%20stroke%3D%22none%22%2F%3E%3C%2Fsvg%3E" />
-  <link rel="stylesheet" href="styles.css?v=6" />
+  <link rel="stylesheet" href="styles.css?v=7" />
 </head>
 <body>
   <div id="welcome" class="welcome-overlay hidden">
@@ -127,6 +127,18 @@
         <button class="sub-tab" data-parent="diagnoses" data-sub="resilience">
           <span class="st-title">レジリエンス</span>
           <span class="st-desc">適応・粘り・楽観の3側面で回復力を見る</span>
+        </button>
+        <button class="sub-tab" data-parent="diagnoses" data-sub="mindset">
+          <span class="st-title">マインドセット</span>
+          <span class="st-desc">成長型 vs 固定型 — 能力観の傾き（Dweck）</span>
+        </button>
+        <button class="sub-tab" data-parent="diagnoses" data-sub="regfocus">
+          <span class="st-title">制御焦点</span>
+          <span class="st-desc">促進 vs 予防 — 動機の方向性（Higgins）</span>
+        </button>
+        <button class="sub-tab" data-parent="diagnoses" data-sub="attachment">
+          <span class="st-title">愛着スタイル</span>
+          <span class="st-desc">不安×回避の2軸で4つの関係性タイプを判定</span>
         </button>
       </nav>
 
@@ -497,6 +509,66 @@
       <ul id="resilience-history" class="social-history"></ul>
     </section>
 
+    <section id="tab-mindset" class="sub-panel" data-sub="mindset">
+      <h2>マインドセット</h2>
+      <p class="muted">「能力は努力で伸びる」という<b>成長型</b>と、「能力は固定的」という<b>固定型</b>のどちらに傾いているかを見ます。Carol Dweck の理論。全8問・4択。</p>
+      <div id="mindset-intro"><div class="actions"><button id="mindset-start" class="primary">診断を開始する</button></div></div>
+      <div id="mindset-quiz" class="hidden">
+        <div class="quiz-progress"><div class="quiz-progress-bar"><div id="mindset-progress-fill"></div></div><span id="mindset-progress-text"></span></div>
+        <div class="quiz-question" id="mindset-question"></div>
+        <div class="quiz-choices">
+          <button class="mindset-choice" data-val="4">はい</button>
+          <button class="mindset-choice" data-val="3">どちらかといえばはい</button>
+          <button class="mindset-choice" data-val="2">どちらかといえばいいえ</button>
+          <button class="mindset-choice" data-val="1">いいえ</button>
+        </div>
+        <div class="actions"><button id="mindset-back">← 前の質問</button><button id="mindset-cancel">中断</button></div>
+      </div>
+      <div id="mindset-result" class="hidden"></div>
+      <h3>診断履歴</h3>
+      <ul id="mindset-history" class="social-history"></ul>
+    </section>
+
+    <section id="tab-regfocus" class="sub-panel" data-sub="regfocus">
+      <h2>制御焦点</h2>
+      <p class="muted">動機の方向性。<b>促進焦点</b>（理想・成長を求める）と<b>予防焦点</b>（損失・失敗を避ける）の2軸。Higgins の理論。全12問・4択。</p>
+      <div id="regfocus-intro"><div class="actions"><button id="regfocus-start" class="primary">診断を開始する</button></div></div>
+      <div id="regfocus-quiz" class="hidden">
+        <div class="quiz-progress"><div class="quiz-progress-bar"><div id="regfocus-progress-fill"></div></div><span id="regfocus-progress-text"></span></div>
+        <div class="quiz-question" id="regfocus-question"></div>
+        <div class="quiz-choices">
+          <button class="regfocus-choice" data-val="4">はい</button>
+          <button class="regfocus-choice" data-val="3">どちらかといえばはい</button>
+          <button class="regfocus-choice" data-val="2">どちらかといえばいいえ</button>
+          <button class="regfocus-choice" data-val="1">いいえ</button>
+        </div>
+        <div class="actions"><button id="regfocus-back">← 前の質問</button><button id="regfocus-cancel">中断</button></div>
+      </div>
+      <div id="regfocus-result" class="hidden"></div>
+      <h3>診断履歴</h3>
+      <ul id="regfocus-history" class="social-history"></ul>
+    </section>
+
+    <section id="tab-attachment" class="sub-panel" data-sub="attachment">
+      <h2>愛着スタイル</h2>
+      <p class="muted">関係性の深層パターン。<b>不安</b>軸（関係喪失への恐れ）と<b>回避</b>軸（親密さからの距離）から、4つの型（安定／とらわれ／拒絶回避／恐怖回避）に分類。Bartholomew & Horowitz の理論。全16問・4択。</p>
+      <div id="attachment-intro"><div class="actions"><button id="attachment-start" class="primary">診断を開始する</button></div></div>
+      <div id="attachment-quiz" class="hidden">
+        <div class="quiz-progress"><div class="quiz-progress-bar"><div id="attachment-progress-fill"></div></div><span id="attachment-progress-text"></span></div>
+        <div class="quiz-question" id="attachment-question"></div>
+        <div class="quiz-choices">
+          <button class="attachment-choice" data-val="4">はい</button>
+          <button class="attachment-choice" data-val="3">どちらかといえばはい</button>
+          <button class="attachment-choice" data-val="2">どちらかといえばいいえ</button>
+          <button class="attachment-choice" data-val="1">いいえ</button>
+        </div>
+        <div class="actions"><button id="attachment-back">← 前の質問</button><button id="attachment-cancel">中断</button></div>
+      </div>
+      <div id="attachment-result" class="hidden"></div>
+      <h3>診断履歴</h3>
+      <ul id="attachment-history" class="social-history"></ul>
+    </section>
+
     </section><!-- /tab-diagnoses -->
 
     <section id="tab-summary" class="panel">
@@ -594,6 +666,6 @@
       }
     })();
   </script>
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>
