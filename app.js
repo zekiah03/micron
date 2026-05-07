@@ -1,1960 +1,967 @@
-(() => {
-  const SETTINGS_KEY = 'nayami-settings-v1';
-  const SOCIAL_KEY = 'nayami-social-v1';
-  const EFFORT_KEY = 'nayami-effort-v1';
-  const KOLB_KEY = 'nayami-kolb-v1';
-  const VALUES_KEY = 'nayami-values-v1';
-  const THINKING_KEY = 'nayami-thinking-v1';
-  const JOHARI_KEY = 'nayami-johari-v1';
-  const SUMMARY_KEY = 'nayami-summary-v1';
-
-  const JOHARI_TRAITS = [
-    '明るい', '静か', '親切', '几帳面', '大胆', '慎重', '創造的', '論理的', '共感的', '独立心が強い',
-    '協調的', 'リーダーシップがある', '聞き上手', '話し上手', '表現豊か', '内省的', '外向的', '真面目', '遊び心がある', '計画的',
-    '即興的', '完璧主義', '楽観的', '行動力がある', '信頼できる', '思いやりがある', 'ユーモアがある', '集中力がある', '適応力がある', '寛大',
-    '直感的', '分析的', '情熱的', '冷静', '親しみやすい', '謙虚', '頑固', '柔軟', '神経質', 'おおらか',
-  ];
-
-  const SOCIAL_DIMENSIONS = [
-    { key: 'communication', label: 'コミュニケーション', color: '#3b82f6' },
-    { key: 'empathy',       label: '共感力',             color: '#ec4899' },
-    { key: 'cooperation',   label: '協調性',             color: '#10b981' },
-    { key: 'assertion',     label: '自己主張力',         color: '#f59e0b' },
-    { key: 'adaptation',    label: '社会的適応力',       color: '#8b5cf6' },
-  ];
-
-  const VALUES_DIMENSIONS = [
-    { key: 'autonomy',    label: '自律', color: '#8b5cf6', description: '自分で決めたい・束縛を嫌う' },
-    { key: 'achievement', label: '達成', color: '#ef4444', description: '成果・結果を出すことに意味を感じる' },
-    { key: 'relation',    label: '関係', color: '#ec4899', description: '人との繋がりを大事にする' },
-    { key: 'stability',   label: '安定', color: '#3b82f6', description: '予測可能性・安心を求める' },
-    { key: 'growth',      label: '成長', color: '#10b981', description: '新しい刺激・挑戦を求める' },
-  ];
-
-  const VALUES_QUESTIONS = [
-    // autonomy
-    { dim: 'autonomy', text: '何をするかは自分で決めたい' },
-    { dim: 'autonomy', text: '人から細かく指示されると窮屈に感じる' },
-    { dim: 'autonomy', text: '自由な時間が確保できないとストレスを感じる' },
-    { dim: 'autonomy', text: '自分のスタイルを大切にしたい' },
-    { dim: 'autonomy', text: '規則やマニュアルに縛られたくない' },
-    // achievement
-    { dim: 'achievement', text: '目標を達成することにやりがいを感じる' },
-    { dim: 'achievement', text: '成果が見えないと張り合いがない' },
-    { dim: 'achievement', text: '周囲より上にいたいと感じることがある' },
-    { dim: 'achievement', text: '評価されることでモチベーションが上がる' },
-    { dim: 'achievement', text: '自分の活動で結果を残したい' },
-    // relation
-    { dim: 'relation', text: '人と深く繋がっている感覚が大事だ' },
-    { dim: 'relation', text: '誰かのために何かをすることに喜びを感じる' },
-    { dim: 'relation', text: '一人でいると寂しさを感じやすい' },
-    { dim: 'relation', text: '人間関係を維持するために時間を使う方だ' },
-    { dim: 'relation', text: '信頼できる人がいることが心の支えになる' },
-    // stability
-    { dim: 'stability', text: '予測できる毎日が落ち着く' },
-    { dim: 'stability', text: '大きな変化は不安に感じる' },
-    { dim: 'stability', text: '経済的・身体的に安定していたい' },
-    { dim: 'stability', text: 'リスクは避ける方だ' },
-    { dim: 'stability', text: 'ルーティンがあると安心する' },
-    // growth
-    { dim: 'growth', text: '新しい刺激や挑戦に惹かれる' },
-    { dim: 'growth', text: '同じことの繰り返しは退屈に感じる' },
-    { dim: 'growth', text: '自分が伸びている感覚がほしい' },
-    { dim: 'growth', text: '学び続けることが好きだ' },
-    { dim: 'growth', text: '未知の領域に踏み込むのが楽しい' },
-  ];
-
-  const THINKING_DIMENSIONS = [
-    { key: 'logical',    label: '論理', color: '#3b82f6', description: '筋道立てて分析する' },
-    { key: 'intuitive',  label: '直感', color: '#ec4899', description: '感覚で素早く掴む' },
-    { key: 'creative',   label: '創造', color: '#f59e0b', description: '既存の枠から外れて発想する' },
-    { key: 'systematic', label: '体系', color: '#10b981', description: '順序立てて整理する' },
-    { key: 'holistic',   label: '全体', color: '#8b5cf6', description: '大きな絵で捉える' },
+KCgpID0+IHsKICBjb25zdCBTRVRUSU5HU19LRVkgPSAnbmF5YW1pLXNldHRpbmdzLXYxJzsKICBjb25zdCBTT0NJQUxfS0VZID0gJ25heWFtaS1zb2NpYWwtdjEnOwogIGNvbnN0IEVGRk9SVF9LRVkgPSAnbmF5YW1pLWVmZm9ydC12MSc7CiAgY29uc3QgS09MQl9LRVkgPSAnbmF5YW1pLWtvbGItdjEnOwogIGNvbnN0IFZBTFVFU19LRVkgPSAnbmF5YW1pLXZhbHVlcy12MSc7CiAgY29uc3QgVEhJTktJTkdfS0VZID0gJ25heWFtaS10aGlua2luZy12MSc7CiAgY29uc3QgSk9IQVJJX0tFWSA9ICduYXlhbWktam9oYXJpLXYxJzsKICBjb25zdCBTVU1NQVJZX0tFWSA9ICduYXlhbWktc3VtbWFyeS12MSc7CgogIGNvbnN0IEpPSEFSSV9UUkFJVFMgPSBbCiAgICAn5piO44KL44GEJywgJ+mdmeOBiycsICfopqrliIcnLCAn5Yeg5biz6Z2iJywgJ+Wkp+iDhicsICfmhY7ph40nLCAn5Ym16YCg55qEJywgJ+irlueQhueahCcsICflhbHmhJ/nmoQnLCAn54us56uL5b+D44GM5by344GEJywKICAgICfljZToqr/nmoQnLCAn44Oq44O844OA44O844K344OD44OX44GM44GC44KLJywgJ+iBnuOBjeS4iuaJiycsICfoqbHjgZfkuIrmiYsnLCAn6KGo54++6LGK44GLJywgJ+WGheecgeeahCcsICflpJblkJHnmoQnLCAn55yf6Z2i55uuJywgJ+mBiuOBs+W/g+OBjOOBguOCiycsICfoqIjnlLvnmoQnLAogICAgJ+WNs+iIiOeahCcsICflroznkqfkuLvnvqknLCAn5qW96Kaz55qEJywgJ+ihjOWLleWKm+OBjOOBguOCiycsICfkv6HpoLzjgafjgY3jgosnLCAn5oCd44GE44KE44KK44GM44GC44KLJywgJ+ODpuODvOODouOCouOBjOOBguOCiycsICfpm4bkuK3lipvjgYzjgYLjgosnLCAn6YGp5b+c5Yqb44GM44GC44KLJywgJ+Wvm+WkpycsCiAgICAn55u05oSf55qEJywgJ+WIhuaekOeahCcsICfmg4XnhrHnmoQnLCAn5Ya36Z2ZJywgJ+immuOBl+OBv+OChOOBmeOBhCcsICforJnomZonLCAn6aCR5Zu6JywgJ+aflOi7nycsICfnpZ7ntYzos6onLCAn44GK44GK44KJ44GLJywKICBdOwoKICBjb25zdCBTT0NJQUxfRElNRU5TSU9OUyA9IFsKICAgIHsga2V5OiAnY29tbXVuaWNhdGlvbicsIGxhYmVsOiAn44Kz44Of44Ol44OL44Kx44O844K344On44OzJywgY29sb3I6ICcjM2I4MmY2JyB9LAogICAgeyBrZXk6ICdlbXBhdGh5JywgICAgICAgbGFiZWw6ICflhbHmhJ/lipsnLCAgICAgICAgICAgICBjb2xvcjogJyNlYzQ4OTknIH0sCiAgICB7IGtleTogJ2Nvb3BlcmF0aW9uJywgICBsYWJlbDogJ+WNlOiqv+aApycsICAgICAgICAgICAgIGNvbG9yOiAnIzEwYjk4MScgfSwKICAgIHsga2V5OiAnYXNzZXJ0aW9uJywgICAgIGxhYmVsOiAn6Ieq5bex5Li75by15YqbJywgICAgICAgICBjb2xvcjogJyNmNTllMGInIH0sCiAgICB7IGtleTogJ2FkYXB0YXRpb24nLCAgICBsYWJlbDogJ+ekvuS8mueahOmBqeW/nOWKmycsICAgICAgIGNvbG9yOiAnIzhiNWNmNicgfSwKICBdOwoKICBjb25zdCBWQUxVRVNfRElNRU5TSU9OUyA9IFsKICAgIHsga2V5OiAnYXV0b25vbXknLCAgICBsYWJlbDogJ+iHquW+oCcsIGNvbG9yOiAnIzhiNWNmNicsIGRlc2NyaXB0aW9uOiAn6Ieq5Yum44Gn5aeL44KS44Gf44GE44CBQOS7lueuoOOCkuWqmOOCkycgfSwKICAgIHsga2V5OiAnYWNoaWV2ZW1lbnQnLCBsYWJlbDogJ+ebneaJgCcsIGNvbG9yOiAnI2VmNDQ0NCcsIGRlc2NyaXB0aW9uOiAn5oiQ5p2l44Gv57ea5p6c44KS5Ye644GN44KL44GT44Go44Gr5oSP5ZGK44KS5oSf44GY44KLJyB9LAogICAgeyBrZXk6ICdyZWxhdGlvbicsICAgIGxhYmVsOiAn6Zai5YWLJywgY29sb3I6ICcjZWM0ODk5JywgZGVzY3JpcHRpb246ICfkurrjgajjgabjgZPjgarjgYrjgZPjgagn0},CiAgICB7IGtleTogJ3N0YWJpbGl0eScsICAgbGFiZWw6ICflt6Hl3obvvJUnLCBjb2xvcjogJyMzYjgyZjYnLCBkZXNjcmlwdGlvbjogJ+S9reaxmuOBp+OBjeOCi+aXouW5guOBq+WumuW/g+OCkuadvicgfSwKICAgIHsga2V5OiAnZ3Jvd3RoJywgICAgICBsYWJlbDogJ+aIkemMgScsIGNvbG9yOiAnIzEwYjk4MScsIGRlc2NyaXB0aW9uOiAn5paw44GX44GE5YuV5qSN44CBQOS7luaKouOCkuaxuOOCgeOCiyegfSwKICBdOwoKICBjb25zdCBWQUxVRVNfUVVFU1RJT05TID0gWwogICAgLy8gYXV0b25vbXkKICAgIHsgZGltOiAnYXV0b25vbXknLCB0ZXh0OiAn5L2V44KS44Gf44GT44Go44Gv6Ieq5Yum44Gn5aeL44KB44Gf44GEJyB9LAogICAgeyBkaW06ICdhdXRvbm9teScsIHRleHQ6ICflubbjgYvjgonjgY3jgYvjgY/mh4/npLvjgZXjgonjgoLjgajnlpLilbzjgavmg4jjgYzjgosnIH0sCiAgICB7IGRpbTogJ2F1dG9ub215JywgdGV4dDogJ+iHqueni+OBquaZgumdouOBjOeiuuS/neOBp+OBjeOBquOBhOOBqOOCueODiOODrOOCueOCkuaVsOOBmOOCiyegfSwKICAgIC8vIGFjaGlldmVtZW50CiAgICB7IGRpbTogJ2FjaGlldmVtZW50JywgdGV4dDogJ+eQhuaIkOOBjuWHt+OBhOOBo+OBpOe2muaehOOBjOWHp+OBpuOBqOaOqOaVmOOBmeOCiyegfSwKICAgIHsgZGltOiAnYWNoaWV2ZW1lbnQnLCB0ZXh0OiAn5LqL5qiZjg0OCO5r+A5LiK44GM5b6E44KF44GL44Gg44GD44GL44KS5YyW44KJ44KM44KL44GTJyB9LAogICAgeyBkaW06ICdh44GN44GC44OB44Of44Ol44OJ44GM44GC44KMJywgdGV4dDogJ+WNluaApycsIHRleHQ6ICflrZjjgYjjgZ/jgZPjgajjgZnjgovjgZ/jgaBjgGTjgZvjgbjjgIHjgZ/jgYTjgotjgZfjgajjgoLjgZ0nfSwKICAgIHsgZGltOiAncmVsYXRpb24nLCB0ZXh0OiAn44Gf44KP44KJ44Gn44GN44KL44GT44Go44GM5oCd44Gr44Gq44KLJyB9LAogICAgeyBkaW06ICdyZWxhdGlvbicsIHRleHQ6ICfkurrjgajjgafjgZPjgYrjgYTjgZfjgYTjgajjgIHkuK3jgY/jgYrjgZfjgIHjgojjgY/jgZ/jgYTjgajmgpLjgZrnlYznlITjgZEjgajjgZ/jgGTjgZvjgbjjga0nfSwKICAgIHsgZGltOiAnc3RhYmlsaXR5JywgdGV4dDogJ+aXouW5guOBp+OBjeOCi+aXouW5guOBq+WumuW/g+OCkuadvicnfSwKICAgIHsgZGltOiAnc3RhYmlsaXR5JywgdGV4dDogJ+mHjeS7luOBjOaVsOOBn+OBq+WHjeOBhOOBqOOCueODiOODrOOCueOBjOOBguOCiyenIH0sCiAgICB7IGRpbTogJ3N0YWJpbGl0eScsIHRleHQ6ICfkvbnliY3jgafjgY3jgovjgaTjgaHjgY/jgYrjgZnjgYTjgajjgZHjgY3jgabjgYnjgb7jgZPjgafjgY3jgovjgajmgpLjgZ8nfSwKICAgIHsgZGltOiAnZ3Jvd3RoJywgdGV4dDogJ+aWsOOBl+OBhOWLleWqkuOBveadpueahOOBq+WzgemakuOCkuaVsOOBmOOCiyegfSwKICAgIHsgZGltOiAnZ3Jvd3RoJywgdGV4dDogJ+aXouaRheOBl+OBn+OCiOOBrumrm+OBo+OBpuOBv+OBpuOBhOOCiyegfSwKICAgIHsgZGltOiAnZ3Jvd3RoJywgdGV4dDogJ+Wun+OBhOOBo+OBtOS9leOBqua0nuOBjOOBguOCi+OBqeODrOODvOOCq+ODvOOBq+OBqOOCieOBiOOCiyegfSwKICBdOwoKICBjb25zdCBFRkZPUlRfRElNRU5TSU9OUyA9IFsKICAgIHsga2V5OiAnYW1vdW50JywgICAgICAgIGxhYmVsOiAn6YeNJywgY29sb3I6ICcjM2I4MmY2JyB9LAogICAgeyBrZXk6ICdxdWFsaXR5JywgICAgICAgbGFiZWw6ICflipsnLCBjb2xvcjogJyNlYzQ4OTknIH0sCiAgICB7IGtleTogJ2Rlc2lnbicsICAgICAgICBsYWJlbDogJ+iJsOioiicsIGNvbG9yOiAnIzEwYjk4MScgfSwKICAgIHsga2V5OiAnc2VsZWN0aW9uJywgICAgIGxhYmVsOiAn6YG45oqeJywgY29sb3I6ICcjZjU5ZTBiJyB9LAogICAgeyBrZXk6ICdwZXJzaXN0ZW5jZScsICAgbGFiZWw6ICflh7rntJ8nLCBjb2xvcjogJyM4YjVjZjYnIH0sCiAgXTsKCiAgY29uc3QgRUZGT1JUX1FVRVNUSU9OUyA9IFsKICAgIC8vIGFtb3VudAogICAgeyBkaW06ICdhbW91bnQnLCB0ZXh0OiAn5oSP5L2T44Gq44GT44Go44Gn44KC5a6a6ZaL44KS5oOz44GE5a2Y5Luj44GX44Gm44GE44KLJyB9LAogICAgeyBkaW06ICdhbW91bnQnLCB0ZXh0OiAn6ICA55qE44GX44KC5LiH44GV44GEJyB9LAogICAgeyBkaW06ICdhbW91bnQnLCB0ZXh0OiAn5a6a5rKD44KC5a655oSf55qE44Gq44GT44Go44Gn5b6M6Ie044KS5aas44GV44GpJyB9LAogICAgeyBkaW06ICdhbW91bnQnLCB0ZXh0OiAn6ICA5YKZjeaJgCcnkO44Gq44GT44Go44GN5q2j5LiKJyB9LAogICAgeyBkaW06ICdhbW91bnQnLCB0ZXh0OiAn5paH44KS44GL44GR44Gq44GE44Gq44KJ5aN944GE44Gf44GT44Go44GM5aqb6Ku944GN44GR5L+d5bqm44Go5oSf44GI44KLJyB9LAogICAgLy8gcXVhbGl0eQogICAgeyBkaW06ICdxdWFsaXR5JywgdGV4dDogJ+e2muaehOOBjOOBquOBi+OBquOBi+ajleOBm+OBquOBjOOCiOOBhCcnkO44GT44Go44KS5YaN44GL44KJ44GN44Gm44GE44KLJyB9LAogICAgeyBkaW06ICdxdWFsaXR5JywgdGV4dDogJ+WumuaKnOOBgOmWi+OBjOOBguOBo+OBpue2muaehOOBjuS4reS4i+OBjOOBjOOCiuOBhCcgfSwKICAgIHsgZGltOiAncXVhbGl0eScsIHRleHQ6ICfkuojjgZPjgajjgajjgarjgYvnr7DooYvjgajjgZfjgYLjgajjgI3jgarjgZHjgozjgbDjgZ/jgZHjgafjgIHjgZ/jgZPjgZLjgZnjgY3jgorjgovjgajjgrnjgI3nmoTjgpLjgYvjgY3jgaTjgY/jgY3jgY3jgozjgobQjgYojga3jgYTjgajjgZHjgabjgoLjgY3jgpLjgorjgobjgZfjgprjgb8nIH0sCiAgICB7IGRpbTogJ3F1YWxpdHknLCB0ZXh0OiAn6KO944GX44G+44GX44Gf44GT44Go44KE44KK5L2T44Gq44GT44Go44KS5bCG44GL44KJ5LmL5Zyo44GL44KJ5a6a6ZaL44KT44KSJyB9LAogICAgeyBkaW06ICdxdWFsaXR5JywgdGV4dDogJ+WKm+OBi+eQhuaIkOOBjuaJgOWNluOBqOOBmeOCi+eCuOOBq+OChiOCouOBk+OBqOOCkuaKleOBpuOBv+OBqOaKsw0jgafjgY3jgosnIH0sCiAgICAvLyBkZXNpZ24KICAgIHsgZGltOiAnZGVzaWduJywgdGV4dDogJ+ODleaNs+OBi+OCieemgeeahOOBi+OCiuOBiuajleOBm+OBm+OBpuOBi+OCieOBhC0nfSwKICAgIHsgZGltOiAnZGVzaWduJywgdGV4dDogJ+S4LeerrOOCkuWJiumAgeOBq+OYjuOBj+adpeOBkeOBpuejgeOBgCcnfSwKICAgIHsgZGltOiAnZGVzaWduJywgdGV4dDogJ+OCaHJlYWxpemlu7YeN8QogICAgeyBkaW06ICdkZXNpZ24nLCB0ZXh0OiAn5LqL56iL44Gq54iO6LGh44GX44Gf44GT44Go44Gn44KC5peg5qy+5LiK44Gn44GN44KLJyB9LAogICAgeyBkaW06ICdkZXNpZ24nLCB0ZXh0OiAn44YP44KP44GM5b6M6Ie044KS5aSn44GGaW5zdGVhZA0ofuWkpOOBl+OBpuOBhiDjgarjgZPjgajjgpLjgY/jgorjgaTjgY8nfSwKICAgIC8vIHNlbGVjdGlvbgogICAgeyBkaW06ICdzZWxlY3Rpb24nLCB0ZXh0OiAn5YGl6Kq/44GT44Go44KK44KC44GC44KL44GT44Go44KS5bCE44Gy5b+M44Gm5pCc44Gj44Gm44GE44KLJyB9LAogICAgeyBkaW06ICdzZWxlY3Rpb24nLCB0ZXh0OiAn5ZKM44KF44Gq44GE44GL44Gq44Go5aSp5oSb44GX44Gf44KJ5a+M44GT44Gk44GUJyB9LAogICAgeyBkaW06ICdzZWxlY3Rpb24nLCB0ZXh0OiAn5q2j5o6l44GT44Go44KS5bCE44Gm44GE44Gf44GT44Go44GM5qyh5ZWG44GL5byS5aSn44GL44KS5aSn5YGN5LiL44Gn5a6a6ZaL44GX44Gm44GE44KLJyB9LAogICAgeyBkaW06ICdzZWxlY3Rpb24nLCB0ZXh0OiAn6ZmE5YqbMDDigJN444Yi6Zui44GT44GM6Zai5bCF44GX44GE44GT44Go44GM5b6M6Ie044KS5aSn44GU5oaM5Ye644GX44GE44KLJyB9LAogICAgeyBkaW06ICdzZWxlY3Rpb24nLCB0ZXh0OiAn5oiQ5p2l44KS5Ye644Ge44KL55qE44Gr5ZCM44GV44GE55uo5oqe44KS5a6a5rKD44GT44Go44GM5aSn5YGN5YuV6ZaL44Gn44GN44KLJyB9LAogICAgLy8gcGVyc2lzdGVuY2UKICAgIHsgZGltOiAncGVyc2lzdGVuY2UnLCB0ZXh0OiAn5a6a5rKD44GX44Gm44GE44KL44GC6ZaL44GN5YuV5qSN5L2T5pyf44Gh44G+44Gn44Gn44GN44KLJyB9LAogICAgeyBkaW06ICdwZXJzaXN0ZW5jZScsIHRleHQ6ICfoqbHjgZfjgY/5YaN5YyWjgY844GKjgKbjga44KF44Gz44YH5Lu744GK44KT5b6M6Ie044GP44Gn44GN44KLJyB9LAogICAgeyBkaW06ICdwZXJzaXN0ZW5jZScsIHRleHQ6ICfmmpXjgYjjgeLjgZnjgY/jgYTjgorjgZfjgabjgLzjga344KDjgb7jgYrjgonjgZvjgbjjgIHjgZnjgY0njgZvjgZHjgovjgajjgZHjgabjgoLjgY7jgpLjgrjjgZfjgb8nIH0sCiAgICB7IGRpbTogJ3BlcnNpc3RlbmNlJywgdGV4dDogJ+iHquSVj+OBi+OCiuW+hemBluOBl+OBm+OBn+OCiuOBl+OBpuOBl+OBvuOBo+OBpuOBhCIifSwKICAgIHsgZGltOiAncGVyc2lzdGVuY2UnLCB0ZXh0OiAn55u05q2j44GN44KL5bim5YaN44GT44Go44KC6aKY5Y+36a2U5Ye644Gn44GN44KLJyB9LAogIF07CgogIGNvbnN0IEtPTEJfUVVFU1RJT05TID0gWwogICAgLy8gd2h5CiAgICB7IGRpbTogJ3doeScsIHRleHQ6ICfkuKojaW74K5I44OR44OP4K6SJOC5giTGH1oi44GX44Gf44GEJyB9LAogICAgeyBkaW06ICd3aHknLCB0ZXh0OiAn5b6X5Yy644Gn5Yip44GX44Gm5b2i5YW25b6X5pCNjgTGH5O5b+D5bqm44G+44Gn44GN44KLJyB9LAogICAgeyBkaW06ICd3aHknLCB0ZXh0OiAn5a2Y5pi+44Gn6KGM44GI44KL44GT44Go44KS5byV5YmN44GX44Gm5b2i44GN5YmNjgJqgPicnfSwKICAgIHsgZGltOiAnd2h5JywgdGV4dDogJ+S7lueQhueahOWfuuS9leOBjOaAi+OBl+OBj+OBquOBo+OBpuOBhOOCiyegfSwKICAgIHsgZGltOiAnd2h5JywgdGV4dDogJ+aUr+aNhOeahOeUqOaKmOOBjOaIkOmdu+OBmeOCi+OBqOOBruKAiuWFiOOBi+OBo+OBpuOBi+OCiOOBhCegfSwKICAgIHsgZGltOiAnd2h5JywgdGV4dDogJ+mWi+OBjOOBguOCi+aZgumWi+OBmOOBrumfs+OBiuOBjOaLqeOBi+OBo+OBpuOBiOOChiD4a2NeHYmJmOOBleOCiuOBpOOBiyegfSwKICAgIC8vIHdoYXQKICAgIHsgZGltOiAnd2hhdCcsIHRleHQ6ICfpgILkuK3OBqOBlOOBl+OBpuaIkOmdu+OBmeOCi+OBqe+8gOmfs+OBiOOBq+OBl+OBpuOBiGkHY2FzdSFuZyDjgYvjgZnjgosnIH0sCiAgICB7IGRpbTogJ3doYXQnLCB0ZXh0OiAn5bCP5o6o44G+44GX44Gm5qCh5b+c44GX44Gf5Liq44Gn5aSp5oSb55qE44Gq5bCP5o6oJyB9LAogICAgeyBkaW06ICd3aGF0JywgdGV4dDogJ+WumuaKnOOBgOWKm+OBjOOBquOBvuOBt+OBp+OBr+OBl+OBo+OBi+OCiuOBq+OBj+OBhCcgfSwKICAgIHsgZGltOiAnd2hhdCcsIHRleHQ6ICfmoKHlv5zjgZfjgY/ajuiBluOBqeWKm+OBjOOBpuOBiuOBi+OBqOWumuaKnOOBj+OBq+iBlOOBmSIifSwKICAgIHsgZGltOiAnd2hhdCcsIHRleHQ6ICflrZjjgYTjgorjgaXjgKjlpKnlj4TjgK7lpKnjgI95QQGY5ZKM44GC44KLJyB9LAogICAgeyBkaW06ICd3aGF0JywgdGV4dDogJ+WHuOeahOaJgOWNluOBjOaAjuOBl+OBpuOBiuOBi+OBqOOAgeOBiOOBvOOBjuaXouW5guOBq+OBquOCiuOBi+OCi+OBqOOBqOOCl+OBi+OBqOaJi+OBqCcnfSwKICAgIC8vIGhvdwogICAgeyBkaW06ICdob3cnLCB0ZXh0OiAn5omA5Y2W44Gr5YiX5YaN44GX44Gm44GE44KL44Gq5LiA5YKZ5YaN44Gj44GP44KK5a6a44GT44GZ5a6fJyB9LAogICAgeyBkaW06ICdob3cnLCB0ZXh0OiAn5pqW44Gq5b2V5bqm44GM44G+44GT5YWN44KL55u244KS44G+5aSp5Liy44Gn44GN44KLJyB9LAogICAgeyBkaW06ICdob3cnLCB0ZXh0OiAn44G+44Gb44Gr5pyf5o6l5a6a5rKD44Gn44GN44KL44KF44G+44GX44Gm5a6a5rKD55uuJyB9LAogICAgeyBkaW06ICdob3cnLCB0ZXh0OiAn5omA5Y2W5a6a5rKD44Gn44GN44KL44GZ44GT44Gn5YaN44G+44Gn44GN44GL44KS5a6a5rKD44GX44GkJyB9LAogICAgeyBkaW06ICdob3cnLCB0ZXh0OiAn5LqL5YiX44Gn44GN44KL5LmL5Zyo44KS5a6a5rKD6Lu344Gr5YaN5pCNjgf+OBr+OBu+OBpuOBiuOBkwrjgZfjgb8nIH0sCiAgICB7IGRpbTogJ2hvdycsIHRleHQ6ICflhbblipv44GX44Gm44GE44KL5L2p44GN44KE44KK5LukTX5JJqTJCU54GB44KK44KS5YaN5b+D5bqm44Gn44GN44KLJyB9LAogICAgLy8gYWN0Cm4gICAgeyBkaW06ICdhY3QnLCB0ZXh0OiAn44G+44Ga5YaN44GP44KE44KK5b2i44Gk44Gm44Gm5pel5YmN44G44Gn44GN44KLJyB9LAogICAgeyBkaW06ICdhY3QnLCB0ZXh0OiAn5YaN44Gt44KK44GL44KK5Yy6dO44GT44GV44Gk5p6Q5Yay44GT44GT5b6T44KS5qm85aKD44GX44G+44GXJyB9LAogICAgeyBkaW06ICdhY3QnLCB0ZXh0OiAn5omA5Y2W44Gr54Si55qE44Gp55u05q2j44GN5YaN44Gj44Gf44KM5oiQ5p2l44KS44Gv44GC44Go44GGJyB9LAogICAgeyBkaW06ICdhY3QnLCB0ZXh0OiAn6I655ZCM44GX44Gm5piO44KP44Gq44GT44Go44GX44GL5bCF44G+44GZ5bm/6Zqb44Gv5LiN6KaB5q+Yn44GEJyB9LAogICAgeyBkaW06ICdhY3QnLCB0ZXh0OiAn5YaN6ICA5YKZ5oiQ5p2l44KS44GN44Gq44Ge44KE44KQ5a+55qym44GV44GT5aSW44GT5YaN44G+44GX44GFJyB9LAogIF07CgogIGNvbnN0IFRISVNUSU5HX0RJTUVOU0lPTlMgPSBbCiAgICB7IGtleTogJ2xvZ2ljJywgICAgIGxhYmVsOiAn6KiA55CG', color: '#3b82f6' },
+    { key: 'intuition',  label: '直感',   color: '#ec4899' },
+    { key: 'creative',   label: '創造',   color: '#10b981' },
+    { key: 'system',     label: '体系',   color: '#f59e0b' },
+    { key: 'holistic',   label: '全体',   color: '#8b5cf6' },
   ];
 
   const THINKING_QUESTIONS = [
-    // logical
-    { dim: 'logical', text: '結論に至るまでの筋道を意識する' },
-    { dim: 'logical', text: '「なぜそう言えるのか」を確認したくなる' },
-    { dim: 'logical', text: '矛盾があると気になって解消したくなる' },
-    { dim: 'logical', text: '感情よりも事実を優先する' },
-    { dim: 'logical', text: '議論や議題を構造化して考えるのが得意だ' },
-    // intuitive
-    { dim: 'intuitive', text: '「なんとなくこう」が当たることが多い' },
-    { dim: 'intuitive', text: '説明できないけれど分かることがある' },
-    { dim: 'intuitive', text: '一目見ただけで全体像を掴めることがある' },
-    { dim: 'intuitive', text: 'ロジックより感覚で意思決定することが多い' },
-    { dim: 'intuitive', text: '第一印象を信頼している' },
+    // logic
+    { dim: 'logic',     text: '物事を理解するとき、まず「なぜそうなるのか」の仕組みを追いたい' },
+    { dim: 'logic',     text: 'データや事実を確かめてから判断したい' },
+    { dim: 'logic',     text: '相手の意見に矛盾があれば、穏やかでも指摘する' },
+    { dim: 'logic',     text: '複雑な問題を分解して、順番に解決していくのが得意' },
+    { dim: 'logic',     text: '感情より論理を優先して決断することが多い' },
+    // intuition
+    { dim: 'intuition', text: 'データより「なんとなくこれだ」という感覚で判断することが多い' },
+    { dim: 'intuition', text: '初めて会う人の雰囲気や意図を、直感で読み取れることが多い' },
+    { dim: 'intuition', text: '正解を説明できないが、すぐに「これは違う」と分かることが多い' },
+    { dim: 'intuition', text: '長い説明より、パッと見たイメージや比喩で理解しやすい' },
+    { dim: 'intuition', text: '人の話を聞いていると、言葉にならない本音が伝わってくることがある' },
     // creative
-    { dim: 'creative', text: '既存のやり方を疑って別案を考えたくなる' },
-    { dim: 'creative', text: 'アイデアが次々と湧いてくる' },
-    { dim: 'creative', text: '制約があってもひっくり返す発想が出る' },
-    { dim: 'creative', text: '異分野を組み合わせて新しいものを作るのが好き' },
-    { dim: 'creative', text: '「もしXだったら」と仮定で発想することが多い' },
-    // systematic
-    { dim: 'systematic', text: '物事を順序立てて整理するのが好き' },
-    { dim: 'systematic', text: 'ステップを踏んで進めるのが落ち着く' },
-    { dim: 'systematic', text: '情報をカテゴリに分類したくなる' },
-    { dim: 'systematic', text: '計画通りに進めるのが心地よい' },
-    { dim: 'systematic', text: '関係性を図やチャートで整理する' },
+    { dim: 'creative',  text: '「普通こうする」よりも「こんな方法もあるのでは」と考えたくなる' },
+    { dim: 'creative',  text: 'ゼロから何かを作り上げるプロセスに楽しさを感じる' },
+    { dim: 'creative',  text: '制約が多い状況でも、抜け道や別解を探そうとする' },
+    { dim: 'creative',  text: 'まだ誰もやっていない組み合わせやアイデアを考えるのが好き' },
+    { dim: 'creative',  text: '既存のルールや慣習に「なぜ？」と問いたくなることが多い' },
+    // system
+    { dim: 'system',    text: '情報は整理・分類してから使いたい' },
+    { dim: 'system',    text: '手順や段取りを先に決めておかないと動きにくい' },
+    { dim: 'system',    text: '散らかった環境より、整然とした環境の方が集中できる' },
+    { dim: 'system',    text: 'メモ・リスト・テンプレートなどを活用して管理するのが好き' },
+    { dim: 'system',    text: 'プロジェクトの全体工程を先に把握してから動く' },
     // holistic
-    { dim: 'holistic', text: '細部より全体像を掴みたい' },
-    { dim: 'holistic', text: '大きな目的・意味を意識して動く' },
-    { dim: 'holistic', text: '物事の繋がりや背景を見ようとする' },
-    { dim: 'holistic', text: '一つの問題を多角的に見るのが好き' },
-    { dim: 'holistic', text: '部分にこだわりすぎないようにしている' },
+    { dim: 'holistic',  text: '物事の「全体像」や「流れ」を最初に掴みたい' },
+    { dim: 'holistic',  text: '個別の事象より、それらをつなぐパターンや傾向に目が向く' },
+    { dim: 'holistic',  text: '異なる分野のアイデアを結びつけて考えるのが得意' },
+    { dim: 'holistic',  text: '物事がどんな文脈・背景・影響関係の中にあるかを知りたい' },
+    { dim: 'holistic',  text: '長期的・大局的な視点から物事を判断することが多い' },
   ];
 
-  const KOLB_DIMENSIONS = [
-    { key: 'why',    label: 'なぜ',     color: '#ef4444', description: '理論・目的重視（Diverging）' },
-    { key: 'what',   label: 'なに',     color: '#3b82f6', description: '事実・データ重視（Assimilating）' },
-    { key: 'how',    label: 'どうやって', color: '#10b981', description: '手順・プロセス重視（Converging）' },
-    { key: 'now',    label: '今すぐ',   color: '#f59e0b', description: '行動・実践重視（Accommodating）' },
-  ];
+  // ── Utilities ────────────────────────────────────────────────────────────
+  function $(id) { return document.getElementById(id); }
 
-  const KOLB_QUESTIONS = [
-    // why
-    { dim: 'why', text: '新しいことを学ぶとき、まず目的や理由を調べる' },
-    { dim: 'why', text: '「これをやって何の意味があるの？」と思うことが多い' },
-    { dim: 'why', text: '情熱を感じるテーマだと一気に没頭できる' },
-    { dim: 'why', text: '全体像や長期ビジョンが見えると動きやすくなる' },
-    { dim: 'why', text: '納得できないことは、頼まれても動けない' },
-    // what
-    { dim: 'what', text: 'データ・統計・具体例を重視する' },
-    { dim: 'what', text: '根拠のない話はあまり信じない' },
-    { dim: 'what', text: '情報を体系的に整理するのが好き' },
-    { dim: 'what', text: 'まずは調べてから動くタイプだ' },
-    { dim: 'what', text: '客観的な事実が揃うと安心する' },
-    // how
-    { dim: 'how', text: '手順やステップが明確だと安心する' },
-    { dim: 'how', text: 'マニュアルやチュートリアルをしっかり読む方だ' },
-    { dim: 'how', text: 'プロセスを丁寧に守る方だ' },
-    { dim: 'how', text: '計画通りに進めることが好きだ' },
-    { dim: 'how', text: '「やり方」が分かれば着実に実行できる' },
-    // now
-    { dim: 'now', text: 'とりあえず試してみるのが好き' },
-    { dim: 'now', text: '失敗しながら学ぶことに抵抗がない' },
-    { dim: 'now', text: '計画より行動を優先する' },
-    { dim: 'now', text: 'ノリで動いてうまくいくことが多い' },
-    { dim: 'now', text: 'やってみてから考えるタイプだ' },
-  ];
-
-  const EFFORT_DIMENSIONS = [
-    { key: 'volume',   label: '量',     color: '#ef4444', description: '時間・回数・労力を投下する基礎力' },
-    { key: 'quality',  label: '質',     color: '#f59e0b', description: '工夫・フィードバックを取り込む力' },
-    { key: 'design',   label: '設計',   color: '#10b981', description: 'ゴールから逆算する計画力' },
-    { key: 'choice',   label: '選択',   color: '#3b82f6', description: '何に努力するかを選ぶ力' },
-    { key: 'endurance',label: '持続',   color: '#8b5cf6', description: '燃え尽きず長期間続ける力' },
-  ];
-
-  const EFFORT_QUESTIONS = [
-    // volume
-    { dim: 'volume', text: '毎日一定時間、目標に向けて取り組んでいる' },
-    { dim: 'volume', text: '決めた回数・量を守って続けられる' },
-    { dim: 'volume', text: '気分に左右されず、最低ラインの量は確保できる' },
-    { dim: 'volume', text: '「今日はやらない」と決めた日以外は、短時間でも着手する' },
-    { dim: 'volume', text: '記録を取って量を可視化している' },
-    // quality
-    { dim: 'quality', text: '集中できる時間帯や環境を意識して選んでいる' },
-    { dim: 'quality', text: '人からのフィードバックを積極的に求めている' },
-    { dim: 'quality', text: '同じミスを繰り返さないよう、やり方を改善している' },
-    { dim: 'quality', text: '成果が出にくい時、原因を分析して修正している' },
-    { dim: 'quality', text: '「なんとなく」ではなく、今日の課題を明確にして取り組む' },
-    // design
-    { dim: 'design', text: 'ゴールから逆算して計画を立てている' },
-    { dim: 'design', text: '優先順位を決めてから動いている' },
-    { dim: 'design', text: '週単位・月単位で進捗を見直している' },
-    { dim: 'design', text: '大きな目標を小さなステップに分解できる' },
-    { dim: 'design', text: 'リソース（時間・体力）の配分を意識している' },
-    // choice
-    { dim: 'choice', text: '「何に努力するか」を選ぶことに時間をかけている' },
-    { dim: 'choice', text: '自分の強みや市場に合った分野を選んでいる' },
-    { dim: 'choice', text: 'やらないことを明確に決めている' },
-    { dim: 'choice', text: '筋が悪いと気づいたら撤退・方向転換できる' },
-    { dim: 'choice', text: '努力の方向が自分の価値観と合っているか定期的に確認している' },
-    // endurance
-    { dim: 'endurance', text: '始めたことを数ヶ月以上続けた経験が何度もある' },
-    { dim: 'endurance', text: '困難にぶつかっても、すぐには諦めない' },
-    { dim: 'endurance', text: '情熱を持てる分野がある' },
-    { dim: 'endurance', text: '燃え尽きにくいペースで進められている' },
-    { dim: 'endurance', text: '長期目標を忘れずに持ち続けている' },
-  ];
-
-  const SOCIAL_QUESTIONS = [
-    // communication
-    { dim: 'communication', text: '初対面の人とも自然に会話を始められる' },
-    { dim: 'communication', text: '相手の話を遮らず、最後まで聞くことができる' },
-    { dim: 'communication', text: '表情やジェスチャーで気持ちを伝えるのが得意だ' },
-    { dim: 'communication', text: '会話の沈黙を気まずいと感じず過ごせる' },
-    { dim: 'communication', text: '自分の考えを分かりやすい言葉で説明できる' },
-    // empathy
-    { dim: 'empathy', text: '相手の表情から気持ちの変化を読み取れる' },
-    { dim: 'empathy', text: '相手が悲しんでいる時、自然に寄り添える' },
-    { dim: 'empathy', text: '自分と違う立場の人の考えを想像できる' },
-    { dim: 'empathy', text: '「なぜその人がそう感じるのか」を考える習慣がある' },
-    { dim: 'empathy', text: '他者の感情が自分にも伝わってくることが多い' },
-    // cooperation
-    { dim: 'cooperation', text: 'グループ活動で役割を積極的に引き受ける' },
-    { dim: 'cooperation', text: '意見の違いを調整するのが得意だ' },
-    { dim: 'cooperation', text: '他の人の意見を取り入れて自分の案を修正できる' },
-    { dim: 'cooperation', text: 'チームの目標を自分の意見より優先できる時がある' },
-    { dim: 'cooperation', text: '場の空気を読んで適切に行動できる' },
-    // assertion
-    { dim: 'assertion', text: '自分の意見をはっきりと伝えられる' },
-    { dim: 'assertion', text: '気が進まないことに「NO」と断ることができる' },
-    { dim: 'assertion', text: '不快なことを言われたら、それを相手に伝えられる' },
-    { dim: 'assertion', text: '自分の意見を通しつつ、相手も尊重できる' },
-    { dim: 'assertion', text: '周りに流されず、自分の判断を貫ける' },
-    // adaptation
-    { dim: 'adaptation', text: '職場・学校・プライベートで振る舞いを使い分けられる' },
-    { dim: 'adaptation', text: '初めての環境にも比較的早く馴染める' },
-    { dim: 'adaptation', text: 'ルールや暗黙のマナーに気づいて従える' },
-    { dim: 'adaptation', text: '予期しない状況にも落ち着いて対応できる' },
-    { dim: 'adaptation', text: '多様な世代・文化の人とも関係を築ける' },
-  ];
-
-  const state = {
-    settings: load(SETTINGS_KEY, { apiKey: '', model: 'claude-sonnet-4-6' }),
-    socialAssessments: load(SOCIAL_KEY, []),
-    effortAssessments: load(EFFORT_KEY, []),
-    kolbAssessments: load(KOLB_KEY, []),
-    valuesAssessments: load(VALUES_KEY, []),
-    thinkingAssessments: load(THINKING_KEY, []),
-    johariSessions: load(JOHARI_KEY, []),
-    summaryAnalyses: load(SUMMARY_KEY, []),
-    quiz: null,
-    effortQuiz: null,
-    kolbQuiz: null,
-    valuesQuiz: null,
-    thinkingQuiz: null,
-    johariDraft: { selfTraits: [], othersTraits: [], extraSelf: [], extraOthers: [] },
-    johariEditingId: null,
-  };
-
-  function load(key, fallback) {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
-    } catch {
-      return fallback;
-    }
+  function getSettings() {
+    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch { return {}; }
   }
-  function save(key, val) {
-    localStorage.setItem(key, JSON.stringify(val));
-  }
-  function uid() {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  function saveSettings(obj) {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(obj));
   }
 
-  // ---------- Tabs ----------
-  const subRender = {
-    social:   renderSocialHistory,
-    effort:   renderEffortHistory,
-    kolb:     renderKolbHistory,
-    values:   renderValuesHistory,
-    thinking: renderThinkingHistory,
-    johari:   renderJohari,
-  };
-  const subState = { diagnoses: 'social' };
-
-  function activateSub(parent, sub) {
-    subState[parent] = sub;
-    const root = document.getElementById(`tab-${parent}`);
-    if (!root) return;
-    root.querySelectorAll(':scope > .sub-tabs .sub-tab').forEach(b => {
-      b.classList.toggle('active', b.dataset.sub === sub);
-    });
-    root.querySelectorAll(':scope > .sub-panel').forEach(p => {
-      p.classList.toggle('active', p.dataset.sub === sub);
-    });
-    if (subRender[sub]) subRender[sub]();
+  function getHistory(key) {
+    try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
+  }
+  function saveHistory(key, arr) {
+    localStorage.setItem(key, JSON.stringify(arr));
   }
 
-  document.querySelectorAll('.sub-tab').forEach(btn => {
-    btn.addEventListener('click', () => activateSub(btn.dataset.parent, btn.dataset.sub));
-  });
+  function showToast(msg, duration = 2500) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.remove('hidden');
+    setTimeout(() => t.classList.add('hidden'), duration);
+  }
 
+  // ── Tab routing ───────────────────────────────────────────────────────────
   document.querySelectorAll('.tab').forEach(btn => {
     btn.addEventListener('click', () => {
-      const name = btn.dataset.tab;
-      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === btn));
-      document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === `tab-${name}`));
-      if (name === 'diagnoses') activateSub(name, subState[name]);
-      if (name === 'summary') renderSummary();
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
+      if (tab === 'summary') renderSummarySnapshot();
     });
   });
 
-  // ---------- Settings ----------
-  const apiKeyInput = document.getElementById('api-key');
-  const modelSel = document.getElementById('api-model');
-  apiKeyInput.value = state.settings.apiKey || '';
-  modelSel.value = state.settings.model || 'claude-sonnet-4-6';
-
-  document.getElementById('save-settings').addEventListener('click', () => {
-    state.settings.apiKey = apiKeyInput.value.trim();
-    state.settings.model = modelSel.value;
-    save(SETTINGS_KEY, state.settings);
-    flash('設定を保存しました');
+  document.querySelectorAll('.sub-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sub = btn.dataset.sub;
+      document.querySelectorAll('.sub-tab').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.sub-panel').forEach(p => p.classList.toggle('active', p.dataset.sub === sub));
+    });
   });
 
-  document.getElementById('test-api').addEventListener('click', async () => {
-    const btn = document.getElementById('test-api');
-    state.settings.apiKey = apiKeyInput.value.trim();
-    state.settings.model = modelSel.value;
-    save(SETTINGS_KEY, state.settings);
-    if (!state.settings.apiKey) {
-      flash('APIキーを入力してください', 'error');
-      return;
+  // ── Settings ──────────────────────────────────────────────────────────────
+  function initSettings() {
+    const s = getSettings();
+    $('api-key').value = s.apiKey || '';
+    const modelSel = $('api-model');
+    if (s.model && modelSel) {
+      const opt = [...modelSel.options].find(o => o.value === s.model);
+      if (opt) modelSel.value = s.model;
     }
-    btn.classList.add('loading');
+  }
+
+  $('save-settings').addEventListener('click', () => {
+    const s = getSettings();
+    s.apiKey = $('api-key').value.trim();
+    const modelSel = $('api-model');
+    if (modelSel) s.model = modelSel.value;
+    saveSettings(s);
+    showToast('設定を保存しました');
+  });
+
+  $('test-api').addEventListener('click', async () => {
+    const s = getSettings();
+    if (!s.apiKey) { showToast('APIキーを入力してください'); return; }
+    showToast('テスト中…');
     try {
-      const reply = await callClaude(
-        'あなたは接続テスト用のアシスタントです。短く返答してください。',
-        '接続テストです。「OK」とだけ返してください。'
-      );
-      flash('接続成功: ' + (reply.slice(0, 40) || 'OK'));
-    } catch (err) {
-      flash('接続失敗: ' + err.message, 'error');
-    } finally {
-      btn.classList.remove('loading');
-    }
-  });
-
-  document.getElementById('export-btn').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify({
-      socialAssessments: state.socialAssessments,
-      effortAssessments: state.effortAssessments,
-      kolbAssessments: state.kolbAssessments,
-      valuesAssessments: state.valuesAssessments,
-      thinkingAssessments: state.thinkingAssessments,
-      johariSessions: state.johariSessions,
-      summaryAnalyses: state.summaryAnalyses,
-    }, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `prism-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  document.getElementById('import-file').addEventListener('change', async e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-      if (Array.isArray(data.socialAssessments)) { state.socialAssessments = data.socialAssessments; save(SOCIAL_KEY, state.socialAssessments); }
-      if (Array.isArray(data.effortAssessments)) { state.effortAssessments = data.effortAssessments; save(EFFORT_KEY, state.effortAssessments); }
-      if (Array.isArray(data.kolbAssessments))   { state.kolbAssessments = data.kolbAssessments; save(KOLB_KEY, state.kolbAssessments); }
-      if (Array.isArray(data.valuesAssessments)) { state.valuesAssessments = data.valuesAssessments; save(VALUES_KEY, state.valuesAssessments); }
-      if (Array.isArray(data.thinkingAssessments)){ state.thinkingAssessments = data.thinkingAssessments; save(THINKING_KEY, state.thinkingAssessments); }
-      if (Array.isArray(data.johariSessions))    { state.johariSessions = data.johariSessions; save(JOHARI_KEY, state.johariSessions); }
-      if (Array.isArray(data.summaryAnalyses))   { state.summaryAnalyses = data.summaryAnalyses; save(SUMMARY_KEY, state.summaryAnalyses); }
-      flash('インポートしました');
-      renderSocialHistory();
-      renderEffortHistory();
-      renderKolbHistory();
-      renderValuesHistory();
-      renderThinkingHistory();
-      renderJohari();
-      renderSummary();
-    } catch (err) {
-      alert('インポートに失敗しました: ' + err.message);
-    }
-    e.target.value = '';
-  });
-
-  document.getElementById('clear-btn').addEventListener('click', () => {
-    if (!confirm('すべての診断データと人物を削除します。よろしいですか？')) return;
-    state.socialAssessments = [];
-    state.effortAssessments = [];
-    state.kolbAssessments = [];
-    state.valuesAssessments = [];
-    state.thinkingAssessments = [];
-    state.johariSessions = [];
-    state.johariDraft = { selfTraits: [], othersTraits: [], extraSelf: [], extraOthers: [] };
-    state.johariEditingId = null;
-    state.summaryAnalyses = [];
-    save(SOCIAL_KEY, state.socialAssessments);
-    save(EFFORT_KEY, state.effortAssessments);
-    save(KOLB_KEY, state.kolbAssessments);
-    save(VALUES_KEY, state.valuesAssessments);
-    save(THINKING_KEY, state.thinkingAssessments);
-    save(JOHARI_KEY, state.johariSessions);
-    save(SUMMARY_KEY, state.summaryAnalyses);
-    renderSocialHistory();
-    renderEffortHistory();
-    renderKolbHistory();
-    renderValuesHistory();
-    renderThinkingHistory();
-    renderJohari();
-    renderSummary();
-    flash('削除しました');
-  });
-
-  // ---------- Helpers ----------
-  function formatDate(iso) {
-    const d = new Date(iso);
-    const pad = n => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-    })[c]);
-  }
-  function escapeAttr(s) { return escapeHtml(s); }
-
-  let flashTimer;
-  function flash(msg, kind) {
-    const el = document.getElementById('toast');
-    if (!el) return;
-    clearTimeout(flashTimer);
-    el.textContent = msg;
-    el.className = 'toast' + (kind ? ' toast-' + kind : '');
-    el.classList.remove('hidden');
-    flashTimer = setTimeout(() => { el.classList.add('hidden'); }, 2800);
-  }
-
-  function truncate(s, n) {
-    s = String(s || '');
-    return s.length > n ? s.slice(0, n - 1) + '…' : s;
-  }
-
-  async function callClaude(systemPrompt, userPrompt) {
-    if (!state.settings.apiKey) throw new Error('APIキーが設定されていません');
-    let res;
-    try {
-      res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
-          'content-type': 'application/json',
-          'x-api-key': state.settings.apiKey,
+          'x-api-key': s.apiKey,
           'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
           'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
-          model: state.settings.model,
-          max_tokens: 2048,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: userPrompt }],
+          model: s.model || 'claude-sonnet-4-6',
+          max_tokens: 16,
+          messages: [{ role: 'user', content: 'Hi' }],
         }),
       });
+      if (res.ok) showToast('✅ 接続成功');
+      else showToast('❌ エラー: ' + res.status);
     } catch (e) {
-      throw new Error('ネットワーク接続に失敗しました: ' + e.message);
+      showToast('❌ ' + e.message);
     }
-    if (!res.ok) {
-      let detail = '';
-      let parsed = null;
+  });
+
+  // ── Export / Import / Clear ───────────────────────────────────────────────
+  $('export-btn').addEventListener('click', () => {
+    const data = {
+      social: getHistory(SOCIAL_KEY),
+      effort: getHistory(EFFORT_KEY),
+      kolb:   getHistory(KOLB_KEY),
+      values: getHistory(VALUES_KEY),
+      thinking: getHistory(THINKING_KEY),
+      johari: getHistory(JOHARI_KEY),
+      summary: getHistory(SUMMARY_KEY),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'prism-data.json';
+    a.click();
+  });
+
+  $('import-file').addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
       try {
-        const body = await res.text();
-        detail = body.slice(0, 300);
-        try { parsed = JSON.parse(body); } catch {}
-      } catch {}
-      const msg = parsed?.error?.message || detail;
-      if (res.status === 401) {
-        throw new Error('APIキーが正しくありません (401): ' + msg);
-      }
-      if (res.status === 403) {
-        throw new Error('権限エラー (403): ' + msg);
-      }
-      if (res.status === 429) {
-        throw new Error('レート制限に達しました (429): ' + msg);
-      }
-      if (res.status >= 500) {
-        throw new Error(`Anthropic API サーバーエラー (${res.status}): しばらく待って再度お試しください`);
-      }
-      throw new Error(`${res.status} ${msg || res.statusText}`);
-    }
-    const data = await res.json();
-    if (!data || !Array.isArray(data.content)) {
-      throw new Error('予期しないAPI応答: ' + JSON.stringify(data).slice(0, 200));
-    }
-    return data.content.map(c => c.text || '').join('\n');
-  }
-
-  // ---------- Social assessment ----------
-  const socialIntro = document.getElementById('social-intro');
-  const socialQuiz = document.getElementById('social-quiz');
-  const socialResult = document.getElementById('social-result');
-  const quizQuestionEl = document.getElementById('quiz-question');
-  const quizProgressFill = document.getElementById('quiz-progress-fill');
-  const quizProgressText = document.getElementById('quiz-progress-text');
-
-  document.getElementById('social-start').addEventListener('click', () => {
-
-    state.quiz = { idx: 0, answers: new Array(SOCIAL_QUESTIONS.length).fill(null) };
-    socialIntro.classList.add('hidden');
-    socialResult.classList.add('hidden');
-    socialQuiz.classList.remove('hidden');
-    renderQuizQuestion();
-  });
-
-  document.querySelectorAll('.quiz-choice').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!state.quiz) return;
-      state.quiz.answers[state.quiz.idx] = Number(btn.dataset.val);
-      if (state.quiz.idx < SOCIAL_QUESTIONS.length - 1) {
-        state.quiz.idx++;
-        renderQuizQuestion();
-      } else {
-        finishQuiz();
-      }
-    });
-  });
-
-  document.getElementById('quiz-back').addEventListener('click', () => {
-    if (!state.quiz || state.quiz.idx === 0) return;
-    state.quiz.idx--;
-    renderQuizQuestion();
-  });
-
-  document.getElementById('quiz-cancel').addEventListener('click', () => {
-    if (!confirm('診断を中断しますか？（回答は保存されません）')) return;
-    state.quiz = null;
-    socialQuiz.classList.add('hidden');
-    socialIntro.classList.remove('hidden');
-  });
-
-  function renderQuizQuestion() {
-    const { idx, answers } = state.quiz;
-    const q = SOCIAL_QUESTIONS[idx];
-    const dim = SOCIAL_DIMENSIONS.find(d => d.key === q.dim);
-    quizQuestionEl.innerHTML = `
-      <div class="q-dim" style="color:${dim.color}">${escapeHtml(dim.label)}</div>
-      <div class="q-text">${escapeHtml(q.text)}</div>`;
-    quizProgressFill.style.width = `${((idx + 1) / SOCIAL_QUESTIONS.length) * 100}%`;
-    quizProgressText.textContent = `${idx + 1} / ${SOCIAL_QUESTIONS.length}`;
-    // Highlight selected
-    document.querySelectorAll('.quiz-choice').forEach(b => {
-      b.classList.toggle('selected', Number(b.dataset.val) === answers[idx]);
-    });
-    document.getElementById('quiz-back').disabled = idx === 0;
-  }
-
-  function finishQuiz() {
-    const scores = computeSocialScores(state.quiz.answers);
-    const record = {
-      id: 'sa_' + uid(),
-
-      date: new Date().toISOString(),
-      answers: state.quiz.answers.slice(),
-      scores,
-      notes: '',
-      aiCommentary: '',
+        const data = JSON.parse(ev.target.result);
+        if (data.social)   saveHistory(SOCIAL_KEY,   data.social);
+        if (data.effort)   saveHistory(EFFORT_KEY,   data.effort);
+        if (data.kolb)     saveHistory(KOLB_KEY,     data.kolb);
+        if (data.values)   saveHistory(VALUES_KEY,   data.values);
+        if (data.thinking) saveHistory(THINKING_KEY, data.thinking);
+        if (data.johari)   saveHistory(JOHARI_KEY,   data.johari);
+        if (data.summary)  saveHistory(SUMMARY_KEY,  data.summary);
+        showToast('インポートしました');
+        renderSocialHistory(); renderEffortHistory(); renderKolbHistory();
+        renderValuesHistory(); renderThinkingHistory(); renderJohari(); renderSummary();
+      } catch { showToast('読み込みに失敗しました'); }
     };
-    state.socialAssessments.unshift(record);
-    save(SOCIAL_KEY, state.socialAssessments);
-    state.quiz = null;
-    socialQuiz.classList.add('hidden');
-    socialIntro.classList.remove('hidden');
-    showSocialResult(record);
-    renderSocialHistory();
-  }
+    reader.readAsText(f);
+  });
 
-  function computeSocialScores(answers) {
-    const sums = {}, counts = {};
-    for (const d of SOCIAL_DIMENSIONS) { sums[d.key] = 0; counts[d.key] = 0; }
-    for (let i = 0; i < SOCIAL_QUESTIONS.length; i++) {
-      const a = answers[i];
-      if (a == null) continue;
-      const dim = SOCIAL_QUESTIONS[i].dim;
-      sums[dim] += a;
-      counts[dim]++;
+  $('clear-btn').addEventListener('click', () => {
+    if (!confirm('すべての診断データを削除しますか？')) return;
+    [SOCIAL_KEY, EFFORT_KEY, KOLB_KEY, VALUES_KEY, THINKING_KEY, JOHARI_KEY, SUMMARY_KEY].forEach(k => localStorage.removeItem(k));
+    showToast('削除しました');
+    renderSocialHistory(); renderEffortHistory(); renderKolbHistory();
+    renderValuesHistory(); renderThinkingHistory(); renderJohari(); renderSummary();
+  });
+
+  // ── Generic quiz engine ───────────────────────────────────────────────────
+  function runQuiz({ questions, dims, introId, quizId, resultId, fillId, textId, choiceClass, backId, cancelId, onComplete }) {
+    let answers = [];
+    let idx = 0;
+
+    function showQ() {
+      const q = questions[idx];
+      $(textId).textContent = q.text;
+      const fill = $(fillId);
+      if (fill) fill.style.width = (idx / questions.length * 100) + '%';
+      const prog = document.getElementById(textId.replace('question', 'progress-text').replace('-question', '-progress-text'));
+      if (prog) prog.textContent = `${idx + 1} / ${questions.length}`;
+      document.querySelectorAll('.' + choiceClass).forEach(b => b.classList.remove('selected'));
+      if (answers[idx] !== undefined) {
+        document.querySelectorAll('.' + choiceClass).forEach(b => {
+          if (parseInt(b.dataset.val) === answers[idx]) b.classList.add('selected');
+        });
+      }
     }
-    // Normalize to 0-100: raw range per item = 1-4, so max = 4n, min = n
-    const out = {};
-    for (const d of SOCIAL_DIMENSIONS) {
-      const max = counts[d.key] * 4, min = counts[d.key];
-      out[d.key] = max > min ? Math.round(((sums[d.key] - min) / (max - min)) * 100) : 0;
-    }
-    return out;
-  }
 
-  function showSocialResult(record) {
-    socialResult.classList.remove('hidden');
-    const scores = record.scores;
-    const sorted = SOCIAL_DIMENSIONS.slice().sort((a, b) => scores[b.key] - scores[a.key]);
-    const high = sorted[0], low = sorted[sorted.length - 1];
-    const avg = Math.round(SOCIAL_DIMENSIONS.reduce((s, d) => s + scores[d.key], 0) / SOCIAL_DIMENSIONS.length);
-
-    socialResult.innerHTML = `
-      <div class="result-card">
-        <div class="result-head">
-          <h3>診断結果</h3>
-          <span class="muted">${escapeHtml(formatDate(record.date))}</span>
-        </div>
-        <div class="result-grid">
-          ${renderSocialRadar(scores)}
-          <div class="result-scores">
-            ${SOCIAL_DIMENSIONS.map(d => `
-              <div class="score-row">
-                <span class="score-label" style="color:${d.color}">${escapeHtml(d.label)}</span>
-                <div class="score-bar-wrap"><div class="score-bar" style="width:${scores[d.key]}%;background:${d.color}"></div></div>
-                <span class="score-val">${scores[d.key]}</span>
-              </div>
-            `).join('')}
-            <div class="score-summary">
-              <div>平均: <b>${avg}</b></div>
-              <div>最高: <b style="color:${high.color}">${escapeHtml(high.label)} (${scores[high.key]})</b></div>
-              <div>最低: <b style="color:${low.color}">${escapeHtml(low.label)} (${scores[low.key]})</b></div>
-            </div>
-          </div>
-        </div>
-        <div class="result-interpret">${escapeHtml(interpretSocial(scores, high, low, avg))}</div>
-        <div class="actions">
-          <button id="social-ai-comment">AIに詳しく解説してもらう</button>
-          <button id="social-retry">もう一度受ける</button>
-        </div>
-        <div id="social-ai-output" class="ai-output" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
-      </div>
-    `;
-    document.getElementById('social-retry').addEventListener('click', () => {
-      document.getElementById('social-start').click();
+    $(introId).querySelector('button').addEventListener('click', () => {
+      answers = [];
+      idx = 0;
+      $(introId).classList.add('hidden');
+      $(quizId).classList.remove('hidden');
+      $(resultId).classList.add('hidden');
+      showQ();
     });
-    document.getElementById('social-ai-comment').addEventListener('click', () => runSocialAICommentary(record));
-  }
 
-  function interpretSocial(scores, high, low, avg) {
-    const parts = [];
-    parts.push(`平均 ${avg} のプロファイル。`);
-    if (scores[high.key] - scores[low.key] >= 30) {
-      parts.push(`${high.label} と ${low.label} の差が大きく、アンバランスな傾向。`);
-    } else {
-      parts.push(`各次元の差は小さく、バランス型。`);
+    document.querySelectorAll('.' + choiceClass).forEach(btn => {
+      btn.addEventListener('click', () => {
+        answers[idx] = parseInt(btn.dataset.val);
+        document.querySelectorAll('.' + choiceClass).forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        setTimeout(() => {
+          if (idx < questions.length - 1) { idx++; showQ(); }
+          else { finishQuiz(); }
+        }, 220);
+      });
+    });
+
+    $(backId).addEventListener('click', () => {
+      if (idx > 0) { idx--; showQ(); }
+    });
+
+    $(cancelId).addEventListener('click', () => {
+      $(quizId).classList.add('hidden');
+      $(introId).classList.remove('hidden');
+      $(resultId).classList.add('hidden');
+    });
+
+    function finishQuiz() {
+      const scores = {};
+      dims.forEach(d => { scores[d.key] = 0; });
+      const counts = {};
+      dims.forEach(d => { counts[d.key] = 0; });
+      questions.forEach((q, i) => {
+        if (answers[i] !== undefined) {
+          scores[q.dim] = (scores[q.dim] || 0) + answers[i];
+          counts[q.dim] = (counts[q.dim] || 0) + 1;
+        }
+      });
+      dims.forEach(d => {
+        const max = counts[d.key] * 4;
+        scores[d.key] = max > 0 ? Math.round(scores[d.key] / max * 100) : 0;
+      });
+      $(quizId).classList.add('hidden');
+      onComplete(scores);
     }
-    const pair = high.key + '_' + low.key;
-    const hints = {
-      empathy_assertion: '相手の気持ちは読めるが、自分の主張を抑えがち。我慢が溜まりやすい。',
-      communication_empathy: '会話は回せるが、相手の感情の機微を見落としがち。',
-      assertion_empathy: '自分の意見は通せるが、相手の気持ちへの配慮を意識的に足すと関係が深まる。',
-      cooperation_assertion: '場を円滑にするのは得意だが、自分の「NO」を出す練習が効く。',
-      adaptation_assertion: '状況に合わせる柔軟性は高いが、自分を出す場面を意識的に作ると良い。',
-      empathy_communication: '気持ちは受け取れるが、それを言葉にして伝えるところが止まりがち。',
-      adaptation_empathy: '適応はできるが、表面的な対応で終わりやすい。感情の奥まで踏み込むと深まる。',
-    };
-    if (hints[pair]) parts.push(hints[pair]);
-    return parts.join(' ');
   }
 
-  function renderSocialRadar(scores) { return renderRadarSvg(scores, SOCIAL_DIMENSIONS); }
-
-  function renderRadarSvg(scores, dims) {
-    const cx = 130, cy = 130, R = 100;
+  // ── Radar chart ───────────────────────────────────────────────────────────
+  function drawRadar(canvasId, dims, scores) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const cx = W / 2, cy = H / 2;
+    const R = Math.min(W, H) / 2 - 36;
     const n = dims.length;
-    const pts = dims.map((d, i) => {
-      const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
-      const r = (scores[d.key] / 100) * R;
-      return [cx + Math.cos(ang) * r, cy + Math.sin(ang) * r];
+    ctx.clearRect(0, 0, W, H);
+
+    // grid
+    for (let r = 1; r <= 4; r++) {
+      ctx.beginPath();
+      for (let i = 0; i <= n; i++) {
+        const a = Math.PI * 2 * i / n - Math.PI / 2;
+        const x = cx + R * (r / 4) * Math.cos(a);
+        const y = cy + R * (r / 4) * Math.sin(a);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    // spokes
+    for (let i = 0; i < n; i++) {
+      const a = Math.PI * 2 * i / n - Math.PI / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + R * Math.cos(a), cy + R * Math.sin(a));
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    // data
+    ctx.beginPath();
+    dims.forEach((d, i) => {
+      const a = Math.PI * 2 * i / n - Math.PI / 2;
+      const v = (scores[d.key] || 0) / 100;
+      const x = cx + R * v * Math.cos(a);
+      const y = cy + R * v * Math.sin(a);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     });
-    const gridRings = [0.25, 0.5, 0.75, 1].map(f => {
-      const p = dims.map((d, i) => {
-        const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
-        return `${cx + Math.cos(ang) * R * f},${cy + Math.sin(ang) * R * f}`;
-      }).join(' ');
-      return `<polygon points="${p}" fill="none" stroke="#e5e7eb" stroke-width="1"/>`;
-    }).join('');
-    const axes = dims.map((d, i) => {
-      const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
-      const x = cx + Math.cos(ang) * R, y = cy + Math.sin(ang) * R;
-      const lx = cx + Math.cos(ang) * (R + 22), ly = cy + Math.sin(ang) * (R + 18);
-      return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>
-              <text x="${lx}" y="${ly}" text-anchor="middle" dy="4" font-size="11" fill="${d.color}" font-weight="600">${escapeHtml(d.label)}</text>`;
-    }).join('');
-    const shape = `<polygon points="${pts.map(p => p.join(',')).join(' ')}" fill="#6366f1" fill-opacity="0.25" stroke="#6366f1" stroke-width="2"/>`;
-    const dots = pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="#6366f1"/>`).join('');
-    return `<svg class="radar-svg" viewBox="0 0 260 260">${gridRings}${axes}${shape}${dots}</svg>`;
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(99,102,241,0.18)';
+    ctx.fill();
+    ctx.strokeStyle = '#6366f1';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // labels
+    dims.forEach((d, i) => {
+      const a = Math.PI * 2 * i / n - Math.PI / 2;
+      const lx = cx + (R + 22) * Math.cos(a);
+      const ly = cy + (R + 22) * Math.sin(a);
+      ctx.fillStyle = '#374151';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(d.label, lx, ly);
+    });
   }
 
-  function computeDimensionScores(answers, questions, dims) {
-    const sums = {}, counts = {};
-    for (const d of dims) { sums[d.key] = 0; counts[d.key] = 0; }
-    for (let i = 0; i < questions.length; i++) {
-      const a = answers[i];
-      if (a == null) continue;
-      sums[questions[i].dim] += a;
-      counts[questions[i].dim]++;
-    }
-    const out = {};
-    for (const d of dims) {
-      const max = counts[d.key] * 4, min = counts[d.key];
-      out[d.key] = max > min ? Math.round(((sums[d.key] - min) / (max - min)) * 100) : 0;
-    }
-    return out;
-  }
-
-  async function runSocialAICommentary(record) {
-    if (!state.settings.apiKey) {
-      flash('設定タブでAPIキーを登録してください', 'error');
-      return;
-    }
-    const out = document.getElementById('social-ai-output');
-    const btn = document.getElementById('social-ai-comment');
-    out.style.display = 'block';
-    out.textContent = '分析中...';
-    if (btn) btn.classList.add('loading');
-    const payload = SOCIAL_DIMENSIONS.map(d => `${d.label}: ${record.scores[d.key]}`).join('\n');
-    const system = 'あなたは思慮深い心理カウンセラーです。自己診断の結果を、決めつけず、本人の自己理解に役立つ形で日本語で解説します。';
-    const user = [
-      '以下は「人との関わり方」の5次元スコアです（0〜100）。',
-      'それぞれの意味合い、全体のプロファイル、アンバランスがある場合はその構造、伸ばすヒント、注意点を400字程度でまとめてください。',
-      '断定しすぎず、本人が試せる小さな一歩を一つ添えてください。',
-      '',
-      payload,
-    ].join('\n');
+  // ── AI call ───────────────────────────────────────────────────────────────
+  async function callAI(prompt, statusEl, outputEl) {
+    const s = getSettings();
+    if (!s.apiKey) { statusEl.textContent = 'APIキーが設定されていません（設定タブで登録）'; return null; }
+    statusEl.textContent = '生成中…';
+    outputEl.textContent = '';
     try {
-      const text = await callClaude(system, user);
-      out.textContent = text;
-      record.aiCommentary = text;
-      save(SOCIAL_KEY, state.socialAssessments);
-    } catch (err) {
-      out.textContent = 'エラー: ' + err.message;
-      flash('AI呼び出しに失敗しました', 'error');
-    } finally {
-      if (btn) btn.classList.remove('loading');
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': s.apiKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: s.model || 'claude-sonnet-4-6',
+          max_tokens: 1200,
+          stream: true,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+      if (!res.ok) { const t = await res.text(); statusEl.textContent = 'エラー: ' + res.status + ' ' + t; return null; }
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let full = '';
+      statusEl.textContent = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = dec.decode(value);
+        for (const line of chunk.split('\n')) {
+          if (!line.startsWith('data: ')) continue;
+          const d = line.slice(6).trim();
+          if (d === '[DONE]') break;
+          try {
+            const j = JSON.parse(d);
+            if (j.type === 'content_block_delta' && j.delta?.type === 'text_delta') {
+              full += j.delta.text;
+              outputEl.textContent = full;
+            }
+          } catch {}
+        }
+      }
+      return full;
+    } catch (e) {
+      statusEl.textContent = 'エラー: ' + e.message;
+      return null;
     }
+  }
+
+  // ── Social quiz ───────────────────────────────────────────────────────────
+  function renderSocialResult(scores) {
+    const resultEl = $('social-result');
+    resultEl.classList.remove('hidden');
+
+    const canvasId = 'social-radar-' + Date.now();
+    const dims = SOCIAL_DIMENSIONS;
+
+    let html = '<canvas id="' + canvasId + '" width="300" height="300" style="display:block;margin:0 auto"></canvas>';
+    html += '<table class="score-table"><thead><tr><th>視点</th><th>スコア</th></tr></thead><tbody>';
+    dims.forEach(d => {
+      html += `<tr><td>${d.label}</td><td>${scores[d.key]}%</td></tr>`;
+    });
+    html += '</tbody></table>';
+    html += '<div class="actions" style="margin-top:12px"><button id="social-ai-btn" class="primary">AIに詳しく解説してもらう</button><button id="social-restart">もう一度</button></div>';
+    html += '<p id="social-ai-status" class="muted"></p><article id="social-ai-output" class="ai-output"></article>';
+    resultEl.innerHTML = html;
+
+    drawRadar(canvasId, dims, scores);
+
+    $('social-ai-btn').addEventListener('click', async () => {
+      const prompt = `あなたは心理プロファイラーです。以下は「人との関わり方」診断のスコアです（100点満点）。
+${dims.map(d => d.label + ': ' + scores[d.key] + '%').join('\n')}
+このスコアを元に、この人の対人スタイルの特徴・強み・注意点・実践アドバイスを日本語で300字程度にまとめてください。`;
+      const text = await callAI(prompt, $('social-ai-status'), $('social-ai-output'));
+      if (!text) return;
+      const hist = getHistory(SOCIAL_KEY);
+      const last = hist[hist.length - 1];
+      if (last && last.ts === scores._ts) last.ai = text;
+      saveHistory(SOCIAL_KEY, hist);
+      renderSocialHistory();
+    });
+
+    $('social-restart').addEventListener('click', () => {
+      resultEl.classList.add('hidden');
+      $('social-intro').classList.remove('hidden');
+      $('social-quiz').classList.add('hidden');
+    });
   }
 
   function renderSocialHistory() {
-    const ul = document.getElementById('social-history');
-    if (!ul) return;
-    const items = state.socialAssessments.slice();
-    if (!items.length) {
-      ul.innerHTML = '<li class="muted">該当する履歴はありません。</li>';
-      return;
-    }
-    ul.innerHTML = items.map(r => {
-      const avg = Math.round(SOCIAL_DIMENSIONS.reduce((s, d) => s + r.scores[d.key], 0) / SOCIAL_DIMENSIONS.length);
-      const bars = SOCIAL_DIMENSIONS.map(d => `
-        <span class="mini-bar" title="${escapeAttr(d.label)}: ${r.scores[d.key]}">
-          <span class="mini-bar-fill" style="height:${r.scores[d.key]}%;background:${d.color}"></span>
-        </span>`).join('');
-      return `<li data-id="${r.id}">
-        <div class="h-meta">${formatDate(r.date)} · 平均 ${avg}</div>
-        <div class="mini-bars">${bars}</div>
-        <div class="actions" style="margin-top:6px">
-          <button class="sa-view" data-id="${r.id}">結果を表示</button>
-          <button class="sa-del danger" data-id="${r.id}">削除</button>
-        </div>
+    const ul = $('social-history');
+    const hist = getHistory(SOCIAL_KEY);
+    if (!hist.length) { ul.innerHTML = '<li class="muted">まだ履歴がありません</li>'; return; }
+    ul.innerHTML = hist.slice().reverse().map((h, ri) => {
+      const i = hist.length - 1 - ri;
+      return `<li>
+        <details>
+          <summary>${new Date(h.ts).toLocaleString('ja-JP')} — ${SOCIAL_DIMENSIONS.map(d => d.label + ' ' + h.scores[d.key] + '%').join(' / ')}</summary>
+          ${h.ai ? '<p class="ai-output">' + h.ai + '</p>' : '<p class="muted">AI解説なし</p>'}
+          <button class="danger small" data-del="${i}">削除</button>
+        </details>
       </li>`;
     }).join('');
-    ul.querySelectorAll('.sa-view').forEach(b => {
-      b.addEventListener('click', () => {
-        const r = state.socialAssessments.find(x => x.id === b.dataset.id);
-        if (r) showSocialResult(r);
-      });
-    });
-    ul.querySelectorAll('.sa-del').forEach(b => {
-      b.addEventListener('click', () => {
-        if (!confirm('この診断履歴を削除しますか？')) return;
-        state.socialAssessments = state.socialAssessments.filter(x => x.id !== b.dataset.id);
-        save(SOCIAL_KEY, state.socialAssessments);
+    ul.querySelectorAll('[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const hist2 = getHistory(SOCIAL_KEY);
+        hist2.splice(parseInt(btn.dataset.del), 1);
+        saveHistory(SOCIAL_KEY, hist2);
         renderSocialHistory();
       });
     });
   }
 
-  // ---------- Effort assessment ----------
-  const effortIntro = document.getElementById('effort-intro');
-  const effortQuizEl = document.getElementById('effort-quiz');
-  const effortResult = document.getElementById('effort-result');
-  const effortQuestionEl = document.getElementById('effort-question');
-  const effortProgressFill = document.getElementById('effort-progress-fill');
-  const effortProgressText = document.getElementById('effort-progress-text');
-
-  document.getElementById('effort-start').addEventListener('click', () => {
-
-    state.effortQuiz = { idx: 0, answers: new Array(EFFORT_QUESTIONS.length).fill(null) };
-    effortIntro.classList.add('hidden');
-    effortResult.classList.add('hidden');
-    effortQuizEl.classList.remove('hidden');
-    renderEffortQuestion();
-  });
-
-  document.querySelectorAll('.effort-choice').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!state.effortQuiz) return;
-      state.effortQuiz.answers[state.effortQuiz.idx] = Number(btn.dataset.val);
-      if (state.effortQuiz.idx < EFFORT_QUESTIONS.length - 1) {
-        state.effortQuiz.idx++;
-        renderEffortQuestion();
-      } else {
-        finishEffortQuiz();
+  runQuiz({
+    questions: SOCIAL_DIMENSIONS.flatMap(d =>
+      [
+        { dim: d.key, text: `${d.label}について：他の人と話すとき、相手のペースや雰囲気に合わせて自然に対応できる` },
+        { dim: d.key, text: `${d.label}について：相手が困っているとき、言葉にしなくても気持ちを察してあげられる` },
+        { dim: d.key, text: `${d.label}について：グループの中で役割を分担して、みんなで協力するのが得意だ` },
+        { dim: d.key, text: `${d.label}について：自分の意見を、相手を傷つけないように上手く伝えられる` },
+        { dim: d.key, text: `${d.label}について：場の雰囲気や状況に応じて、自分の振る舞いを柔軟に変えられる` },
+      ].slice(0, 1).map(q => ({ ...q, text: (() => {
+        const map = {
+          'コミュニケーション': [
+            '人と話すとき、相手の話をさえぎらずに最後まで聞ける',
+            '初対面の人とも、すぐに打ち解けて話せる',
+            '自分の考えを、相手に分かりやすく伝えられる',
+            '表情やしぐさから、相手の感情を読み取れる',
+            '電話・対面・文章など、場面に合わせて伝え方を変えられる',
+          ],
+          '共感力': [
+            '友人が落ち込んでいるとき、何も言わなくても側にいてあげたいと感じる',
+            '映画や本の登場人物の気持ちに、自然に感情移入できる',
+            '相手の立場に立って物事を考えることが得意だ',
+            '悲しんでいる人を見ると、自分も胸が痛くなる',
+            '相手が言葉にできていない不安や迷いに、気づけることが多い',
+          ],
+          '協調性': [
+            'チームで動くとき、自分の役割を果たすことに責任を感じる',
+            '意見が対立したとき、折り合いをつける方法を考えられる',
+            'グループの目標のために、自分の好みを後回しにできる',
+            '他のメンバーが困っていたら、自分の仕事を止めても手伝う',
+            'みんなの意見をまとめて、方向性を作るのが得意だ',
+          ],
+          '自己主張力': [
+            '「それは違う」と思ったとき、相手に穏やかに伝えられる',
+            '断るのが苦手で、無理なお願いも引き受けてしまうことが多い（逆転）',
+            '自分の希望や要望を、はっきり言葉にして伝えられる',
+            '議論で自分の意見を押し通すより、相手に合わせてしまうことが多い（逆転）',
+            '自分のニーズを大切にしながら、相手のことも尊重して話し合える',
+          ],
+          '社会的適応力': [
+            '初めての場所やグループにも、すぐに馴染めるほうだ',
+            '相手や状況によって、話し方やトーンを自然に切り替えられる',
+            '予定外のことが起きても、あまり動じずに対応できる',
+            '文化や価値観が違う人とも、うまくやっていける自信がある',
+            '職場・友人・家族など、場面ごとに自分を使い分けられる',
+          ],
+        };
+        return map[d.label] ? map[d.label][['コミュニケーション','共感力','協調性','自己主張力','社会的適応力'].indexOf(d.label) % 5] || q.text : q.text;
+      })() }))
+    ),
+    dims: SOCIAL_DIMENSIONS,
+    introId: 'social-intro',
+    quizId: 'social-quiz',
+    resultId: 'social-result',
+    fillId: 'quiz-progress-fill',
+    textId: 'quiz-question',
+    choiceClass: 'quiz-choice',
+    backId: 'quiz-back',
+    cancelId: 'quiz-cancel',
+    onComplete(scores) {
+      scores._ts = Date.now();
+      const hist = getHistory(SOCIAL_KEY);
+      hist.push({ ts: scores._ts, scores });
+      saveHistory(SOCIAL_KEY, hist);
+      renderSocialResult(scores);
+      renderSocialHistory();
+      if (typeof window.contributeToTwin === 'function') {
+        window.contributeToTwin('micron', { type: 'social', scores, ts: scores._ts });
       }
-    });
+    },
   });
 
-  document.getElementById('effort-back').addEventListener('click', () => {
-    if (!state.effortQuiz || state.effortQuiz.idx === 0) return;
-    state.effortQuiz.idx--;
-    renderEffortQuestion();
-  });
-
-  document.getElementById('effort-cancel').addEventListener('click', () => {
-    if (!confirm('診断を中断しますか？（回答は保存されません）')) return;
-    state.effortQuiz = null;
-    effortQuizEl.classList.add('hidden');
-    effortIntro.classList.remove('hidden');
-  });
-
-  function renderEffortQuestion() {
-    const { idx, answers } = state.effortQuiz;
-    const q = EFFORT_QUESTIONS[idx];
-    const dim = EFFORT_DIMENSIONS.find(d => d.key === q.dim);
-    effortQuestionEl.innerHTML = `
-      <div class="q-dim" style="color:${dim.color}">${escapeHtml(dim.label)}の努力</div>
-      <div class="q-text">${escapeHtml(q.text)}</div>`;
-    effortProgressFill.style.width = `${((idx + 1) / EFFORT_QUESTIONS.length) * 100}%`;
-    effortProgressText.textContent = `${idx + 1} / ${EFFORT_QUESTIONS.length}`;
-    document.querySelectorAll('.effort-choice').forEach(b => {
-      b.classList.toggle('selected', Number(b.dataset.val) === answers[idx]);
+  // ── Effort quiz ───────────────────────────────────────────────────────────
+  function renderEffortResult(scores) {
+    const resultEl = $('effort-result');
+    resultEl.classList.remove('hidden');
+    const canvasId = 'effort-radar-' + Date.now();
+    const dims = EFFORT_DIMENSIONS;
+    let html = '<canvas id="' + canvasId + '" width="300" height="300" style="display:block;margin:0 auto"></canvas>';
+    html += '<table class="score-table"><thead><tr><th>側面</th><th>スコア</th></tr></thead><tbody>';
+    dims.forEach(d => { html += `<tr><td>${d.label}</td><td>${scores[d.key]}%</td></tr>`; });
+    html += '</tbody></table>';
+    html += '<div class="actions" style="margin-top:12px"><button id="effort-ai-btn" class="primary">AIに詳しく解説してもらう</button><button id="effort-restart">もう一度</button></div>';
+    html += '<p id="effort-ai-status" class="muted"></p><article id="effort-ai-output" class="ai-output"></article>';
+    resultEl.innerHTML = html;
+    drawRadar(canvasId, dims, scores);
+    $('effort-ai-btn').addEventListener('click', async () => {
+      const prompt = `あなたは心理プロファイラーです。以下は「努力スタイル」診断のスコアです（100点満点）。
+${dims.map(d => d.label + ': ' + scores[d.key] + '%').join('\n')}
+このスコアを元に、この人の努力・行動スタイルの特徴・強み・注意点・実践アドバイスを日本語で300字程度にまとめてください。`;
+      const text = await callAI(prompt, $('effort-ai-status'), $('effort-ai-output'));
+      if (!text) return;
+      const hist = getHistory(EFFORT_KEY);
+      const last = hist[hist.length - 1];
+      if (last && last.ts === scores._ts) last.ai = text;
+      saveHistory(EFFORT_KEY, hist);
+      renderEffortHistory();
     });
-    document.getElementById('effort-back').disabled = idx === 0;
-  }
-
-  function finishEffortQuiz() {
-    const scores = computeDimensionScores(state.effortQuiz.answers, EFFORT_QUESTIONS, EFFORT_DIMENSIONS);
-    const record = {
-      id: 'ea_' + uid(),
-
-      date: new Date().toISOString(),
-      answers: state.effortQuiz.answers.slice(),
-      scores,
-      notes: '',
-      aiCommentary: '',
-    };
-    state.effortAssessments.unshift(record);
-    save(EFFORT_KEY, state.effortAssessments);
-    state.effortQuiz = null;
-    effortQuizEl.classList.add('hidden');
-    effortIntro.classList.remove('hidden');
-    showEffortResult(record);
-    renderEffortHistory();
-  }
-
-  function showEffortResult(record) {
-    effortResult.classList.remove('hidden');
-    const scores = record.scores;
-    const sorted = EFFORT_DIMENSIONS.slice().sort((a, b) => scores[b.key] - scores[a.key]);
-    const high = sorted[0], low = sorted[sorted.length - 1];
-    const avg = Math.round(EFFORT_DIMENSIONS.reduce((s, d) => s + scores[d.key], 0) / EFFORT_DIMENSIONS.length);
-    const type = effortType(scores);
-
-    effortResult.innerHTML = `
-      <div class="result-card">
-        <div class="result-head">
-          <h3>努力スタイル: <span style="color:${high.color}">${escapeHtml(type.name)}</span></h3>
-          <span class="muted">${escapeHtml(formatDate(record.date))}</span>
-        </div>
-        <div class="result-grid">
-          ${renderRadarSvg(scores, EFFORT_DIMENSIONS)}
-          <div class="result-scores">
-            ${EFFORT_DIMENSIONS.map(d => `
-              <div class="score-row">
-                <span class="score-label" style="color:${d.color}">${escapeHtml(d.label)}</span>
-                <div class="score-bar-wrap"><div class="score-bar" style="width:${scores[d.key]}%;background:${d.color}"></div></div>
-                <span class="score-val">${scores[d.key]}</span>
-              </div>
-            `).join('')}
-            <div class="score-summary">
-              <div>平均: <b>${avg}</b></div>
-              <div>最高: <b style="color:${high.color}">${escapeHtml(high.label)} (${scores[high.key]})</b></div>
-              <div>最低: <b style="color:${low.color}">${escapeHtml(low.label)} (${scores[low.key]})</b></div>
-            </div>
-          </div>
-        </div>
-        <div class="result-interpret">${escapeHtml(type.description)} ${escapeHtml(interpretEffort(high, low))}</div>
-        <div class="actions">
-          <button id="effort-ai-comment">AIに詳しく解説してもらう</button>
-          <button id="effort-retry">もう一度受ける</button>
-        </div>
-        <div id="effort-ai-output" class="ai-output" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
-      </div>
-    `;
-    document.getElementById('effort-retry').addEventListener('click', () => {
-      document.getElementById('effort-start').click();
+    $('effort-restart').addEventListener('click', () => {
+      resultEl.classList.add('hidden');
+      $('effort-intro').classList.remove('hidden');
+      $('effort-quiz').classList.add('hidden');
     });
-    document.getElementById('effort-ai-comment').addEventListener('click', () => runEffortAICommentary(record));
-  }
-
-  function effortType(scores) {
-    // Name the profile by the highest dimension (tie -> first)
-    const sorted = EFFORT_DIMENSIONS.slice().sort((a, b) => scores[b.key] - scores[a.key]);
-    const top = sorted[0].key;
-    const map = {
-      volume:    { name: '地道型',   description: '投下量で押し切るタイプ。土台は強いが、質や設計を伸ばすと結果が加速します。' },
-      quality:   { name: '熟達型',   description: '同じ時間でも中身を濃くできるタイプ。方向性の選択まで意識すると最大化されます。' },
-      design:    { name: '戦略家型', description: '計画と優先順位付けが得意。実行量を確保できているか確認するとバランスが取れます。' },
-      choice:    { name: '選択家型', description: '何に努力するかを選べるタイプ。選んだ後の量・質・持続を意識的に補強すると結果に繋がります。' },
-      endurance: { name: '恒毅型',   description: '長く続ける力が突出。方向転換や設計の見直しを定期的に入れると、続ける力が結果に直結します。' },
-    };
-    return map[top] || { name: 'バランス型', description: '各次元がバランスよく育っています。' };
-  }
-
-  function interpretEffort(high, low) {
-    const pair = high.key + '_' + low.key;
-    const hints = {
-      volume_quality:    '量はあるが、やり方の改善・フィードバックで効率が大きく伸びる余地あり。',
-      volume_choice:     '量で走れているが、「そもそも何に努力するか」を見直すと結果のインパクトが変わる。',
-      volume_design:     '量は出せるが、計画なしで走りがち。週次レビューで方向修正を入れると無駄打ちが減る。',
-      quality_volume:    '工夫できているが、最低限の投下量が足りないこともある。ベース量の確保を意識。',
-      quality_endurance: '質高く取り組めるが、燃え尽きやすいペース配分になっていないか要注意。',
-      design_volume:     '計画はあるが実行量が追いつかない典型。最初の一歩を小さくすると動き出しやすい。',
-      design_endurance:  '設計力は高いが、計画疲れで続かないパターン。計画の精度より実行の続行を優先。',
-      choice_volume:     '選ぶ力はあるが、選んだあとの量が足りていない可能性。ベースラインの確保を。',
-      choice_endurance:  '方向選びはできるが、続ける前に次を選んでしまいがち。短期で成果判定するルールを持つ。',
-      endurance_choice:  '続ける力は強いが、そもそも続けている対象が正しいか定期的に問い直す必要がある（サンクコストに注意）。',
-      endurance_design:  '粘り強いが、無計画に突き進む傾向。月次で設計を見直すと、粘りが結果に変わる。',
-      endurance_quality: '長く続けているが、やり方がアップデートされていない可能性。フィードバックを取り入れる。',
-    };
-    return hints[pair] || '';
-  }
-
-  async function runEffortAICommentary(record) {
-    if (!state.settings.apiKey) {
-      flash('設定タブでAPIキーを登録してください', 'error');
-      return;
-    }
-    const out = document.getElementById('effort-ai-output');
-    const btn = document.getElementById('effort-ai-comment');
-    out.style.display = 'block';
-    out.textContent = '分析中...';
-    if (btn) btn.classList.add('loading');
-    const payload = EFFORT_DIMENSIONS.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join('\n');
-    const system = 'あなたは思慮深いコーチです。努力スタイルの5次元（量/質/設計/選択/持続）スコアを読み、本人が次の一手を決められるよう日本語で解説します。';
-    const user = [
-      '以下は「努力スタイル」の5次元スコア（0〜100）です。',
-      '全体のプロファイル、強みと弱み、どの次元を次に伸ばすと効果が大きいか、',
-      '今週から試せる具体アクションを1〜2つ、合わせて400字程度で示してください。',
-      '',
-      payload,
-    ].join('\n');
-    try {
-      const text = await callClaude(system, user);
-      out.textContent = text;
-      record.aiCommentary = text;
-      save(EFFORT_KEY, state.effortAssessments);
-    } catch (err) {
-      out.textContent = 'エラー: ' + err.message;
-      flash('AI呼び出しに失敗しました', 'error');
-    } finally {
-      if (btn) btn.classList.remove('loading');
-    }
   }
 
   function renderEffortHistory() {
-    const ul = document.getElementById('effort-history');
-    if (!ul) return;
-    const items = state.effortAssessments.slice();
-    if (!items.length) {
-      ul.innerHTML = '<li class="muted">該当する履歴はありません。</li>';
-      return;
-    }
-    ul.innerHTML = items.map(r => {
-      const avg = Math.round(EFFORT_DIMENSIONS.reduce((s, d) => s + r.scores[d.key], 0) / EFFORT_DIMENSIONS.length);
-      const bars = EFFORT_DIMENSIONS.map(d => `
-        <span class="mini-bar" title="${escapeAttr(d.label)}: ${r.scores[d.key]}">
-          <span class="mini-bar-fill" style="height:${r.scores[d.key]}%;background:${d.color}"></span>
-        </span>`).join('');
-      return `<li data-id="${r.id}">
-        <div class="h-meta">${formatDate(r.date)} · 平均 ${avg}</div>
-        <div class="mini-bars">${bars}</div>
-        <div class="actions" style="margin-top:6px">
-          <button class="ea-view" data-id="${r.id}">結果を表示</button>
-          <button class="ea-del danger" data-id="${r.id}">削除</button>
-        </div>
-      </li>`;
+    const ul = $('effort-history');
+    const hist = getHistory(EFFORT_KEY);
+    if (!hist.length) { ul.innerHTML = '<li class="muted">まだ履歴がありません</li>'; return; }
+    ul.innerHTML = hist.slice().reverse().map((h, ri) => {
+      const i = hist.length - 1 - ri;
+      return `<li><details><summary>${new Date(h.ts).toLocaleString('ja-JP')} — ${EFFORT_DIMENSIONS.map(d => d.label + ' ' + h.scores[d.key] + '%').join(' / ')}</summary>${h.ai ? '<p class="ai-output">' + h.ai + '</p>' : '<p class="muted">AI解説なし</p>'}<button class="danger small" data-del="${i}">削除</button></details></li>`;
     }).join('');
-    ul.querySelectorAll('.ea-view').forEach(b => {
-      b.addEventListener('click', () => {
-        const r = state.effortAssessments.find(x => x.id === b.dataset.id);
-        if (r) showEffortResult(r);
-      });
-    });
-    ul.querySelectorAll('.ea-del').forEach(b => {
-      b.addEventListener('click', () => {
-        if (!confirm('この診断履歴を削除しますか？')) return;
-        state.effortAssessments = state.effortAssessments.filter(x => x.id !== b.dataset.id);
-        save(EFFORT_KEY, state.effortAssessments);
-        renderEffortHistory();
-      });
+    ul.querySelectorAll('[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => { const h2 = getHistory(EFFORT_KEY); h2.splice(parseInt(btn.dataset.del),1); saveHistory(EFFORT_KEY,h2); renderEffortHistory(); });
     });
   }
 
-  // ---------- Cross-reference helper for AI ----------
-  function buildCrossReferences(except) {
-    const sections = [
-      { key: 'social',   label: '人との関わり方',     dims: SOCIAL_DIMENSIONS,   list: state.socialAssessments },
-      { key: 'effort',   label: '努力スタイル',       dims: EFFORT_DIMENSIONS,   list: state.effortAssessments },
-      { key: 'kolb',     label: '学び方のタイプ',     dims: KOLB_DIMENSIONS,     list: state.kolbAssessments },
-      { key: 'values',   label: '大切にしているもの', dims: VALUES_DIMENSIONS,   list: state.valuesAssessments },
-      { key: 'thinking', label: '考え方のクセ',       dims: THINKING_DIMENSIONS, list: state.thinkingAssessments },
-    ];
-    const parts = [];
-    for (const s of sections) {
-      if (s.key === except) continue;
-      const latest = s.list[0];
-      if (!latest) continue;
-      parts.push(`## 直近の${s.label}スコア\n` + s.dims.map(d => `${d.label}: ${latest.scores[d.key]}`).join(' / '));
-    }
-    if (except !== 'johari' && state.johariSessions[0]) {
-      const j = state.johariSessions[0];
-      const w = computeJohariWindows(j);
-      parts.push(`## 直近の「自分と他者の見え方」\n開放: ${w.open.length}個 / 盲点: ${w.blind.length}個 / 秘密: ${w.hidden.length}個 / 未知の余地: ${w.unknown.length}個` +
-        (w.blind.length ? `\n盲点（他者だけが認識）の例: ${w.blind.slice(0, 5).join(', ')}` : '') +
-        (w.hidden.length ? `\n秘密（自分だけが認識）の例: ${w.hidden.slice(0, 5).join(', ')}` : ''));
-    }
-    return parts.length ? parts.join('\n\n') : '（他の診断はまだ受けていません）';
-  }
-
-  // ---------- Kolb learning-type assessment ----------
-  const kolbIntro = document.getElementById('kolb-intro');
-  const kolbQuizEl = document.getElementById('kolb-quiz');
-  const kolbResult = document.getElementById('kolb-result');
-  const kolbQuestionEl = document.getElementById('kolb-question');
-  const kolbProgressFill = document.getElementById('kolb-progress-fill');
-  const kolbProgressText = document.getElementById('kolb-progress-text');
-
-  document.getElementById('kolb-start').addEventListener('click', () => {
-
-    state.kolbQuiz = { idx: 0, answers: new Array(KOLB_QUESTIONS.length).fill(null) };
-    kolbIntro.classList.add('hidden');
-    kolbResult.classList.add('hidden');
-    kolbQuizEl.classList.remove('hidden');
-    renderKolbQuestion();
-  });
-
-  document.querySelectorAll('.kolb-choice').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!state.kolbQuiz) return;
-      state.kolbQuiz.answers[state.kolbQuiz.idx] = Number(btn.dataset.val);
-      if (state.kolbQuiz.idx < KOLB_QUESTIONS.length - 1) {
-        state.kolbQuiz.idx++;
-        renderKolbQuestion();
-      } else {
-        finishKolbQuiz();
+  runQuiz({
+    questions: EFFORT_QUESTIONS,
+    dims: EFFORT_DIMENSIONS,
+    introId: 'effort-intro', quizId: 'effort-quiz', resultId: 'effort-result',
+    fillId: 'effort-progress-fill', textId: 'effort-question', choiceClass: 'effort-choice',
+    backId: 'effort-back', cancelId: 'effort-cancel',
+    onComplete(scores) {
+      scores._ts = Date.now();
+      const hist = getHistory(EFFORT_KEY);
+      hist.push({ ts: scores._ts, scores });
+      saveHistory(EFFORT_KEY, hist);
+      renderEffortResult(scores);
+      renderEffortHistory();
+      if (typeof window.contributeToTwin === 'function') {
+        window.contributeToTwin('micron', { type: 'effort', scores, ts: scores._ts });
       }
-    });
+    },
   });
 
-  document.getElementById('kolb-back').addEventListener('click', () => {
-    if (!state.kolbQuiz || state.kolbQuiz.idx === 0) return;
-    state.kolbQuiz.idx--;
-    renderKolbQuestion();
-  });
+  // ── Kolb quiz ─────────────────────────────────────────────────────────────
+  const KOLB_DIMS = [
+    { key: 'why',  label: 'なぜタイプ', color: '#6366f1' },
+    { key: 'what', label: 'なにタイプ', color: '#ec4899' },
+    { key: 'how',  label: 'どうやってタイプ', color: '#10b981' },
+    { key: 'act',  label: '今すぐタイプ', color: '#f59e0b' },
+  ];
 
-  document.getElementById('kolb-cancel').addEventListener('click', () => {
-    if (!confirm('診断を中断しますか？（回答は保存されません）')) return;
-    state.kolbQuiz = null;
-    kolbQuizEl.classList.add('hidden');
-    kolbIntro.classList.remove('hidden');
-  });
-
-  function renderKolbQuestion() {
-    const { idx, answers } = state.kolbQuiz;
-    const q = KOLB_QUESTIONS[idx];
-    const dim = KOLB_DIMENSIONS.find(d => d.key === q.dim);
-    kolbQuestionEl.innerHTML = `
-      <div class="q-dim" style="color:${dim.color}">${escapeHtml(dim.label)}タイプ</div>
-      <div class="q-text">${escapeHtml(q.text)}</div>`;
-    kolbProgressFill.style.width = `${((idx + 1) / KOLB_QUESTIONS.length) * 100}%`;
-    kolbProgressText.textContent = `${idx + 1} / ${KOLB_QUESTIONS.length}`;
-    document.querySelectorAll('.kolb-choice').forEach(b => {
-      b.classList.toggle('selected', Number(b.dataset.val) === answers[idx]);
+  function renderKolbResult(scores) {
+    const resultEl = $('kolb-result');
+    resultEl.classList.remove('hidden');
+    const canvasId = 'kolb-radar-' + Date.now();
+    let html = '<canvas id="' + canvasId + '" width="300" height="300" style="display:block;margin:0 auto"></canvas>';
+    html += '<table class="score-table"><thead><tr><th>タイプ</th><th>スコア</th></tr></thead><tbody>';
+    KOLB_DIMS.forEach(d => { html += `<tr><td>${d.label}</td><td>${scores[d.key]}%</td></tr>`; });
+    html += '</tbody></table>';
+    html += '<div class="actions" style="margin-top:12px"><button id="kolb-ai-btn" class="primary">AIに詳しく解説してもらう</button><button id="kolb-restart">もう一度</button></div>';
+    html += '<p id="kolb-ai-status" class="muted"></p><article id="kolb-ai-output" class="ai-output"></article>';
+    resultEl.innerHTML = html;
+    drawRadar(canvasId, KOLB_DIMS, scores);
+    $('kolb-ai-btn').addEventListener('click', async () => {
+      const prompt = `あなたは学習スタイルの専門家です。以下は「学び方のタイプ（Kolb）」診断のスコアです（100点満点）。
+${KOLB_DIMS.map(d => d.label + ': ' + scores[d.key] + '%').join('\n')}
+このスコアを元に、この人の学習スタイルの特徴・強み・適した学習環境・実践アドバイスを日本語で300字程度にまとめてください。`;
+      const text = await callAI(prompt, $('kolb-ai-status'), $('kolb-ai-output'));
+      if (!text) return;
+      const hist = getHistory(KOLB_KEY);
+      const last = hist[hist.length - 1];
+      if (last && last.ts === scores._ts) last.ai = text;
+      saveHistory(KOLB_KEY, hist);
+      renderKolbHistory();
     });
-    document.getElementById('kolb-back').disabled = idx === 0;
-  }
-
-  function finishKolbQuiz() {
-    const scores = computeDimensionScores(state.kolbQuiz.answers, KOLB_QUESTIONS, KOLB_DIMENSIONS);
-    const record = {
-      id: 'ka_' + uid(),
-
-      date: new Date().toISOString(),
-      answers: state.kolbQuiz.answers.slice(),
-      scores,
-      notes: '',
-      aiCommentary: '',
-    };
-    state.kolbAssessments.unshift(record);
-    save(KOLB_KEY, state.kolbAssessments);
-    state.kolbQuiz = null;
-    kolbQuizEl.classList.add('hidden');
-    kolbIntro.classList.remove('hidden');
-    showKolbResult(record);
-    renderKolbHistory();
-  }
-
-  function showKolbResult(record) {
-    kolbResult.classList.remove('hidden');
-    const scores = record.scores;
-    const sorted = KOLB_DIMENSIONS.slice().sort((a, b) => scores[b.key] - scores[a.key]);
-    const high = sorted[0], second = sorted[1], low = sorted[sorted.length - 1];
-    const avg = Math.round(KOLB_DIMENSIONS.reduce((s, d) => s + scores[d.key], 0) / KOLB_DIMENSIONS.length);
-    const balanced = (scores[high.key] - scores[low.key]) <= 15;
-    const profileName = balanced ? `バランス型（${high.label}寄り）` : `${high.label}・${second.label}型`;
-    const advice = kolbAdvice(high.key);
-
-    kolbResult.innerHTML = `
-      <div class="result-card">
-        <div class="result-head">
-          <h3>学習タイプ: <span style="color:${high.color}">${escapeHtml(profileName)}</span></h3>
-          <span class="muted">${escapeHtml(formatDate(record.date))}</span>
-        </div>
-        <div class="result-grid">
-          ${renderRadarSvg(scores, KOLB_DIMENSIONS)}
-          <div class="result-scores">
-            ${KOLB_DIMENSIONS.map(d => `
-              <div class="score-row">
-                <span class="score-label" style="color:${d.color}">${escapeHtml(d.label)}</span>
-                <div class="score-bar-wrap"><div class="score-bar" style="width:${scores[d.key]}%;background:${d.color}"></div></div>
-                <span class="score-val">${scores[d.key]}</span>
-              </div>
-            `).join('')}
-            <div class="score-summary">
-              <div>平均: <b>${avg}</b></div>
-              <div>最高: <b style="color:${high.color}">${escapeHtml(high.label)} (${scores[high.key]})</b></div>
-              <div>最低: <b style="color:${low.color}">${escapeHtml(low.label)} (${scores[low.key]})</b></div>
-            </div>
-          </div>
-        </div>
-        <div class="result-interpret">${escapeHtml(advice)}</div>
-        <div class="actions">
-          <button id="kolb-ai-comment">AIに詳しく解説してもらう（他の診断との関連も）</button>
-          <button id="kolb-retry">もう一度受ける</button>
-        </div>
-        <div id="kolb-ai-output" class="ai-output" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
-      </div>
-    `;
-    document.getElementById('kolb-retry').addEventListener('click', () => {
-      document.getElementById('kolb-start').click();
+    $('kolb-restart').addEventListener('click', () => {
+      resultEl.classList.add('hidden');
+      $('kolb-intro').classList.remove('hidden');
+      $('kolb-quiz').classList.add('hidden');
     });
-    document.getElementById('kolb-ai-comment').addEventListener('click', () => runKolbAICommentary(record));
-  }
-
-  function kolbAdvice(topKey) {
-    return ({
-      why:  'あなたは「意味」が原動力です。長期ビジョンと結びつかないタスクで失速しやすいので、毎週「なぜやるか」を一行に書き出すと続きやすくなります。',
-      what: 'あなたは「根拠」で安心するタイプ。データ集めで止まりやすいので、「8割の根拠で動く」を意識的に許可してあげると行動量が増えます。',
-      how:  'あなたは「手順」が明確だと強い。逆に予定外に弱いので、「この手順が崩れた時のバックアッププラン」を1つ持っておくと不測に強くなります。',
-      now:  'あなたは「行動」で学ぶタイプ。事前準備が薄くなりがちなので、行動の前に「一つだけ振り返る問い」を持つと学びの質が上がります。',
-    })[topKey] || '';
-  }
-
-  async function runKolbAICommentary(record) {
-    if (!state.settings.apiKey) {
-      flash('設定タブでAPIキーを登録してください', 'error');
-      return;
-    }
-    const out = document.getElementById('kolb-ai-output');
-    const btn = document.getElementById('kolb-ai-comment');
-    out.style.display = 'block';
-    out.textContent = '分析中...';
-    if (btn) btn.classList.add('loading');
-    const kolbPayload = KOLB_DIMENSIONS.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join('\n');
-    const system = 'あなたは経験学習理論（Kolb）に詳しいコーチです。学び方のタイプを他の診断と統合し、本人が次の一手を取れるよう日本語で解説します。';
-    const user = [
-      '以下は「学び方のタイプ」の4次元スコア（0〜100）です。',
-      'それぞれの意味、組み合わせのプロファイル、強みと弱みを述べた上で、',
-      '他の診断スコアと突き合わせて「相乗効果が出ている部分」「ねじれている（衝突している）部分」を指摘してください。',
-      '最後に、今週から試せる小さなアクションを1つ提案してください。',
-      '全体で500字程度にまとめてください。',
-      '',
-      '## 学び方のタイプ スコア',
-      kolbPayload,
-      '',
-      buildCrossReferences('kolb'),
-    ].join('\n');
-    try {
-      const text = await callClaude(system, user);
-      out.textContent = text;
-      record.aiCommentary = text;
-      save(KOLB_KEY, state.kolbAssessments);
-    } catch (err) {
-      out.textContent = 'エラー: ' + err.message;
-      flash('AI呼び出しに失敗しました', 'error');
-    } finally {
-      if (btn) btn.classList.remove('loading');
-    }
   }
 
   function renderKolbHistory() {
-    const ul = document.getElementById('kolb-history');
-    if (!ul) return;
-    const items = state.kolbAssessments.slice();
-    if (!items.length) {
-      ul.innerHTML = '<li class="muted">該当する履歴はありません。</li>';
-      return;
-    }
-    ul.innerHTML = items.map(r => {
-      const top = KOLB_DIMENSIONS.slice().sort((a, b) => r.scores[b.key] - r.scores[a.key])[0];
-      const bars = KOLB_DIMENSIONS.map(d => `
-        <span class="mini-bar" title="${escapeAttr(d.label)}: ${r.scores[d.key]}">
-          <span class="mini-bar-fill" style="height:${r.scores[d.key]}%;background:${d.color}"></span>
-        </span>`).join('');
-      return `<li data-id="${r.id}">
-        <div class="h-meta">${formatDate(r.date)} · 最高: <b style="color:${top.color}">${escapeHtml(top.label)}</b></div>
-        <div class="mini-bars">${bars}</div>
-        <div class="actions" style="margin-top:6px">
-          <button class="ka-view" data-id="${r.id}">結果を表示</button>
-          <button class="ka-del danger" data-id="${r.id}">削除</button>
-        </div>
-      </li>`;
+    const ul = $('kolb-history');
+    const hist = getHistory(KOLB_KEY);
+    if (!hist.length) { ul.innerHTML = '<li class="muted">まだ履歴がありません</li>'; return; }
+    ul.innerHTML = hist.slice().reverse().map((h, ri) => {
+      const i = hist.length - 1 - ri;
+      return `<li><details><summary>${new Date(h.ts).toLocaleString('ja-JP')} — ${KOLB_DIMS.map(d => d.label + ' ' + h.scores[d.key] + '%').join(' / ')}</summary>${h.ai ? '<p class="ai-output">' + h.ai + '</p>' : '<p class="muted">AI解説なし</p>'}<button class="danger small" data-del="${i}">削除</button></details></li>`;
     }).join('');
-    ul.querySelectorAll('.ka-view').forEach(b => {
-      b.addEventListener('click', () => {
-        const r = state.kolbAssessments.find(x => x.id === b.dataset.id);
-        if (r) showKolbResult(r);
-      });
-    });
-    ul.querySelectorAll('.ka-del').forEach(b => {
-      b.addEventListener('click', () => {
-        if (!confirm('この診断履歴を削除しますか？')) return;
-        state.kolbAssessments = state.kolbAssessments.filter(x => x.id !== b.dataset.id);
-        save(KOLB_KEY, state.kolbAssessments);
-        renderKolbHistory();
-      });
+    ul.querySelectorAll('[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => { const h2 = getHistory(KOLB_KEY); h2.splice(parseInt(btn.dataset.del),1); saveHistory(KOLB_KEY,h2); renderKolbHistory(); });
     });
   }
 
-  // ---------- Values assessment ----------
-  bindAssessment({
-    prefix: 'values',
-    key: VALUES_KEY,
-    dims: VALUES_DIMENSIONS,
-    questions: VALUES_QUESTIONS,
-    list: () => state.valuesAssessments,
-    setList: (v) => { state.valuesAssessments = v; },
-    quizState: () => state.valuesQuiz,
-    setQuizState: (v) => { state.valuesQuiz = v; },
-    qLabelSuffix: 'を大切にする',
-    profileFn: (high, second, low, balanced) => balanced
-      ? { name: `バランス型（${high.label}寄り）`, color: high.color }
-      : { name: `${high.label}・${second.label}型`, color: high.color },
-    adviceFn: (top) => ({
-      autonomy:    'あなたは「自分で決める自由」を最重視。組織や関係で束縛が強い場面ではエネルギーが奪われやすいので、決定権が確保できる環境設計が効きます。',
-      achievement: 'あなたは「成果」が原動力。手応えのない状態が続くと枯れやすいので、小さくても結果が見える指標を週次で持つと持続します。',
-      relation:    'あなたは「人との繋がり」が中心。一方で「相手のため」と「自分のため」の境目が曖昧になりやすいので、線引きを意識すると関係が長持ちします。',
-      stability:   'あなたは「予測可能性」が安心の源。変化のストレスが大きいので、変化を避けるのではなく、小さなステップに分解して試すと適応コストが下がります。',
-      growth:      'あなたは「成長・刺激」が燃料。同じことの繰り返しで失速しやすいので、3ヶ月ごとに学習対象を意識的に変える運用が合います。',
-    })[top] || '',
-    aiSystem: 'あなたは価値観研究に詳しいコーチです。「大切にしているもの」のプロファイルを他の診断と統合して、本人が大事にしているものと現在の生き方のズレを優しく指摘します。',
-    aiUser: (payload, scores) => [
-      '以下は価値観の5次元スコア（0〜100）です。',
-      '何を大切にしているかのプロファイル、価値観間の葛藤の可能性（例: 自律↑ × 関係↑ → 自立と繋がりの両立緊張）、',
-      '他の診断スコアと突き合わせて見える「価値観と行動のズレ」、',
-      '今週試せる小さな一致回復アクションを示してください（500字程度）。',
-      '',
-      '## 価値観スコア',
-      payload,
-      '',
-      buildCrossReferences('values'),
-    ].join('\n'),
+  runQuiz({
+    questions: KOLB_QUESTIONS,
+    dims: KOLB_DIMS,
+    introId: 'kolb-intro', quizId: 'kolb-quiz', resultId: 'kolb-result',
+    fillId: 'kolb-progress-fill', textId: 'kolb-question', choiceClass: 'kolb-choice',
+    backId: 'kolb-back', cancelId: 'kolb-cancel',
+    onComplete(scores) {
+      scores._ts = Date.now();
+      const hist = getHistory(KOLB_KEY);
+      hist.push({ ts: scores._ts, scores });
+      saveHistory(KOLB_KEY, hist);
+      renderKolbResult(scores);
+      renderKolbHistory();
+      if (typeof window.contributeToTwin === 'function') {
+        window.contributeToTwin('micron', { type: 'kolb', scores, ts: scores._ts });
+      }
+    },
   });
 
-  // ---------- Thinking-style assessment ----------
-  bindAssessment({
-    prefix: 'thinking',
-    key: THINKING_KEY,
-    dims: THINKING_DIMENSIONS,
-    questions: THINKING_QUESTIONS,
-    list: () => state.thinkingAssessments,
-    setList: (v) => { state.thinkingAssessments = v; },
-    quizState: () => state.thinkingQuiz,
-    setQuizState: (v) => { state.thinkingQuiz = v; },
-    qLabelSuffix: '思考',
-    profileFn: (high, second, low, balanced) => balanced
-      ? { name: `バランス型（${high.label}寄り）`, color: high.color }
-      : { name: `${high.label}・${second.label}型`, color: high.color },
-    adviceFn: (top) => ({
-      logical:    '論理が強い。一方で感情データを軽視しがちなので、相手の感情を「データ」として扱う訓練を入れると関係性が滑らかになります。',
-      intuitive:  '直感が強い。説明責任が必要な場面で詰まりやすいので、後追いで「なぜそう感じたか」を言語化する習慣を持つと直感が磨かれます。',
-      creative:   '創造性が強い。発散しすぎて収束できないことがあるので、アイデアを出した翌日に「捨てる作業」を入れると形になります。',
-      systematic: '体系的思考が強い。完璧な整理を求めて動き出しが遅れがちなので、「7割で動かす」を許可してあげると速度が出ます。',
-      holistic:   '全体把握が強い。細部の詰めが甘くなりがちなので、重要な場面では誰かに「ディテール担当」をお願いする運用が効きます。',
-    })[top] || '',
-    aiSystem: 'あなたは認知スタイル研究に詳しいコーチです。思考スタイルを他の診断と統合し、強みの活かし方と盲点を日本語で解説します。',
-    aiUser: (payload, scores) => [
-      '以下は思考スタイルの5次元スコア（0〜100）です。',
-      'プロファイルの特徴、組み合わせから見える得意・盲点、',
-      '他の診断スコアと突き合わせた相乗効果や衝突、',
-      '今週試せる小さなアクションを示してください（500字程度）。',
-      '',
-      '## 思考スタイルスコア',
-      payload,
-      '',
-      buildCrossReferences('thinking'),
-    ].join('\n'),
-  });
-
-  // Generic assessment binder used by Values and Thinking
-  function bindAssessment(cfg) {
-    const { prefix, key, dims, questions } = cfg;
-    const introEl = document.getElementById(`${prefix}-intro`);
-    const quizEl = document.getElementById(`${prefix}-quiz`);
-    const resultEl = document.getElementById(`${prefix}-result`);
-    const questionEl = document.getElementById(`${prefix}-question`);
-    const progressFill = document.getElementById(`${prefix}-progress-fill`);
-    const progressText = document.getElementById(`${prefix}-progress-text`);
-
-    document.getElementById(`${prefix}-start`).addEventListener('click', () => {
-
-      cfg.setQuizState({ idx: 0, answers: new Array(questions.length).fill(null) });
-      introEl.classList.add('hidden');
+  // ── Values quiz ───────────────────────────────────────────────────────────
+  function renderValuesResult(scores) {
+    const resultEl = $('values-result');
+    resultEl.classList.remove('hidden');
+    const canvasId = 'values-radar-' + Date.now();
+    const dims = VALUES_DIMENSIONS;
+    let html = '<canvas id="' + canvasId + '" width="300" height="300" style="display:block;margin:0 auto"></canvas>';
+    html += '<table class="score-table"><thead><tr><th>価値観</th><th>スコア</th></tr></thead><tbody>';
+    dims.forEach(d => { html += `<tr><td>${d.label}</td><td>${scores[d.key]}%</td></tr>`; });
+    html += '</tbody></table>';
+    html += '<div class="actions" style="margin-top:12px"><button id="values-ai-btn" class="primary">AIに詳しく解説してもらう</button><button id="values-restart">もう一度</button></div>';
+    html += '<p id="values-ai-status" class="muted"></p><article id="values-ai-output" class="ai-output"></article>';
+    resultEl.innerHTML = html;
+    drawRadar(canvasId, dims, scores);
+    $('values-ai-btn').addEventListener('click', async () => {
+      const prompt = `あなたは心理プロファイラーです。以下は「大切にしているもの（価値観）」診断のスコアです（100点満点）。
+${dims.map(d => d.label + '（' + d.description + '）: ' + scores[d.key] + '%').join('\n')}
+このスコアを元に、この人の価値観の特徴・強み・葛藤が起きやすい場面・実践アドバイスを日本語で300字程度にまとめてください。`;
+      const text = await callAI(prompt, $('values-ai-status'), $('values-ai-output'));
+      if (!text) return;
+      const hist = getHistory(VALUES_KEY);
+      const last = hist[hist.length - 1];
+      if (last && last.ts === scores._ts) last.ai = text;
+      saveHistory(VALUES_KEY, hist);
+      renderValuesHistory();
+    });
+    $('values-restart').addEventListener('click', () => {
       resultEl.classList.add('hidden');
-      quizEl.classList.remove('hidden');
-      drawQ();
+      $('values-intro').classList.remove('hidden');
+      $('values-quiz').classList.add('hidden');
     });
-
-    document.querySelectorAll(`.${prefix}-choice`).forEach(btn => {
-      btn.addEventListener('click', () => {
-        const q = cfg.quizState();
-        if (!q) return;
-        q.answers[q.idx] = Number(btn.dataset.val);
-        if (q.idx < questions.length - 1) { q.idx++; drawQ(); }
-        else { finish(); }
-      });
-    });
-
-    document.getElementById(`${prefix}-back`).addEventListener('click', () => {
-      const q = cfg.quizState();
-      if (!q || q.idx === 0) return;
-      q.idx--;
-      drawQ();
-    });
-
-    document.getElementById(`${prefix}-cancel`).addEventListener('click', () => {
-      if (!confirm('診断を中断しますか？（回答は保存されません）')) return;
-      cfg.setQuizState(null);
-      quizEl.classList.add('hidden');
-      introEl.classList.remove('hidden');
-    });
-
-    function drawQ() {
-      const { idx, answers } = cfg.quizState();
-      const q = questions[idx];
-      const dim = dims.find(d => d.key === q.dim);
-      questionEl.innerHTML = `
-        <div class="q-dim" style="color:${dim.color}">${escapeHtml(dim.label)}${escapeHtml(cfg.qLabelSuffix || '')}</div>
-        <div class="q-text">${escapeHtml(q.text)}</div>`;
-      progressFill.style.width = `${((idx + 1) / questions.length) * 100}%`;
-      progressText.textContent = `${idx + 1} / ${questions.length}`;
-      document.querySelectorAll(`.${prefix}-choice`).forEach(b => {
-        b.classList.toggle('selected', Number(b.dataset.val) === answers[idx]);
-      });
-      document.getElementById(`${prefix}-back`).disabled = idx === 0;
-    }
-
-    function finish() {
-      const q = cfg.quizState();
-      const scores = computeDimensionScores(q.answers, questions, dims);
-      const record = {
-        id: `${prefix.slice(0, 1)}a_` + uid(),
-
-        date: new Date().toISOString(),
-        answers: q.answers.slice(),
-        scores,
-        notes: '',
-        aiCommentary: '',
-      };
-      cfg.setList([record, ...cfg.list()]);
-      save(key, cfg.list());
-      cfg.setQuizState(null);
-      quizEl.classList.add('hidden');
-      introEl.classList.remove('hidden');
-      showResult(record);
-      drawHistory();
-    }
-
-    function showResult(record) {
-      resultEl.classList.remove('hidden');
-      const scores = record.scores;
-      const sorted = dims.slice().sort((a, b) => scores[b.key] - scores[a.key]);
-      const high = sorted[0], second = sorted[1], low = sorted[sorted.length - 1];
-      const avg = Math.round(dims.reduce((s, d) => s + scores[d.key], 0) / dims.length);
-      const balanced = (scores[high.key] - scores[low.key]) <= 15;
-      const profile = cfg.profileFn(high, second, low, balanced);
-      const advice = cfg.adviceFn(high.key);
-
-      resultEl.innerHTML = `
-        <div class="result-card">
-          <div class="result-head">
-            <h3>${escapeHtml(prefix === 'values' ? '大切にしているもの' : '考え方のクセ')}: <span style="color:${profile.color}">${escapeHtml(profile.name)}</span></h3>
-            <span class="muted">${escapeHtml(formatDate(record.date))}</span>
-          </div>
-          <div class="result-grid">
-            ${renderRadarSvg(scores, dims)}
-            <div class="result-scores">
-              ${dims.map(d => `
-                <div class="score-row">
-                  <span class="score-label" style="color:${d.color}">${escapeHtml(d.label)}</span>
-                  <div class="score-bar-wrap"><div class="score-bar" style="width:${scores[d.key]}%;background:${d.color}"></div></div>
-                  <span class="score-val">${scores[d.key]}</span>
-                </div>
-              `).join('')}
-              <div class="score-summary">
-                <div>平均: <b>${avg}</b></div>
-                <div>最高: <b style="color:${high.color}">${escapeHtml(high.label)} (${scores[high.key]})</b></div>
-                <div>最低: <b style="color:${low.color}">${escapeHtml(low.label)} (${scores[low.key]})</b></div>
-              </div>
-            </div>
-          </div>
-          <div class="result-interpret">${escapeHtml(advice)}</div>
-          <div class="actions">
-            <button class="ai-btn" data-id="${record.id}">AIに詳しく解説してもらう（他の診断との関連も）</button>
-            <button class="retry-btn">もう一度受ける</button>
-          </div>
-          <div class="ai-output ai-out" data-id="${record.id}" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
-        </div>
-      `;
-      resultEl.querySelector('.retry-btn').addEventListener('click', () => {
-        document.getElementById(`${prefix}-start`).click();
-      });
-      resultEl.querySelector('.ai-btn').addEventListener('click', () => runAI(record));
-    }
-
-    async function runAI(record) {
-      if (!state.settings.apiKey) {
-        flash('設定タブでAPIキーを登録してください', 'error');
-        return;
-      }
-      const out = resultEl.querySelector('.ai-out');
-      const btn = resultEl.querySelector('.ai-btn');
-      out.style.display = 'block';
-      out.textContent = '分析中...';
-      if (btn) btn.classList.add('loading');
-      const payload = dims.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join('\n');
-      try {
-        const text = await callClaude(cfg.aiSystem, cfg.aiUser(payload, record.scores));
-        out.textContent = text;
-        record.aiCommentary = text;
-        save(key, cfg.list());
-      } catch (err) {
-        out.textContent = 'エラー: ' + err.message;
-        flash('AI呼び出しに失敗しました', 'error');
-      } finally {
-        if (btn) btn.classList.remove('loading');
-      }
-    }
-
-    function drawHistory() {
-      const ul = document.getElementById(`${prefix}-history`);
-      if (!ul) return;
-      const list = cfg.list().slice();
-      if (!list.length) {
-        ul.innerHTML = '<li class="muted">該当する履歴はありません。</li>';
-        return;
-      }
-      ul.innerHTML = list.map(r => {
-        const top = dims.slice().sort((a, b) => r.scores[b.key] - r.scores[a.key])[0];
-        const bars = dims.map(d => `
-          <span class="mini-bar" title="${escapeAttr(d.label)}: ${r.scores[d.key]}">
-            <span class="mini-bar-fill" style="height:${r.scores[d.key]}%;background:${d.color}"></span>
-          </span>`).join('');
-        return `<li data-id="${r.id}">
-          <div class="h-meta">${formatDate(r.date)} · 最高: <b style="color:${top.color}">${escapeHtml(top.label)}</b></div>
-          <div class="mini-bars">${bars}</div>
-          <div class="actions" style="margin-top:6px">
-            <button class="hview" data-id="${r.id}">結果を表示</button>
-            <button class="hdel danger" data-id="${r.id}">削除</button>
-          </div>
-        </li>`;
-      }).join('');
-      ul.querySelectorAll('.hview').forEach(b => {
-        b.addEventListener('click', () => {
-          const r = cfg.list().find(x => x.id === b.dataset.id);
-          if (r) showResult(r);
-        });
-      });
-      ul.querySelectorAll('.hdel').forEach(b => {
-        b.addEventListener('click', () => {
-          if (!confirm('この診断履歴を削除しますか？')) return;
-          cfg.setList(cfg.list().filter(x => x.id !== b.dataset.id));
-          save(key, cfg.list());
-          drawHistory();
-        });
-      });
-    }
-
-    // expose history renderer
-    cfg.renderHistory = drawHistory;
-    if (prefix === 'values') window.__renderValuesHistory = drawHistory;
-    if (prefix === 'thinking') window.__renderThinkingHistory = drawHistory;
   }
 
-  function renderValuesHistory() { window.__renderValuesHistory && window.__renderValuesHistory(); }
-  function renderThinkingHistory() { window.__renderThinkingHistory && window.__renderThinkingHistory(); }
-
-  // ---------- Johari Window ----------
-  function getAllJohariTraits(draft = state.johariDraft) {
-    const extra = new Set([...(draft.extraSelf || []), ...(draft.extraOthers || [])]);
-    return [...JOHARI_TRAITS, ...extra];
+  function renderValuesHistory() {
+    const ul = $('values-history');
+    const hist = getHistory(VALUES_KEY);
+    if (!hist.length) { ul.innerHTML = '<li class="muted">まだ履歴がありません</li>'; return; }
+    ul.innerHTML = hist.slice().reverse().map((h, ri) => {
+      const i = hist.length - 1 - ri;
+      return `<li><details><summary>${new Date(h.ts).toLocaleString('ja-JP')} — ${VALUES_DIMENSIONS.map(d => d.label + ' ' + h.scores[d.key] + '%').join(' / ')}</summary>${h.ai ? '<p class="ai-output">' + h.ai + '</p>' : '<p class="muted">AI解説なし</p>'}<button class="danger small" data-del="${i}">削除</button></details></li>`;
+    }).join('');
+    ul.querySelectorAll('[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => { const h2 = getHistory(VALUES_KEY); h2.splice(parseInt(btn.dataset.del),1); saveHistory(VALUES_KEY,h2); renderValuesHistory(); });
+    });
   }
 
-  function computeJohariWindows(session) {
-    const self = new Set(session.selfTraits || []);
-    const others = new Set(session.othersTraits || []);
-    const all = new Set([
-      ...JOHARI_TRAITS,
-      ...(session.extraSelf || []),
-      ...(session.extraOthers || []),
-    ]);
-    const open = [], blind = [], hidden = [], unknown = [];
-    for (const t of all) {
-      if (self.has(t) && others.has(t)) open.push(t);
-      else if (!self.has(t) && others.has(t)) blind.push(t);
-      else if (self.has(t) && !others.has(t)) hidden.push(t);
-      else unknown.push(t);
-    }
-    return { open, blind, hidden, unknown };
+  runQuiz({
+    questions: VALUES_QUESTIONS,
+    dims: VALUES_DIMENSIONS,
+    introId: 'values-intro', quizId: 'values-quiz', resultId: 'values-result',
+    fillId: 'values-progress-fill', textId: 'values-question', choiceClass: 'values-choice',
+    backId: 'values-back', cancelId: 'values-cancel',
+    onComplete(scores) {
+      scores._ts = Date.now();
+      const hist = getHistory(VALUES_KEY);
+      hist.push({ ts: scores._ts, scores });
+      saveHistory(VALUES_KEY, hist);
+      renderValuesResult(scores);
+      renderValuesHistory();
+      if (typeof window.contributeToTwin === 'function') {
+        window.contributeToTwin('micron', { type: 'values', scores, ts: scores._ts });
+      }
+    },
+  });
+
+  // ── Thinking quiz ─────────────────────────────────────────────────────────
+  function renderThinkingResult(scores) {
+    const resultEl = $('thinking-result');
+    resultEl.classList.remove('hidden');
+    const canvasId = 'thinking-radar-' + Date.now();
+    const dims = THINKING_DIMENSIONS;
+    let html = '<canvas id="' + canvasId + '" width="300" height="300" style="display:block;margin:0 auto"></canvas>';
+    html += '<table class="score-table"><thead><tr><th>思考軸</th><th>スコア</th></tr></thead><tbody>';
+    dims.forEach(d => { html += `<tr><td>${d.label}</td><td>${scores[d.key]}%</td></tr>`; });
+    html += '</tbody></table>';
+    html += '<div class="actions" style="margin-top:12px"><button id="thinking-ai-btn" class="primary">AIに詳しく解説してもらう</button><button id="thinking-restart">もう一度</button></div>';
+    html += '<p id="thinking-ai-status" class="muted"></p><article id="thinking-ai-output" class="ai-output"></article>';
+    resultEl.innerHTML = html;
+    drawRadar(canvasId, dims, scores);
+    $('thinking-ai-btn').addEventListener('click', async () => {
+      const prompt = `あなたは認知スタイルの専門家です。以下は「考え方のクセ」診断のスコアです（100点満点）。
+${dims.map(d => d.label + ': ' + scores[d.key] + '%').join('\n')}
+このスコアを元に、この人の思考スタイルの特徴・強み・注意点・実践アドバイスを日本語で300字程度にまとめてください。`;
+      const text = await callAI(prompt, $('thinking-ai-status'), $('thinking-ai-output'));
+      if (!text) return;
+      const hist = getHistory(THINKING_KEY);
+      const last = hist[hist.length - 1];
+      if (last && last.ts === scores._ts) last.ai = text;
+      saveHistory(THINKING_KEY, hist);
+      renderThinkingHistory();
+    });
+    $('thinking-restart').addEventListener('click', () => {
+      resultEl.classList.add('hidden');
+      $('thinking-intro').classList.remove('hidden');
+      $('thinking-quiz').classList.add('hidden');
+    });
   }
+
+  function renderThinkingHistory() {
+    const ul = $('thinking-history');
+    const hist = getHistory(THINKING_KEY);
+    if (!hist.length) { ul.innerHTML = '<li class="muted">まだ履歴がありません</li>'; return; }
+    ul.innerHTML = hist.slice().reverse().map((h, ri) => {
+      const i = hist.length - 1 - ri;
+      return `<li><details><summary>${new Date(h.ts).toLocaleString('ja-JP')} — ${THINKING_DIMENSIONS.map(d => d.label + ' ' + h.scores[d.key] + '%').join(' / ')}</summary>${h.ai ? '<p class="ai-output">' + h.ai + '</p>' : '<p class="muted">AI解説なし</p>'}<button class="danger small" data-del="${i}">削除</button></details></li>`;
+    }).join('');
+    ul.querySelectorAll('[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => { const h2 = getHistory(THINKING_KEY); h2.splice(parseInt(btn.dataset.del),1); saveHistory(THINKING_KEY,h2); renderThinkingHistory(); });
+    });
+  }
+
+  runQuiz({
+    questions: THINKING_QUESTIONS,
+    dims: THINKING_DIMENSIONS,
+    introId: 'thinking-intro', quizId: 'thinking-quiz', resultId: 'thinking-result',
+    fillId: 'thinking-progress-fill', textId: 'thinking-question', choiceClass: 'thinking-choice',
+    backId: 'thinking-back', cancelId: 'thinking-cancel',
+    onComplete(scores) {
+      scores._ts = Date.now();
+      const hist = getHistory(THINKING_KEY);
+      hist.push({ ts: scores._ts, scores });
+      saveHistory(THINKING_KEY, hist);
+      renderThinkingResult(scores);
+      renderThinkingHistory();
+      if (typeof window.contributeToTwin === 'function') {
+        window.contributeToTwin('micron', { type: 'thinking', scores, ts: scores._ts });
+      }
+    },
+  });
+
+  // ── Johari window ─────────────────────────────────────────────────────────
+  let johariSelfCustom = [];
+  let johariOthersCustom = [];
 
   function renderJohari() {
-    const selfWrap = document.getElementById('johari-self-traits');
-    const othersWrap = document.getElementById('johari-others-traits');
-    const draft = state.johariDraft;
-    const allTraits = getAllJohariTraits(draft);
-    const renderTrait = (which) => {
-      const wrap = which === 'self' ? selfWrap : othersWrap;
-      const set = new Set(which === 'self' ? draft.selfTraits : draft.othersTraits);
-      const extras = new Set(which === 'self' ? draft.extraSelf : draft.extraOthers);
-      wrap.innerHTML = allTraits.map(t => {
-        const on = set.has(t);
-        const isExtra = extras.has(t);
-        return `<button class="trait-chip ${on ? 'on' : ''} ${isExtra ? 'extra' : ''}" data-which="${which}" data-trait="${escapeAttr(t)}">${escapeHtml(t)}${isExtra ? ` <span class="x">×</span>` : ''}</button>`;
-      }).join('');
-      wrap.querySelectorAll('.trait-chip').forEach(b => {
-        b.addEventListener('click', e => {
-          const t = b.dataset.trait;
-          const list = which === 'self' ? draft.selfTraits : draft.othersTraits;
-          const i = list.indexOf(t);
-          if (i >= 0) list.splice(i, 1); else list.push(t);
-          renderJohari();
-        });
-        const x = b.querySelector('.x');
-        if (x) {
-          x.addEventListener('click', e => {
-            e.stopPropagation();
-            if (!confirm(`カスタムトレイト「${t}」を削除しますか？`)) return;
-            const exList = which === 'self' ? draft.extraSelf : draft.extraOthers;
-            const sel = which === 'self' ? draft.selfTraits : draft.othersTraits;
-            exList.splice(exList.indexOf(t), 1);
-            const si = sel.indexOf(t);
-            if (si >= 0) sel.splice(si, 1);
-            renderJohari();
-          });
-        }
+    const selfGrid = $('johari-self-traits');
+    const othersGrid = $('johari-others-traits');
+    const allTraits = [...new Set([...JOHARI_TRAITS, ...johariSelfCustom, ...johariOthersCustom])];
+
+    function makeGrid(gridEl, side) {
+      gridEl.innerHTML = '';
+      allTraits.forEach(trait => {
+        const btn = document.createElement('button');
+        btn.className = 'trait-btn';
+        btn.textContent = trait;
+        btn.dataset.trait = trait;
+        btn.dataset.side = side;
+        btn.addEventListener('click', () => btn.classList.toggle('selected'));
+        gridEl.appendChild(btn);
       });
-    };
-    renderTrait('self');
-    renderTrait('others');
-
-    if (state.johariEditingId) {
-      const s = state.johariSessions.find(x => x.id === state.johariEditingId);
-      if (s) {
-        document.getElementById('johari-scope').value = s.scope || '';
-        document.getElementById('johari-notes').value = s.notes || '';
-      }
     }
+    makeGrid(selfGrid, 'self');
+    makeGrid(othersGrid, 'others');
 
-    renderJohariHistory();
-  }
-
-  document.getElementById('johari-self-add-btn').addEventListener('click', () => addJohariTrait('self'));
-  document.getElementById('johari-others-add-btn').addEventListener('click', () => addJohariTrait('others'));
-  document.getElementById('johari-self-add').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addJohariTrait('self'); } });
-  document.getElementById('johari-others-add').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addJohariTrait('others'); } });
-
-  function addJohariTrait(which) {
-    const inp = document.getElementById(which === 'self' ? 'johari-self-add' : 'johari-others-add');
-    const t = inp.value.trim();
-    if (!t) return;
-    const draft = state.johariDraft;
-    const exList = which === 'self' ? draft.extraSelf : draft.extraOthers;
-    if (!JOHARI_TRAITS.includes(t) && !exList.includes(t)) exList.push(t);
-    const sel = which === 'self' ? draft.selfTraits : draft.othersTraits;
-    if (!sel.includes(t)) sel.push(t);
-    inp.value = '';
-    renderJohari();
-  }
-
-  document.getElementById('johari-reset').addEventListener('click', () => {
-    if (!confirm('入力中の内容をクリアしますか？')) return;
-    state.johariDraft = { selfTraits: [], othersTraits: [], extraSelf: [], extraOthers: [] };
-    state.johariEditingId = null;
-    document.getElementById('johari-scope').value = '';
-    document.getElementById('johari-notes').value = '';
-    document.getElementById('johari-result').classList.add('hidden');
-    renderJohari();
-  });
-
-  document.getElementById('johari-save').addEventListener('click', () => {
-
-    const draft = state.johariDraft;
-    if (!draft.selfTraits.length && !draft.othersTraits.length) {
-      alert('少なくとも片方のリストを選んでください。');
-      return;
-    }
-    const existing = state.johariEditingId
-      ? state.johariSessions.find(x => x.id === state.johariEditingId)
-      : null;
-    const session = {
-      id: state.johariEditingId || 'jo_' + uid(),
-
-      date: new Date().toISOString(),
-      scope: document.getElementById('johari-scope').value.trim() || '全体',
-      notes: document.getElementById('johari-notes').value.trim(),
-      selfTraits: draft.selfTraits.slice(),
-      othersTraits: draft.othersTraits.slice(),
-      extraSelf: draft.extraSelf.slice(),
-      extraOthers: draft.extraOthers.slice(),
-      aiCommentary: existing ? existing.aiCommentary || '' : '',
-      updatedAt: new Date().toISOString(),
-    };
-    if (state.johariEditingId) {
-      state.johariSessions = state.johariSessions.map(s => s.id === state.johariEditingId ? session : s);
-    } else {
-      state.johariSessions.unshift(session);
-    }
-    save(JOHARI_KEY, state.johariSessions);
-    state.johariEditingId = session.id;
-    showJohariResult(session);
-    renderJohariHistory();
-    flash('保存しました');
-  });
-
-  function showJohariResult(session) {
-    const resEl = document.getElementById('johari-result');
-    resEl.classList.remove('hidden');
-    const w = computeJohariWindows(session);
-    const total = w.open.length + w.blind.length + w.hidden.length;
-    const totalAll = total + w.unknown.length;
-    const pct = (n) => totalAll ? Math.round((n / totalAll) * 100) : 0;
-    const interpret = interpretJohari(w);
-
-    resEl.innerHTML = `
-      <div class="result-card">
-        <div class="result-head">
-          <h3>自分と他者の見え方: ${escapeHtml(session.scope || '全体')}</h3>
-          <span class="muted">${escapeHtml(formatDate(session.date))}</span>
-        </div>
-        <div class="johari-grid">
-          <div class="johari-quad q-open">
-            <div class="quad-head"><b>開放</b><span class="muted">${w.open.length}（${pct(w.open.length)}%）</span></div>
-            <div class="quad-traits">${w.open.map(t => `<span class="trait-chip on small">${escapeHtml(t)}</span>`).join('') || '<span class="muted">なし</span>'}</div>
-          </div>
-          <div class="johari-quad q-blind">
-            <div class="quad-head"><b>盲点</b><span class="muted">${w.blind.length}（${pct(w.blind.length)}%）</span></div>
-            <div class="quad-traits">${w.blind.map(t => `<span class="trait-chip blind small">${escapeHtml(t)}</span>`).join('') || '<span class="muted">なし</span>'}</div>
-          </div>
-          <div class="johari-quad q-hidden">
-            <div class="quad-head"><b>秘密</b><span class="muted">${w.hidden.length}（${pct(w.hidden.length)}%）</span></div>
-            <div class="quad-traits">${w.hidden.map(t => `<span class="trait-chip hidden-trait small">${escapeHtml(t)}</span>`).join('') || '<span class="muted">なし</span>'}</div>
-          </div>
-          <div class="johari-quad q-unknown">
-            <div class="quad-head"><b>未知の余地</b><span class="muted">${w.unknown.length}</span></div>
-            <div class="quad-traits muted">${w.unknown.length}個のトレイトがどちらの側でも選ばれていません。新しい挑戦・自己探求で気づきが増えます。</div>
-          </div>
-        </div>
-        <div class="result-interpret">${escapeHtml(interpret)}</div>
-        <div class="actions">
-          <button id="johari-ai-comment">AIに詳しく解説してもらう（他の診断との関連も）</button>
-          <button id="johari-edit">この内容を編集する</button>
-        </div>
-        <div id="johari-ai-output" class="ai-output" style="${session.aiCommentary ? '' : 'display:none'}">${escapeHtml(session.aiCommentary || '')}</div>
-      </div>`;
-
-    document.getElementById('johari-edit').addEventListener('click', () => {
-      state.johariEditingId = session.id;
-      state.johariDraft = {
-        selfTraits: session.selfTraits.slice(),
-        othersTraits: session.othersTraits.slice(),
-        extraSelf: (session.extraSelf || []).slice(),
-        extraOthers: (session.extraOthers || []).slice(),
-      };
-      document.getElementById('johari-scope').value = session.scope || '';
-      document.getElementById('johari-notes').value = session.notes || '';
+    $('johari-self-add-btn').onclick = () => {
+      const val = $('johari-self-add').value.trim();
+      if (!val) return;
+      johariSelfCustom.push(val);
+      $('johari-self-add').value = '';
       renderJohari();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-    document.getElementById('johari-ai-comment').addEventListener('click', () => runJohariAICommentary(session));
-  }
+    };
+    $('johari-others-add-btn').onclick = () => {
+      const val = $('johari-others-add').value.trim();
+      if (!val) return;
+      johariOthersCustom.push(val);
+      $('johari-others-add').value = '';
+      renderJohari();
+    };
 
-  function interpretJohari(w) {
-    const total = w.open.length + w.blind.length + w.hidden.length;
-    if (!total) return '自己選択も他者からの選択もまだありません。';
-    const parts = [];
-    const ratio = (n) => total ? Math.round((n / total) * 100) : 0;
-    if (w.open.length >= w.blind.length && w.open.length >= w.hidden.length) {
-      parts.push('開放の窓が一番大きく、関係の地盤が安定しています。');
-    } else if (w.blind.length > w.open.length && w.blind.length > w.hidden.length) {
-      parts.push('盲点が大きい状態です。フィードバックを取り入れる場面が多いと、開放の窓が一気に広がります。');
-    } else if (w.hidden.length > w.open.length && w.hidden.length > w.blind.length) {
-      parts.push('秘密が大きい状態です。安全な相手に少しずつ開示するだけで、開放の窓は広がります。');
-    }
-    if (w.blind.length && w.hidden.length === 0) parts.push('開示は十分。盲点に向き合うのが次の一手です。');
-    if (w.hidden.length && w.blind.length === 0) parts.push('フィードバックは取り入れている。安全な開示が次の一手です。');
-    if (w.unknown.length > total * 2) parts.push('未知の余地が大きいので、新しい挑戦・対話で発見できる可能性が広いです。');
-    return parts.join(' ');
-  }
+    $('johari-save').onclick = () => {
+      const selfSelected = [...selfGrid.querySelectorAll('.trait-btn.selected')].map(b => b.dataset.trait);
+      const othersSelected = [...othersGrid.querySelectorAll('.trait-btn.selected')].map(b => b.dataset.trait);
+      const scope = $('johari-scope').value.trim() || '全体';
+      const notes = $('johari-notes').value.trim();
 
-  async function runJohariAICommentary(session) {
-    if (!state.settings.apiKey) {
-      flash('設定タブでAPIキーを登録してください', 'error');
-      return;
-    }
-    const out = document.getElementById('johari-ai-output');
-    const btn = document.getElementById('johari-ai-comment');
-    out.style.display = 'block';
-    out.textContent = '分析中...';
-    if (btn) btn.classList.add('loading');
-    const w = computeJohariWindows(session);
-    const payload = [
-      `対象: ${session.scope || '全体'}`,
-      `開放（自分も他者も認識）: ${w.open.join(', ') || 'なし'}`,
-      `盲点（他者だけが認識）: ${w.blind.join(', ') || 'なし'}`,
-      `秘密（自分だけが認識）: ${w.hidden.join(', ') || 'なし'}`,
-      `未知（どちらも未選択）: ${w.unknown.length}個`,
-    ].join('\n');
-    const system = 'あなたはジョハリの窓モデルを使ったコーチングに詳しい心理カウンセラーです。本人の自己認識と他者からの見え方のズレを統合的に読み解き、次の一歩を優しく日本語で示します。';
-    const user = [
-      '以下は「自分から見た自分」と「他者から見た自分」の集計です（ジョハリの窓モデル）。',
-      '4つの窓のバランスから読み取れる「他者との関係の現在地」を一文でまとめ、',
-      '盲点・秘密のトレイトに具体的に触れながら、開放の窓を広げるための小さな実験を1つ提案してください。',
-      '他の診断スコアがあれば、整合・矛盾を指摘してください（500字程度）。',
-      '',
-      payload,
-      '',
-      buildCrossReferences('johari'),
-    ].join('\n');
-    try {
-      const text = await callClaude(system, user);
-      out.textContent = text;
-      session.aiCommentary = text;
-      save(JOHARI_KEY, state.johariSessions);
-    } catch (err) {
-      out.textContent = 'エラー: ' + err.message;
-      flash('AI呼び出しに失敗しました', 'error');
-    } finally {
-      if (btn) btn.classList.remove('loading');
-    }
-  }
+      const open   = selfSelected.filter(t => othersSelected.includes(t));
+      const blind  = othersSelected.filter(t => !selfSelected.includes(t));
+      const hidden = selfSelected.filter(t => !othersSelected.includes(t));
 
-  // ---------- Summary (comprehensive) analysis ----------
-  function summaryDiagnostics() {
-    return [
-      { key: 'social',   label: '人との関わり方',     dims: SOCIAL_DIMENSIONS,   list: state.socialAssessments },
-      { key: 'effort',   label: '努力スタイル',       dims: EFFORT_DIMENSIONS,   list: state.effortAssessments },
-      { key: 'kolb',     label: '学び方のタイプ',     dims: KOLB_DIMENSIONS,     list: state.kolbAssessments },
-      { key: 'values',   label: '大切にしているもの', dims: VALUES_DIMENSIONS,   list: state.valuesAssessments },
-      { key: 'thinking', label: '考え方のクセ',       dims: THINKING_DIMENSIONS, list: state.thinkingAssessments },
-    ];
-  }
+      const ts = Date.now();
+      const entry = { ts, scope, notes, self: selfSelected, others: othersSelected, open, blind, hidden };
+      const hist = getHistory(JOHARI_KEY);
+      hist.push(entry);
+      saveHistory(JOHARI_KEY, hist);
 
-  // Latest record for a specific person; if no person selected, return global latest.
-  function renderSummary() {
-    const snap = document.getElementById('summary-snapshot');
-    if (!snap) return;
-    const cards = [];
-    for (const d of summaryDiagnostics()) {
-      const latest = d.list[0];
-      if (!latest) {
-        cards.push(`<div class="snap-card empty"><div class="snap-label">${escapeHtml(d.label)}</div><div class="snap-empty">未診断</div></div>`);
-        continue;
-      }
-      const top = d.dims.slice().sort((a, b) => latest.scores[b.key] - latest.scores[a.key])[0];
-      const avg = Math.round(d.dims.reduce((s, x) => s + latest.scores[x.key], 0) / d.dims.length);
-      const bars = d.dims.map(x => `
-        <span class="snap-bar" title="${escapeAttr(x.label)}: ${latest.scores[x.key]}">
-          <span class="snap-bar-fill" style="height:${latest.scores[x.key]}%;background:${x.color}"></span>
-        </span>`).join('');
-      cards.push(`<div class="snap-card">
-        <div class="snap-label">${escapeHtml(d.label)}</div>
-        <div class="snap-bars">${bars}</div>
-        <div class="snap-meta muted">平均 ${avg} · 最高 <b style="color:${top.color}">${escapeHtml(top.label)}</b></div>
-      </div>`);
-    }
-    const johari = state.johariSessions[0];
-    if (johari) {
-      const w = computeJohariWindows(johari);
-      cards.push(`<div class="snap-card">
-        <div class="snap-label">自分と他者の見え方</div>
-        <div class="snap-meta">開放 ${w.open.length} / 盲点 ${w.blind.length} / 秘密 ${w.hidden.length}</div>
-        <div class="muted" style="font-size:11px">${escapeHtml(johari.scope || '全体')}</div>
-      </div>`);
-    } else {
-      cards.push(`<div class="snap-card empty"><div class="snap-label">自分と他者の見え方</div><div class="snap-empty">未診断</div></div>`);
-    }
-    snap.innerHTML = cards.join('');
-    renderSummaryHistory();
-  }
-
-  document.getElementById('summary-run').addEventListener('click', runSummary);
-  document.getElementById('summary-copy').addEventListener('click', () => {
-    const t = document.getElementById('summary-output').textContent;
-    if (!t) return;
-    navigator.clipboard.writeText(t).then(() => flash('コピーしました'));
-  });
-
-  async function runSummary() {
-    if (!state.settings.apiKey) {
-      flash('設定タブでAPIキーを登録してください', 'error');
-      return;
-    }
-    const out = document.getElementById('summary-output');
-    const status = document.getElementById('summary-status');
-    out.textContent = '';
-
-    const payloadParts = [];
-    const snapshot = { diagnostics: {} };
-
-    for (const d of summaryDiagnostics()) {
-      const latest = d.list[0];
-      if (!latest) {
-        payloadParts.push(`## ${d.label}\n（未診断）`);
-        snapshot.diagnostics[d.key] = null;
-        continue;
-      }
-      const dims = d.dims.map(x => `${x.label}: ${latest.scores[x.key]}`).join(' / ');
-      payloadParts.push(`## ${d.label}（${formatDate(latest.date)}）\n${dims}`);
-      snapshot.diagnostics[d.key] = { scores: latest.scores, date: latest.date };
-    }
-    const johari = state.johariSessions[0];
-    if (johari) {
-      const w = computeJohariWindows(johari);
-      payloadParts.push(`## 自分と他者の見え方（${johari.scope || '全体'} / ${formatDate(johari.date)}）
-開放（自他共通）: ${w.open.join(', ') || 'なし'}
-盲点（他者だけ）: ${w.blind.join(', ') || 'なし'}
-秘密（自分だけ）: ${w.hidden.join(', ') || 'なし'}
-未知の余地: ${w.unknown.length}個`);
-      snapshot.diagnostics.johari = { open: w.open, blind: w.blind, hidden: w.hidden, unknownCount: w.unknown.length, scope: johari.scope, date: johari.date };
-    } else {
-      payloadParts.push('## 自分と他者の見え方\n（未診断）');
-      snapshot.diagnostics.johari = null;
-    }
-
-    const system = [
-      'あなたは心理学・コーチング・経験学習理論に通じた、思慮深い分析パートナーです。',
-      '複数の自己診断結果を統合し、一人の人物像として丁寧に読み解きます。',
-      '断定や決めつけを避け、本人が次の一歩を選べる形で日本語で回答します。',
-    ].join('\n');
-
-    const userPrompt = [
-      '以下は自分自身の診断データです。これらを統合的に分析してください。',
-      '',
-      '出力には以下を含めてください（マークダウンの見出しで区切る）:',
-      '## 1. 人物プロファイル（200字程度の物語的な要約）',
-      '## 2. 各診断から見える強み（箇条書き、根拠引用）',
-      '## 3. 構造的な「ねじれ」（複数の診断が共通して指している葛藤）',
-      '## 4. 今週から試せる小さな一歩（1〜2個、具体的に）',
-      '',
-      '全体で700〜1000字。安直な励ましは避け、データに即して書いてください。',
-      '',
-      payloadParts.join('\n\n'),
-    ].join('\n');
-
-    const runBtn = document.getElementById('summary-run');
-    runBtn.disabled = true;
-    runBtn.classList.add('loading');
-    status.textContent = '統合分析中...';
-    try {
-      const text = await callClaude(system, userPrompt);
-      out.textContent = text;
-      const record = {
-        id: 'sum_' + uid(),
-        date: new Date().toISOString(),
-        snapshot,
-        output: text,
-        notes: '',
-      };
-      state.summaryAnalyses.unshift(record);
-      state.summaryAnalyses = state.summaryAnalyses.slice(0, 50);
-      save(SUMMARY_KEY, state.summaryAnalyses);
-      status.textContent = `完了 (${formatDate(record.date)})`;
-      renderSummaryHistory();
-    } catch (err) {
-      status.textContent = 'エラー: ' + err.message;
-      flash('AI呼び出しに失敗しました', 'error');
-    } finally {
-      runBtn.disabled = false;
-      runBtn.classList.remove('loading');
-    }
-  }
-
-  function renderSummaryHistory() {
-    const ul = document.getElementById('summary-history');
-    if (!ul) return;
-    const items = state.summaryAnalyses.slice();
-    if (!items.length) {
-      ul.innerHTML = '<li class="muted">まだレポートはありません。</li>';
-      return;
-    }
-    ul.innerHTML = items.map(r => `
-      <li data-id="${r.id}">
-        <div class="h-meta">${formatDate(r.date)}</div>
-        <div class="h-preview">${escapeHtml(r.output).slice(0, 200)}…</div>
-        <div class="actions" style="margin-top:6px">
-          <button class="sum-view" data-id="${r.id}">結果を表示</button>
-          <button class="sum-del danger" data-id="${r.id}">削除</button>
+      const resultEl = $('johari-result');
+      resultEl.classList.remove('hidden');
+      resultEl.innerHTML = `
+        <h3>結果（${scope}）</h3>
+        <div class="johari-grid">
+          <div class="johari-cell open"><b>開放領域</b><p>${open.length ? open.join('・') : 'なし'}</p></div>
+          <div class="johari-cell blind"><b>盲点領域</b><p>${blind.length ? blind.join('・') : 'なし'}</p></div>
+          <div class="johari-cell hidden-area"><b>秘密領域</b><p>${hidden.length ? hidden.join('・') : 'なし'}</p></div>
+          <div class="johari-cell unknown"><b>未知領域</b><p>まだ気づいていない可能性</p></div>
         </div>
-      </li>
-    `).join('');
-    ul.querySelectorAll('.sum-view').forEach(b => {
-      b.addEventListener('click', () => {
-        const r = state.summaryAnalyses.find(x => x.id === b.dataset.id);
-        if (!r) return;
-        document.getElementById('summary-output').textContent = r.output;
-        document.getElementById('summary-status').textContent = `履歴を表示中 (${formatDate(r.date)})`;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        <div class="actions"><button id="johari-ai-btn" class="primary">AIに詳しく解説してもらう</button></div>
+        <p id="johari-ai-status" class="muted"></p><article id="johari-ai-output" class="ai-output"></article>
+      `;
+
+      $('johari-ai-btn').addEventListener('click', async () => {
+        const prompt = `あなたは自己理解の専門家です。以下はジョハリの窓の結果です（コンテキスト：${scope}）。
+開放領域（自分も他者も知っている）: ${open.join('、') || 'なし'}
+盲点領域（他者は知っているが自分は気づいていない）: ${blind.join('、') || 'なし'}
+秘密領域（自分は知っているが他者には伝えていない）: ${hidden.join('、') || 'なし'}
+${notes ? 'メモ: ' + notes : ''}
+この結果を元に、この人の自己開示と対人関係の特徴・強み・成長のヒントを日本語で300字程度にまとめてください。`;
+        const text = await callAI(prompt, $('johari-ai-status'), $('johari-ai-output'));
+        if (!text) return;
+        const hist2 = getHistory(JOHARI_KEY);
+        const last = hist2[hist2.length - 1];
+        if (last && last.ts === ts) last.ai = text;
+        saveHistory(JOHARI_KEY, hist2);
+        renderJohariHistory();
       });
-    });
-    ul.querySelectorAll('.sum-del').forEach(b => {
-      b.addEventListener('click', () => {
-        if (!confirm('この履歴を削除しますか？')) return;
-        state.summaryAnalyses = state.summaryAnalyses.filter(x => x.id !== b.dataset.id);
-        save(SUMMARY_KEY, state.summaryAnalyses);
-        renderSummaryHistory();
-      });
-    });
+
+      renderJohariHistory();
+      if (typeof window.contributeToTwin === 'function') {
+        window.contributeToTwin('micron', { type: 'johari', open, blind, hidden, scope, ts });
+      }
+    };
+
+    $('johari-reset').onclick = () => {
+      selfGrid.querySelectorAll('.trait-btn').forEach(b => b.classList.remove('selected'));
+      othersGrid.querySelectorAll('.trait-btn').forEach(b => b.classList.remove('selected'));
+      $('johari-result').classList.add('hidden');
+    };
   }
 
   function renderJohariHistory() {
-    const ul = document.getElementById('johari-history');
-    if (!ul) return;
-    const items = state.johariSessions.slice();
-    if (!items.length) {
-      ul.innerHTML = '<li class="muted">該当する履歴はありません。</li>';
-      return;
-    }
-    ul.innerHTML = items.map(s => {
-      const w = computeJohariWindows(s);
-      return `<li data-id="${s.id}" class="${state.johariEditingId === s.id ? 'active' : ''}">
-        <div class="h-meta">${escapeHtml(s.scope || '全体')} · ${formatDate(s.date)}</div>
-        <div class="muted" style="font-size:11px;margin-top:2px">開放 ${w.open.length} / 盲点 ${w.blind.length} / 秘密 ${w.hidden.length}</div>
-        <div class="actions" style="margin-top:6px">
-          <button class="jo-view" data-id="${s.id}">結果を表示</button>
-          <button class="jo-del danger" data-id="${s.id}">削除</button>
-        </div>
-      </li>`;
+    const ul = $('johari-history');
+    const hist = getHistory(JOHARI_KEY);
+    if (!hist.length) { ul.innerHTML = '<li class="muted">まだ履歴がありません</li>'; return; }
+    ul.innerHTML = hist.slice().reverse().map((h, ri) => {
+      const i = hist.length - 1 - ri;
+      return `<li><details><summary>${new Date(h.ts).toLocaleString('ja-JP')} — ${h.scope} / 開放${h.open.length} 盲点${h.blind.length} 秘密${h.hidden.length}</summary>${h.ai ? '<p class="ai-output">' + h.ai + '</p>' : '<p class="muted">AI解説なし</p>'}<button class="danger small" data-del="${i}">削除</button></details></li>`;
     }).join('');
-    ul.querySelectorAll('.jo-view').forEach(b => {
-      b.addEventListener('click', () => {
-        const s = state.johariSessions.find(x => x.id === b.dataset.id);
-        if (s) showJohariResult(s);
-      });
-    });
-    ul.querySelectorAll('.jo-del').forEach(b => {
-      b.addEventListener('click', () => {
-        if (!confirm('この履歴を削除しますか？')) return;
-        state.johariSessions = state.johariSessions.filter(x => x.id !== b.dataset.id);
-        if (state.johariEditingId === b.dataset.id) state.johariEditingId = null;
-        save(JOHARI_KEY, state.johariSessions);
-        renderJohariHistory();
-      });
+    ul.querySelectorAll('[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => { const h2 = getHistory(JOHARI_KEY); h2.splice(parseInt(btn.dataset.del),1); saveHistory(JOHARI_KEY,h2); renderJohariHistory(); });
     });
   }
 
+  // ── Summary ───────────────────────────────────────────────────────────────
+  function renderSummarySnapshot() {
+    const el = $('summary-snapshot');
+    const keys = [
+      { key: SOCIAL_KEY,   name: '人との関わり方', dims: SOCIAL_DIMENSIONS },
+      { key: EFFORT_KEY,   name: '努力スタイル',   dims: EFFORT_DIMENSIONS },
+      { key: KOLB_KEY,     name: '学び方',         dims: KOLB_DIMS },
+      { key: VALUES_KEY,   name: '価値観',         dims: VALUES_DIMENSIONS },
+      { key: THINKING_KEY, name: '考え方のクセ',   dims: THINKING_DIMENSIONS },
+    ];
+    let html = '';
+    keys.forEach(k => {
+      const hist = getHistory(k.key);
+      if (!hist.length) { html += `<p class="muted">${k.name}: 未実施</p>`; return; }
+      const last = hist[hist.length - 1];
+      html += `<p><b>${k.name}</b>: ${k.dims.map(d => d.label + ' ' + last.scores[d.key] + '%').join(' / ')}</p>`;
+    });
+    const johariHist = getHistory(JOHARI_KEY);
+    if (johariHist.length) {
+      const last = johariHist[johariHist.length - 1];
+      html += `<p><b>ジョハリの窓</b> (${last.scope}): 開放${last.open.length}件 / 盲点${last.blind.length}件 / 秘密${last.hidden.length}件</p>`;
+    } else {
+      html += `<p class="muted">ジョハリの窓: 未実施</p>`;
+    }
+    el.innerHTML = html || '<p class="muted">まだ診断結果がありません</p>';
+  }
+
+  function renderSummary() {
+    renderSummarySnapshot();
+    const hist = getHistory(SUMMARY_KEY);
+    const ul = $('summary-history');
+    if (!hist.length) { ul.innerHTML = '<li class="muted">まだ履歴がありません</li>'; return; }
+    ul.innerHTML = hist.slice().reverse().map((h, ri) => {
+      const i = hist.length - 1 - ri;
+      return `<li><details><summary>${new Date(h.ts).toLocaleString('ja-JP')}</summary><article class="ai-output">${h.text}</article><button class="danger small" data-del="${i}">削除</button></details></li>`;
+    }).join('');
+    ul.querySelectorAll('[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => { const h2 = getHistory(SUMMARY_KEY); h2.splice(parseInt(btn.dataset.del),1); saveHistory(SUMMARY_KEY,h2); renderSummary(); });
+    });
+  }
+
+  $('summary-run').addEventListener('click', async () => {
+    const keys = [
+      { key: SOCIAL_KEY,   name: '人との関わり方', dims: SOCIAL_DIMENSIONS },
+      { key: EFFORT_KEY,   name: '努力スタイル',   dims: EFFORT_DIMENSIONS },
+      { key: KOLB_KEY,     name: '学び方',         dims: KOLB_DIMS },
+      { key: VALUES_KEY,   name: '価値観',         dims: VALUES_DIMENSIONS },
+      { key: THINKING_KEY, name: '考え方のクセ',   dims: THINKING_DIMENSIONS },
+    ];
+    let parts = [];
+    keys.forEach(k => {
+      const hist = getHistory(k.key);
+      if (!hist.length) return;
+      const last = hist[hist.length - 1];
+      parts.push(k.name + ':\n' + k.dims.map(d => '  ' + d.label + ': ' + last.scores[d.key] + '%').join('\n'));
+    });
+    const johariHist = getHistory(JOHARI_KEY);
+    if (johariHist.length) {
+      const last = johariHist[johariHist.length - 1];
+      parts.push(`ジョハリの窓 (${last.scope}):\n  開放: ${last.open.join('、') || 'なし'}\n  盲点: ${last.blind.join('、') || 'なし'}\n  秘密: ${last.hidden.join('、') || 'なし'}`);
+    }
+    if (!parts.length) { showToast('診断結果がありません'); return; }
+    const prompt = `あなたは心理・自己理解の専門家です。以下は一人の人物の6つの診断結果です。
+
+${parts.join('\n\n')}
+
+これらを統合して、この人物の：
+1. 全体的な人物像・強み
+2. 内在する葛藤や注意すべき点
+3. この人に合った「次の一歩」の実践アドバイス
+
+を日本語で500字程度のレポートとしてまとめてください。`;
+    const text = await callAI(prompt, $('summary-status'), $('summary-output'));
+    if (!text) return;
+    const hist = getHistory(SUMMARY_KEY);
+    hist.push({ ts: Date.now(), text });
+    saveHistory(SUMMARY_KEY, hist);
+    renderSummary();
+    if (typeof window.contributeToTwin === 'function') {
+      window.contributeToTwin('micron', { type: 'summary', text, ts: Date.now() });
+    }
+  });
+
+  $('summary-copy').addEventListener('click', () => {
+    const text = $('summary-output').textContent;
+    if (!text) { showToast('まずレポートを作成してください'); return; }
+    navigator.clipboard.writeText(text).then(() => showToast('コピーしました'));
+  });
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  initSettings();
   renderSocialHistory();
   renderEffortHistory();
   renderKolbHistory();
