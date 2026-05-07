@@ -111,6 +111,18 @@ main {
 .sub-panel { display: none; }
 .sub-panel.active { display: block; }
 
+.diag-group-title {
+  margin: 18px 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  text-transform: none;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 6px;
+}
+.diag-group-title:first-of-type { margin-top: 0; }
+.diag-group-title .muted { font-weight: 400; font-size: 12px; }
+
 /* Diagnostic tab cards: bigger and easier to tap */
 .diag-tabs {
   display: grid;
