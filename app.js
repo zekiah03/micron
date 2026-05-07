@@ -1,4 +1,4 @@
-successfully downloaded text file (SHA: 6c8e7ce677ff048ccd7bc7acab588def62fd1641)[Resource from github at repo://zekiah03/micron/sha/825d6fc9a812e316f5c83837f7ed16009e754af5/contents/app.js] (() => {
+(() => {
   const SETTINGS_KEY = 'nayami-settings-v1';
   const SOCIAL_KEY = 'nayami-social-v1';
   const EFFORT_KEY = 'nayami-effort-v1';
@@ -649,123 +649,47 @@ successfully downloaded text file (SHA: 6c8e7ce677ff048ccd7bc7acab588def62fd1641
       const r = (scores[d.key] / 100) * R;
       return [cx + Math.cos(ang) * r, cy + Math.sin(ang) * r];
     });
-    const gridRings = [0.25, 0.5, 0.75, 1].map(f => {
-      const p = dims.map((d, i) => {
-        const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
-        return `${cx + Math.cos(ang) * R * f},${cy + Math.sin(ang) * R * f}`;
-      }).join(' ');
-      return `<polygon points="${p}" fill="none" stroke="#e5e7eb" stroke-width="1"/>`;
-    }).join('');
     const axes = dims.map((d, i) => {
       const ang = -Math.PI / 2 + (i * 2 * Math.PI) / n;
-      const x = cx + Math.cos(ang) * R, y = cy + Math.sin(ang) * R;
-      const lx = cx + Math.cos(ang) * (R + 22), ly = cy + Math.sin(ang) * (R + 18);
-      return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>
-              <text x="${lx}" y="${ly}" text-anchor="middle" dy="4" font-size="11" fill="${d.color}" font-weight="600">${escapeHtml(d.label)}</text>`;
+      const lx = cx + Math.cos(ang) * (R + 18);
+      const ly = cy + Math.sin(ang) * (R + 18);
+      return `<line x1="${cx}" y1="${cy}" x2="${cx + Math.cos(ang) * R}" y2="${cy + Math.sin(ang) * R}" stroke="#334155" stroke-width="1"/>
+              <text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" fill="${d.color}" font-size="11">${escapeHtml(d.label)}</text>`;
     }).join('');
-    const shape = `<polygon points="${pts.map(p => p.join(',')).join(' ')}" fill="#6366f1" fill-opacity="0.25" stroke="#6366f1" stroke-width="2"/>`;
-    const dots = pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="#6366f1"/>`).join('');
-    return `<svg class="radar-svg" viewBox="0 0 260 260">${gridRings}${axes}${shape}${dots}</svg>`;
-  }
-
-  function computeDimensionScores(answers, questions, dims) {
-    const sums = {}, counts = {};
-    for (const d of dims) { sums[d.key] = 0; counts[d.key] = 0; }
-    for (let i = 0; i < questions.length; i++) {
-      const a = answers[i];
-      if (a == null) continue;
-      sums[questions[i].dim] += a;
-      counts[questions[i].dim]++;
-    }
-    const out = {};
-    for (const d of dims) {
-      const max = counts[d.key] * 4, min = counts[d.key];
-      out[d.key] = max > min ? Math.round(((sums[d.key] - min) / (max - min)) * 100) : 0;
-    }
-    return out;
+    const polygon = `<polygon points="${pts.map(p => p.join(',')).join(' ')}" fill="rgba(99,102,241,0.25)" stroke="#6366f1" stroke-width="2"/>`;
+    return `<svg width="260" height="260" viewBox="0 0 260 260">${axes}${polygon}</svg>`;
   }
 
   async function runSocialAICommentary(record) {
-    if (!state.settings.apiKey) {
-      flash('設定タブでAPIキーを登録してください', 'error');
-      return;
-    }
-    const out = document.getElementById('social-ai-output');
     const btn = document.getElementById('social-ai-comment');
-    out.style.display = 'block';
-    out.textContent = '分析中...';
-    if (btn) btn.classList.add('loading');
-    const payload = SOCIAL_DIMENSIONS.map(d => `${d.label}: ${record.scores[d.key]}`).join('\n');
-    const system = 'あなたは思慮深い心理カウンセラーです。自己診断の結果を、決めつけず、本人の自己理解に役立つ形で日本語で解説します。';
-    const user = [
-      '以下は「人との関わり方」の5次元スコアです（0〜100）。',
-      'それぞれの意味合い、全体のプロファイル、アンバランスがある場合はその構造、伸ばすヒント、注意点を400字程度でまとめてください。',
-      '断定しすぎず、本人が試せる小さな一歩を一つ添えてください。',
-      '',
-      payload,
-    ].join('\n');
+    if (!btn) return;
+    btn.classList.add('loading');
     try {
-      const text = await callClaude(system, user);
-      out.textContent = text;
+      const scoreStr = SOCIAL_DIMENSIONS.map(d => `${d.label}: ${record.scores[d.key]}`).join(', ');
+      const text = await callClaude(
+        'あなたは社会的スキル診断の専門家アドバイザーです。診断結果を見て、具体的で実践的なフィードバックを日本語で提供してください。',
+        `社会的スキル診断の結果（0-100スケール）:\n${scoreStr}\n\nこの結果について、強み・課題・具体的な改善策を含む詳しい解説をお願いします。`
+      );
       record.aiCommentary = text;
       save(SOCIAL_KEY, state.socialAssessments);
+      const out = document.getElementById('social-ai-output');
+      if (out) { out.textContent = text; out.style.display = ''; }
     } catch (err) {
-      out.textContent = 'エラー: ' + err.message;
-      flash('AI呼び出しに失敗しました', 'error');
+      flash('AI解説に失敗しました: ' + err.message, 'error');
     } finally {
-      if (btn) btn.classList.remove('loading');
+      btn.classList.remove('loading');
     }
-  }
-
-  function renderSocialHistory() {
-    const ul = document.getElementById('social-history');
-    if (!ul) return;
-    const items = state.socialAssessments.slice();
-    if (!items.length) {
-      ul.innerHTML = '<li class="muted">該当する履歴はありません。</li>';
-      return;
-    }
-    ul.innerHTML = items.map(r => {
-      const avg = Math.round(SOCIAL_DIMENSIONS.reduce((s, d) => s + r.scores[d.key], 0) / SOCIAL_DIMENSIONS.length);
-      const bars = SOCIAL_DIMENSIONS.map(d => `
-        <span class="mini-bar" title="${escapeAttr(d.label)}: ${r.scores[d.key]}">
-          <span class="mini-bar-fill" style="height:${r.scores[d.key]}%;background:${d.color}"></span>
-        </span>`).join('');
-      return `<li data-id="${r.id}">
-        <div class="h-meta">${formatDate(r.date)} · 平均 ${avg}</div>
-        <div class="mini-bars">${bars}</div>
-        <div class="actions" style="margin-top:6px">
-          <button class="sa-view" data-id="${r.id}">結果を表示</button>
-          <button class="sa-del danger" data-id="${r.id}">削除</button>
-        </div>
-      </li>`;
-    }).join('');
-    ul.querySelectorAll('.sa-view').forEach(b => {
-      b.addEventListener('click', () => {
-        const r = state.socialAssessments.find(x => x.id === b.dataset.id);
-        if (r) showSocialResult(r);
-      });
-    });
-    ul.querySelectorAll('.sa-del').forEach(b => {
-      b.addEventListener('click', () => {
-        if (!confirm('この診断履歴を削除しますか？')) return;
-        state.socialAssessments = state.socialAssessments.filter(x => x.id !== b.dataset.id);
-        save(SOCIAL_KEY, state.socialAssessments);
-        renderSocialHistory();
-      });
-    });
   }
 
   // ---------- Effort assessment ----------
   const effortIntro = document.getElementById('effort-intro');
   const effortQuizEl = document.getElementById('effort-quiz');
   const effortResult = document.getElementById('effort-result');
-  const effortQuestionEl = document.getElementById('effort-question');
-  const effortProgressFill = document.getElementById('effort-progress-fill');
-  const effortProgressText = document.getElementById('effort-progress-text');
+  const effortQEl = document.getElementById('effort-question');
+  const effortFill = document.getElementById('effort-progress-fill');
+  const effortText = document.getElementById('effort-progress-text');
 
   document.getElementById('effort-start').addEventListener('click', () => {
-
     state.effortQuiz = { idx: 0, answers: new Array(EFFORT_QUESTIONS.length).fill(null) };
     effortIntro.classList.add('hidden');
     effortResult.classList.add('hidden');
@@ -803,11 +727,11 @@ successfully downloaded text file (SHA: 6c8e7ce677ff048ccd7bc7acab588def62fd1641
     const { idx, answers } = state.effortQuiz;
     const q = EFFORT_QUESTIONS[idx];
     const dim = EFFORT_DIMENSIONS.find(d => d.key === q.dim);
-    effortQuestionEl.innerHTML = `
-      <div class="q-dim" style="color:${dim.color}">${escapeHtml(dim.label)}の努力</div>
+    effortQEl.innerHTML = `
+      <div class="q-dim" style="color:${dim.color}">${escapeHtml(dim.label)}</div>
       <div class="q-text">${escapeHtml(q.text)}</div>`;
-    effortProgressFill.style.width = `${((idx + 1) / EFFORT_QUESTIONS.length) * 100}%`;
-    effortProgressText.textContent = `${idx + 1} / ${EFFORT_QUESTIONS.length}`;
+    effortFill.style.width = `${((idx + 1) / EFFORT_QUESTIONS.length) * 100}%`;
+    effortText.textContent = `${idx + 1} / ${EFFORT_QUESTIONS.length}`;
     document.querySelectorAll('.effort-choice').forEach(b => {
       b.classList.toggle('selected', Number(b.dataset.val) === answers[idx]);
     });
@@ -815,16 +739,8 @@ successfully downloaded text file (SHA: 6c8e7ce677ff048ccd7bc7acab588def62fd1641
   }
 
   function finishEffortQuiz() {
-    const scores = computeDimensionScores(state.effortQuiz.answers, EFFORT_QUESTIONS, EFFORT_DIMENSIONS);
-    const record = {
-      id: 'ea_' + uid(),
-
-      date: new Date().toISOString(),
-      answers: state.effortQuiz.answers.slice(),
-      scores,
-      notes: '',
-      aiCommentary: '',
-    };
+    const scores = computeScores(state.effortQuiz.answers, EFFORT_QUESTIONS, EFFORT_DIMENSIONS);
+    const record = { id: 'ef_' + uid(), date: new Date().toISOString(), answers: state.effortQuiz.answers.slice(), scores, notes: '', aiCommentary: '' };
     state.effortAssessments.unshift(record);
     save(EFFORT_KEY, state.effortAssessments);
     if (typeof window.contributeToTwin === 'function') window.contributeToTwin('micron', { quizType: 'effort', scores: scores });
@@ -835,20 +751,33 @@ successfully downloaded text file (SHA: 6c8e7ce677ff048ccd7bc7acab588def62fd1641
     renderEffortHistory();
   }
 
+  function computeScores(answers, questions, dimensions) {
+    const sums = {}, counts = {};
+    for (const d of dimensions) { sums[d.key] = 0; counts[d.key] = 0; }
+    for (let i = 0; i < questions.length; i++) {
+      const a = answers[i];
+      if (a == null) continue;
+      const dim = questions[i].dim;
+      sums[dim] += a;
+      counts[dim]++;
+    }
+    const out = {};
+    for (const d of dimensions) {
+      const max = counts[d.key] * 4, min = counts[d.key];
+      out[d.key] = max > min ? Math.round(((sums[d.key] - min) / (max - min)) * 100) : 0;
+    }
+    return out;
+  }
+
   function showEffortResult(record) {
     effortResult.classList.remove('hidden');
     const scores = record.scores;
     const sorted = EFFORT_DIMENSIONS.slice().sort((a, b) => scores[b.key] - scores[a.key]);
     const high = sorted[0], low = sorted[sorted.length - 1];
     const avg = Math.round(EFFORT_DIMENSIONS.reduce((s, d) => s + scores[d.key], 0) / EFFORT_DIMENSIONS.length);
-    const type = effortType(scores);
-
     effortResult.innerHTML = `
       <div class="result-card">
-        <div class="result-head">
-          <h3>努力スタイル: <span style="color:${high.color}">${escapeHtml(type.name)}</span></h3>
-          <span class="muted">${escapeHtml(formatDate(record.date))}</span>
-        </div>
+        <div class="result-head"><h3>努力診断結果</h3><span class="muted">${escapeHtml(formatDate(record.date))}</span></div>
         <div class="result-grid">
           ${renderRadarSvg(scores, EFFORT_DIMENSIONS)}
           <div class="result-scores">
@@ -866,7 +795,7 @@ successfully downloaded text file (SHA: 6c8e7ce677ff048ccd7bc7acab588def62fd1641
             </div>
           </div>
         </div>
-        <div class="result-interpret">${escapeHtml(type.description)} ${escapeHtml(interpretEffort(high, low))}</div>
+        <div class="result-interpret">${escapeHtml(interpretEffort(scores, high, low, avg))}</div>
         <div class="actions">
           <button id="effort-ai-comment">AIに詳しく解説してもらう</button>
           <button id="effort-retry">もう一度受ける</button>
@@ -874,152 +803,58 @@ successfully downloaded text file (SHA: 6c8e7ce677ff048ccd7bc7acab588def62fd1641
         <div id="effort-ai-output" class="ai-output" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
       </div>
     `;
-    document.getElementById('effort-retry').addEventListener('click', () => {
-      document.getElementById('effort-start').click();
-    });
+    document.getElementById('effort-retry').addEventListener('click', () => document.getElementById('effort-start').click());
     document.getElementById('effort-ai-comment').addEventListener('click', () => runEffortAICommentary(record));
   }
 
-  function effortType(scores) {
-    // Name the profile by the highest dimension (tie -> first)
-    const sorted = EFFORT_DIMENSIONS.slice().sort((a, b) => scores[b.key] - scores[a.key]);
-    const top = sorted[0].key;
-    const map = {
-      volume:    { name: '地道型',   description: '投下量で押し切るタイプ。土台は強いが、質や設計を伸ばすと結果が加速します。' },
-      quality:   { name: '熟達型',   description: '同じ時間でも中身を濃くできるタイプ。方向性の選択まで意識すると最大化されます。' },
-      design:    { name: '戦略家型', description: '計画と優先順位付けが得意。実行量を確保できているか確認するとバランスが取れます。' },
-      choice:    { name: '選択家型', description: '何に努力するかを選べるタイプ。選んだ後の量・質・持続を意識的に補強すると結果に繋がります。' },
-      endurance: { name: '恒毅型',   description: '長く続ける力が突出。方向転換や設計の見直しを定期的に入れると、続ける力が結果に直結します。' },
-    };
-    return map[top] || { name: 'バランス型', description: '各次元がバランスよく育っています。' };
-  }
-
-  function interpretEffort(high, low) {
-    const pair = high.key + '_' + low.key;
+  function interpretEffort(scores, high, low, avg) {
+    const parts = [`平均 ${avg} の努力プロファイル。`];
+    if (scores[high.key] - scores[low.key] >= 30) {
+      parts.push(`${high.label} が突出し、${low.label} が相対的に低い。`);
+    } else {
+      parts.push('各次元がバランスよく発揮されている。');
+    }
     const hints = {
-      volume_quality:    '量はあるが、やり方の改善・フィードバックで効率が大きく伸びる余地あり。',
-      volume_choice:     '量で走れているが、「そもそも何に努力するか」を見直すと結果のインパクトが変わる。',
-      volume_design:     '量は出せるが、計画なしで走りがち。週次レビューで方向修正を入れると無駄打ちが減る。',
-      quality_volume:    '工夫できているが、最低限の投下量が足りないこともある。ベース量の確保を意識。',
-      quality_endurance: '質高く取り組めるが、燃え尽きやすいペース配分になっていないか要注意。',
-      design_volume:     '計画はあるが実行量が追いつかない典型。最初の一歩を小さくすると動き出しやすい。',
-      design_endurance:  '設計力は高いが、計画疲れで続かないパターン。計画の精度より実行の続行を優先。',
-      choice_volume:     '選ぶ力はあるが、選んだあとの量が足りていない可能性。ベースラインの確保を。',
-      choice_endurance:  '方向選びはできるが、続ける前に次を選んでしまいがち。短期で成果判定するルールを持つ。',
-      endurance_choice:  '続ける力は強いが、そもそも続けている対象が正しいか定期的に問い直す必要がある（サンクコストに注意）。',
-      endurance_design:  '粘り強いが、無計画に突き進む傾向。月次で設計を見直すと、粘りが結果に変わる。',
-      endurance_quality: '長く続けているが、やり方がアップデートされていない可能性。フィードバックを取り入れる。',
+      volume:    '量の基盤がある。質・設計の改善でさらに成果が伸びやすい。',
+      quality:   '質の意識が高い。量も確保できると複利的に伸びる。',
+      design:    '設計力がある。実行量が伴うと強力。',
+      choice:    '選択眼がある。正しいことに正しく努力できる素地がある。',
+      endurance: '継続力がある。燃え尽きに注意しながら活かすと長期で強い。',
     };
-    return hints[pair] || '';
+    if (hints[high.key]) parts.push(hints[high.key]);
+    return parts.join(' ');
   }
 
   async function runEffortAICommentary(record) {
-    if (!state.settings.apiKey) {
-      flash('設定タブでAPIキーを登録してください', 'error');
-      return;
-    }
-    const out = document.getElementById('effort-ai-output');
     const btn = document.getElementById('effort-ai-comment');
-    out.style.display = 'block';
-    out.textContent = '分析中...';
-    if (btn) btn.classList.add('loading');
-    const payload = EFFORT_DIMENSIONS.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join('\n');
-    const system = 'あなたは思慮深いコーチです。努力スタイルの5次元（量/質/設計/選択/持続）スコアを読み、本人が次の一手を決められるよう日本語で解説します。';
-    const user = [
-      '以下は「努力スタイル」の5次元スコア（0〜100）です。',
-      '全体のプロファイル、強みと弱み、どの次元を次に伸ばすと効果が大きいか、',
-      '今週から試せる具体アクションを1〜2つ、合わせて400字程度で示してください。',
-      '',
-      payload,
-    ].join('\n');
+    if (!btn) return;
+    btn.classList.add('loading');
     try {
-      const text = await callClaude(system, user);
-      out.textContent = text;
+      const scoreStr = EFFORT_DIMENSIONS.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join(', ');
+      const text = await callClaude(
+        'あなたは努力・学習習慣の専門コーチです。診断結果を見て、具体的で実践的なフィードバックを日本語で提供してください。',
+        `努力診断の結果（0-100スケール）:\n${scoreStr}\n\nこの結果について、強み・課題・具体的な改善策を含む詳しい解説をお願いします。`
+      );
       record.aiCommentary = text;
       save(EFFORT_KEY, state.effortAssessments);
+      const out = document.getElementById('effort-ai-output');
+      if (out) { out.textContent = text; out.style.display = ''; }
     } catch (err) {
-      out.textContent = 'エラー: ' + err.message;
-      flash('AI呼び出しに失敗しました', 'error');
+      flash('AI解説に失敗しました: ' + err.message, 'error');
     } finally {
-      if (btn) btn.classList.remove('loading');
+      btn.classList.remove('loading');
     }
   }
 
-  function renderEffortHistory() {
-    const ul = document.getElementById('effort-history');
-    if (!ul) return;
-    const items = state.effortAssessments.slice();
-    if (!items.length) {
-      ul.innerHTML = '<li class="muted">該当する履歴はありません。</li>';
-      return;
-    }
-    ul.innerHTML = items.map(r => {
-      const avg = Math.round(EFFORT_DIMENSIONS.reduce((s, d) => s + r.scores[d.key], 0) / EFFORT_DIMENSIONS.length);
-      const bars = EFFORT_DIMENSIONS.map(d => `
-        <span class="mini-bar" title="${escapeAttr(d.label)}: ${r.scores[d.key]}">
-          <span class="mini-bar-fill" style="height:${r.scores[d.key]}%;background:${d.color}"></span>
-        </span>`).join('');
-      return `<li data-id="${r.id}">
-        <div class="h-meta">${formatDate(r.date)} · 平均 ${avg}</div>
-        <div class="mini-bars">${bars}</div>
-        <div class="actions" style="margin-top:6px">
-          <button class="ea-view" data-id="${r.id}">結果を表示</button>
-          <button class="ea-del danger" data-id="${r.id}">削除</button>
-        </div>
-      </li>`;
-    }).join('');
-    ul.querySelectorAll('.ea-view').forEach(b => {
-      b.addEventListener('click', () => {
-        const r = state.effortAssessments.find(x => x.id === b.dataset.id);
-        if (r) showEffortResult(r);
-      });
-    });
-    ul.querySelectorAll('.ea-del').forEach(b => {
-      b.addEventListener('click', () => {
-        if (!confirm('この診断履歴を削除しますか？')) return;
-        state.effortAssessments = state.effortAssessments.filter(x => x.id !== b.dataset.id);
-        save(EFFORT_KEY, state.effortAssessments);
-        renderEffortHistory();
-      });
-    });
-  }
-
-  // ---------- Cross-reference helper for AI ----------
-  function buildCrossReferences(except) {
-    const sections = [
-      { key: 'social',   label: '人との関わり方',     dims: SOCIAL_DIMENSIONS,   list: state.socialAssessments },
-      { key: 'effort',   label: '努力スタイル',       dims: EFFORT_DIMENSIONS,   list: state.effortAssessments },
-      { key: 'kolb',     label: '学び方のタイプ',     dims: KOLB_DIMENSIONS,     list: state.kolbAssessments },
-      { key: 'values',   label: '大切にしているもの', dims: VALUES_DIMENSIONS,   list: state.valuesAssessments },
-      { key: 'thinking', label: '考え方のクセ',       dims: THINKING_DIMENSIONS, list: state.thinkingAssessments },
-    ];
-    const parts = [];
-    for (const s of sections) {
-      if (s.key === except) continue;
-      const latest = s.list[0];
-      if (!latest) continue;
-      parts.push(`## 直近の${s.label}スコア\n` + s.dims.map(d => `${d.label}: ${latest.scores[d.key]}`).join(' / '));
-    }
-    if (except !== 'johari' && state.johariSessions[0]) {
-      const j = state.johariSessions[0];
-      const w = computeJohariWindows(j);
-      parts.push(`## 直近の「自分と他者の見え方」\n開放: ${w.open.length}個 / 盲点: ${w.blind.length}個 / 秘密: ${w.hidden.length}個 / 未知の余地: ${w.unknown.length}個` +
-        (w.blind.length ? `\n盲点（他者だけが認識）の例: ${w.blind.slice(0, 5).join(', ')}` : '') +
-        (w.hidden.length ? `\n秘密（自分だけが認識）の例: ${w.hidden.slice(0, 5).join(', ')}` : ''));
-    }
-    return parts.length ? parts.join('\n\n') : '（他の診断はまだ受けていません）';
-  }
-
-  // ---------- Kolb learning-type assessment ----------
+  // ---------- KOLB assessment ----------
   const kolbIntro = document.getElementById('kolb-intro');
   const kolbQuizEl = document.getElementById('kolb-quiz');
   const kolbResult = document.getElementById('kolb-result');
-  const kolbQuestionEl = document.getElementById('kolb-question');
-  const kolbProgressFill = document.getElementById('kolb-progress-fill');
-  const kolbProgressText = document.getElementById('kolb-progress-text');
+  const kolbQEl = document.getElementById('kolb-question');
+  const kolbFill = document.getElementById('kolb-progress-fill');
+  const kolbText = document.getElementById('kolb-progress-text');
 
   document.getElementById('kolb-start').addEventListener('click', () => {
-
     state.kolbQuiz = { idx: 0, answers: new Array(KOLB_QUESTIONS.length).fill(null) };
     kolbIntro.classList.add('hidden');
     kolbResult.classList.add('hidden');
@@ -1057,11 +892,11 @@ successfully downloaded text file (SHA: 6c8e7ce677ff048ccd7bc7acab588def62fd1641
     const { idx, answers } = state.kolbQuiz;
     const q = KOLB_QUESTIONS[idx];
     const dim = KOLB_DIMENSIONS.find(d => d.key === q.dim);
-    kolbQuestionEl.innerHTML = `
-      <div class="q-dim" style="color:${dim.color}">${escapeHtml(dim.label)}タイプ</div>
+    kolbQEl.innerHTML = `
+      <div class="q-dim" style="color:${dim.color}">${escapeHtml(dim.label)}</div>
       <div class="q-text">${escapeHtml(q.text)}</div>`;
-    kolbProgressFill.style.width = `${((idx + 1) / KOLB_QUESTIONS.length) * 100}%`;
-    kolbProgressText.textContent = `${idx + 1} / ${KOLB_QUESTIONS.length}`;
+    kolbFill.style.width = `${((idx + 1) / KOLB_QUESTIONS.length) * 100}%`;
+    kolbText.textContent = `${idx + 1} / ${KOLB_QUESTIONS.length}`;
     document.querySelectorAll('.kolb-choice').forEach(b => {
       b.classList.toggle('selected', Number(b.dataset.val) === answers[idx]);
     });
@@ -1069,16 +904,8 @@ successfully downloaded text file (SHA: 6c8e7ce677ff048ccd7bc7acab588def62fd1641
   }
 
   function finishKolbQuiz() {
-    const scores = computeDimensionScores(state.kolbQuiz.answers, KOLB_QUESTIONS, KOLB_DIMENSIONS);
-    const record = {
-      id: 'ka_' + uid(),
-
-      date: new Date().toISOString(),
-      answers: state.kolbQuiz.answers.slice(),
-      scores,
-      notes: '',
-      aiCommentary: '',
-    };
+    const scores = computeScores(state.kolbQuiz.answers, KOLB_QUESTIONS, KOLB_DIMENSIONS);
+    const record = { id: 'kb_' + uid(), date: new Date().toISOString(), answers: state.kolbQuiz.answers.slice(), scores, notes: '', aiCommentary: '' };
     state.kolbAssessments.unshift(record);
     save(KOLB_KEY, state.kolbAssessments);
     if (typeof window.contributeToTwin === 'function') window.contributeToTwin('micron', { quizType: 'kolb', scores: scores });
@@ -1093,18 +920,11 @@ successfully downloaded text file (SHA: 6c8e7ce677ff048ccd7bc7acab588def62fd1641
     kolbResult.classList.remove('hidden');
     const scores = record.scores;
     const sorted = KOLB_DIMENSIONS.slice().sort((a, b) => scores[b.key] - scores[a.key]);
-    const high = sorted[0], second = sorted[1], low = sorted[sorted.length - 1];
+    const high = sorted[0], low = sorted[sorted.length - 1];
     const avg = Math.round(KOLB_DIMENSIONS.reduce((s, d) => s + scores[d.key], 0) / KOLB_DIMENSIONS.length);
-    const balanced = (scores[high.key] - scores[low.key]) <= 15;
-    const profileName = balanced ? `バランス型（${high.label}寄り）` : `${high.label}・${second.label}型`;
-    const advice = kolbAdvice(high.key);
-
     kolbResult.innerHTML = `
       <div class="result-card">
-        <div class="result-head">
-          <h3>学習タイプ: <span style="color:${high.color}">${escapeHtml(profileName)}</span></h3>
-          <span class="muted">${escapeHtml(formatDate(record.date))}</span>
-        </div>
+        <div class="result-head"><h3>学習スタイル診断結果</h3><span class="muted">${escapeHtml(formatDate(record.date))}</span></div>
         <div class="result-grid">
           ${renderRadarSvg(scores, KOLB_DIMENSIONS)}
           <div class="result-scores">
@@ -1122,844 +942,778 @@ successfully downloaded text file (SHA: 6c8e7ce677ff048ccd7bc7acab588def62fd1641
             </div>
           </div>
         </div>
-        <div class="result-interpret">${escapeHtml(advice)}</div>
+        <div class="result-interpret">${escapeHtml(interpretKolb(scores, high, low, avg))}</div>
         <div class="actions">
-          <button id="kolb-ai-comment">AIに詳しく解説してもらう（他の診断との関連も）</button>
+          <button id="kolb-ai-comment">AIに詳しく解説してもらう</button>
           <button id="kolb-retry">もう一度受ける</button>
         </div>
         <div id="kolb-ai-output" class="ai-output" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
       </div>
     `;
-    document.getElementById('kolb-retry').addEventListener('click', () => {
-      document.getElementById('kolb-start').click();
-    });
+    document.getElementById('kolb-retry').addEventListener('click', () => document.getElementById('kolb-start').click());
     document.getElementById('kolb-ai-comment').addEventListener('click', () => runKolbAICommentary(record));
   }
 
-  function kolbAdvice(topKey) {
-    return ({
-      why:  'あなたは「意味」が原動力です。長期ビジョンと結びつかないタスクで失速しやすいので、毎週「なぜやるか」を一行に書き出すと続きやすくなります。',
-      what: 'あなたは「根拠」で安心するタイプ。データ集めで止まりやすいので、「8割の根拠で動く」を意識的に許可してあげると行動量が増えます。',
-      how:  'あなたは「手順」が明確だと強い。逆に予定外に弱いので、「この手順が崩れた時のバックアッププラン」を1つ持っておくと不測に強くなります。',
-      now:  'あなたは「行動」で学ぶタイプ。事前準備が薄くなりがちなので、行動の前に「一つだけ振り返る問い」を持つと学びの質が上がります。',
-    })[topKey] || '';
+  function interpretKolb(scores, high, low, avg) {
+    const styles = {
+      why:  'Why型（Diverging）: 意味・目的から入るタイプ。動機付けが重要。',
+      what: 'What型（Assimilating）: データ・理論から入るタイプ。根拠重視。',
+      how:  'How型（Converging）: 手順・プロセスから入るタイプ。着実な実行者。',
+      now:  'Now型（Accommodating）: まず行動するタイプ。体験から学ぶ。',
+    };
+    const parts = [`平均 ${avg}。支配的スタイル: ${styles[high.key] || high.key}`];
+    if (scores[high.key] - scores[low.key] >= 30) {
+      parts.push(`${high.label} と ${low.label} の差が顕著。`);
+    }
+    return parts.join(' ');
   }
 
   async function runKolbAICommentary(record) {
-    if (!state.settings.apiKey) {
-      flash('設定タブでAPIキーを登録してください', 'error');
-      return;
-    }
-    const out = document.getElementById('kolb-ai-output');
     const btn = document.getElementById('kolb-ai-comment');
-    out.style.display = 'block';
-    out.textContent = '分析中...';
-    if (btn) btn.classList.add('loading');
-    const kolbPayload = KOLB_DIMENSIONS.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join('\n');
-    const system = 'あなたは経験学習理論（Kolb）に詳しいコーチです。学び方のタイプを他の診断と統合し、本人が次の一手を取れるよう日本語で解説します。';
-    const user = [
-      '以下は「学び方のタイプ」の4次元スコア（0〜100）です。',
-      'それぞれの意味、組み合わせのプロファイル、強みと弱みを述べた上で、',
-      '他の診断スコアと突き合わせて「相乗効果が出ている部分」「ねじれている（衝突している）部分」を指摘してください。',
-      '最後に、今週から試せる小さなアクションを1つ提案してください。',
-      '全体で500字程度にまとめてください。',
-      '',
-      '## 学び方のタイプ スコア',
-      kolbPayload,
-      '',
-      buildCrossReferences('kolb'),
-    ].join('\n');
+    if (!btn) return;
+    btn.classList.add('loading');
     try {
-      const text = await callClaude(system, user);
-      out.textContent = text;
+      const scoreStr = KOLB_DIMENSIONS.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join(', ');
+      const text = await callClaude(
+        'あなたは学習スタイル診断の専門家です。Kolb学習スタイル理論に基づき、診断結果を解説してください。',
+        `学習スタイル診断の結果（0-100スケール）:\n${scoreStr}\n\nこの結果について、学習スタイルの特徴・強み・活かし方・補完すべき点を含む詳しい解説をお願いします。`
+      );
       record.aiCommentary = text;
       save(KOLB_KEY, state.kolbAssessments);
+      const out = document.getElementById('kolb-ai-output');
+      if (out) { out.textContent = text; out.style.display = ''; }
     } catch (err) {
-      out.textContent = 'エラー: ' + err.message;
-      flash('AI呼び出しに失敗しました', 'error');
+      flash('AI解説に失敗しました: ' + err.message, 'error');
     } finally {
-      if (btn) btn.classList.remove('loading');
+      btn.classList.remove('loading');
     }
   }
 
-  function renderKolbHistory() {
-    const ul = document.getElementById('kolb-history');
-    if (!ul) return;
-    const items = state.kolbAssessments.slice();
-    if (!items.length) {
-      ul.innerHTML = '<li class="muted">該当する履歴はありません。</li>';
-      return;
-    }
-    ul.innerHTML = items.map(r => {
-      const top = KOLB_DIMENSIONS.slice().sort((a, b) => r.scores[b.key] - r.scores[a.key])[0];
-      const bars = KOLB_DIMENSIONS.map(d => `
-        <span class="mini-bar" title="${escapeAttr(d.label)}: ${r.scores[d.key]}">
-          <span class="mini-bar-fill" style="height:${r.scores[d.key]}%;background:${d.color}"></span>
-        </span>`).join('');
-      return `<li data-id="${r.id}">
-        <div class="h-meta">${formatDate(r.date)} · 最高: <b style="color:${top.color}">${escapeHtml(top.label)}</b></div>
-        <div class="mini-bars">${bars}</div>
-        <div class="actions" style="margin-top:6px">
-          <button class="ka-view" data-id="${r.id}">結果を表示</button>
-          <button class="ka-del danger" data-id="${r.id}">削除</button>
+  // ---------- Values assessment ----------
+  const valuesIntro = document.getElementById('values-intro');
+  const valuesQuizEl = document.getElementById('values-quiz');
+  const valuesResult = document.getElementById('values-result');
+  const valuesQEl = document.getElementById('values-question');
+  const valuesFill = document.getElementById('values-progress-fill');
+  const valuesText = document.getElementById('values-progress-text');
+
+  document.getElementById('values-start').addEventListener('click', () => {
+    state.valuesQuiz = { idx: 0, answers: new Array(VALUES_QUESTIONS.length).fill(null) };
+    valuesIntro.classList.add('hidden');
+    valuesResult.classList.add('hidden');
+    valuesQuizEl.classList.remove('hidden');
+    renderValuesQuestion();
+  });
+
+  document.querySelectorAll('.values-choice').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!state.valuesQuiz) return;
+      state.valuesQuiz.answers[state.valuesQuiz.idx] = Number(btn.dataset.val);
+      if (state.valuesQuiz.idx < VALUES_QUESTIONS.length - 1) {
+        state.valuesQuiz.idx++;
+        renderValuesQuestion();
+      } else {
+        finishValuesQuiz();
+      }
+    });
+  });
+
+  document.getElementById('values-back').addEventListener('click', () => {
+    if (!state.valuesQuiz || state.valuesQuiz.idx === 0) return;
+    state.valuesQuiz.idx--;
+    renderValuesQuestion();
+  });
+
+  document.getElementById('values-cancel').addEventListener('click', () => {
+    if (!confirm('診断を中断しますか？（回答は保存されません）')) return;
+    state.valuesQuiz = null;
+    valuesQuizEl.classList.add('hidden');
+    valuesIntro.classList.remove('hidden');
+  });
+
+  function renderValuesQuestion() {
+    const { idx, answers } = state.valuesQuiz;
+    const q = VALUES_QUESTIONS[idx];
+    const dim = VALUES_DIMENSIONS.find(d => d.key === q.dim);
+    valuesQEl.innerHTML = `
+      <div class="q-dim" style="color:${dim.color}">${escapeHtml(dim.label)}</div>
+      <div class="q-text">${escapeHtml(q.text)}</div>`;
+    valuesFill.style.width = `${((idx + 1) / VALUES_QUESTIONS.length) * 100}%`;
+    valuesText.textContent = `${idx + 1} / ${VALUES_QUESTIONS.length}`;
+    document.querySelectorAll('.values-choice').forEach(b => {
+      b.classList.toggle('selected', Number(b.dataset.val) === answers[idx]);
+    });
+    document.getElementById('values-back').disabled = idx === 0;
+  }
+
+  function finishValuesQuiz() {
+    const scores = computeScores(state.valuesQuiz.answers, VALUES_QUESTIONS, VALUES_DIMENSIONS);
+    const record = { id: 'vl_' + uid(), date: new Date().toISOString(), answers: state.valuesQuiz.answers.slice(), scores, notes: '', aiCommentary: '' };
+    state.valuesAssessments.unshift(record);
+    save(VALUES_KEY, state.valuesAssessments);
+    if (typeof window.contributeToTwin === 'function') window.contributeToTwin('micron', { quizType: 'values', scores: scores });
+    state.valuesQuiz = null;
+    valuesQuizEl.classList.add('hidden');
+    valuesIntro.classList.remove('hidden');
+    showValuesResult(record);
+    renderValuesHistory();
+  }
+
+  function showValuesResult(record) {
+    valuesResult.classList.remove('hidden');
+    const scores = record.scores;
+    const sorted = VALUES_DIMENSIONS.slice().sort((a, b) => scores[b.key] - scores[a.key]);
+    const high = sorted[0], low = sorted[sorted.length - 1];
+    const avg = Math.round(VALUES_DIMENSIONS.reduce((s, d) => s + scores[d.key], 0) / VALUES_DIMENSIONS.length);
+    valuesResult.innerHTML = `
+      <div class="result-card">
+        <div class="result-head"><h3>価値観診断結果</h3><span class="muted">${escapeHtml(formatDate(record.date))}</span></div>
+        <div class="result-grid">
+          ${renderRadarSvg(scores, VALUES_DIMENSIONS)}
+          <div class="result-scores">
+            ${VALUES_DIMENSIONS.map(d => `
+              <div class="score-row">
+                <span class="score-label" style="color:${d.color}">${escapeHtml(d.label)}</span>
+                <div class="score-bar-wrap"><div class="score-bar" style="width:${scores[d.key]}%;background:${d.color}"></div></div>
+                <span class="score-val">${scores[d.key]}</span>
+              </div>
+            `).join('')}
+            <div class="score-summary">
+              <div>平均: <b>${avg}</b></div>
+              <div>最高: <b style="color:${high.color}">${escapeHtml(high.label)} (${scores[high.key]})</b></div>
+              <div>最低: <b style="color:${low.color}">${escapeHtml(low.label)} (${scores[low.key]})</b></div>
+            </div>
+          </div>
         </div>
-      </li>`;
+        <div class="result-interpret">${escapeHtml(interpretValues(scores, high, low, avg))}</div>
+        <div class="actions">
+          <button id="values-ai-comment">AIに詳しく解説してもらう</button>
+          <button id="values-retry">もう一度受ける</button>
+        </div>
+        <div id="values-ai-output" class="ai-output" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
+      </div>
+    `;
+    document.getElementById('values-retry').addEventListener('click', () => document.getElementById('values-start').click());
+    document.getElementById('values-ai-comment').addEventListener('click', () => runValuesAICommentary(record));
+  }
+
+  function interpretValues(scores, high, low, avg) {
+    const parts = [`平均 ${avg}。最も強い価値観: ${high.label}（${high.description}）`];
+    if (scores[high.key] >= 70) parts.push('この価値観は非常に強く表れています。');
+    if (scores[low.key] <= 30) parts.push(`${low.label} は相対的に低め。`);
+    const tensions = {
+      autonomy_stability: '自律と安定は時にトレードオフ。どちらを優先するか状況に応じた判断が必要。',
+      achievement_relation: '達成と関係のバランスを意識的に取ることで、孤立せずに結果も出せる。',
+      growth_stability: '成長への渇望と安定への欲求を統合できる環境・方法を探すと良い。',
+    };
+    const key = `${high.key}_${low.key}`;
+    if (tensions[key]) parts.push(tensions[key]);
+    return parts.join(' ');
+  }
+
+  async function runValuesAICommentary(record) {
+    const btn = document.getElementById('values-ai-comment');
+    if (!btn) return;
+    btn.classList.add('loading');
+    try {
+      const scoreStr = VALUES_DIMENSIONS.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join(', ');
+      const text = await callClaude(
+        'あなたは価値観・動機診断の専門家です。診断結果を見て、その人の価値観プロファイルを深く解説してください。',
+        `価値観診断の結果（0-100スケール）:\n${scoreStr}\n\nこの結果について、価値観の特徴・キャリアや生活への影響・活かし方を含む詳しい解説をお願いします。`
+      );
+      record.aiCommentary = text;
+      save(VALUES_KEY, state.valuesAssessments);
+      const out = document.getElementById('values-ai-output');
+      if (out) { out.textContent = text; out.style.display = ''; }
+    } catch (err) {
+      flash('AI解説に失敗しました: ' + err.message, 'error');
+    } finally {
+      btn.classList.remove('loading');
+    }
+  }
+
+  // ---------- Thinking assessment ----------
+  const thinkingIntro = document.getElementById('thinking-intro');
+  const thinkingQuizEl = document.getElementById('thinking-quiz');
+  const thinkingResult = document.getElementById('thinking-result');
+  const thinkingQEl = document.getElementById('thinking-question');
+  const thinkingFill = document.getElementById('thinking-progress-fill');
+  const thinkingText = document.getElementById('thinking-progress-text');
+
+  document.getElementById('thinking-start').addEventListener('click', () => {
+    state.thinkingQuiz = { idx: 0, answers: new Array(THINKING_QUESTIONS.length).fill(null) };
+    thinkingIntro.classList.add('hidden');
+    thinkingResult.classList.add('hidden');
+    thinkingQuizEl.classList.remove('hidden');
+    renderThinkingQuestion();
+  });
+
+  document.querySelectorAll('.thinking-choice').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!state.thinkingQuiz) return;
+      state.thinkingQuiz.answers[state.thinkingQuiz.idx] = Number(btn.dataset.val);
+      if (state.thinkingQuiz.idx < THINKING_QUESTIONS.length - 1) {
+        state.thinkingQuiz.idx++;
+        renderThinkingQuestion();
+      } else {
+        finishThinkingQuiz();
+      }
+    });
+  });
+
+  document.getElementById('thinking-back').addEventListener('click', () => {
+    if (!state.thinkingQuiz || state.thinkingQuiz.idx === 0) return;
+    state.thinkingQuiz.idx--;
+    renderThinkingQuestion();
+  });
+
+  document.getElementById('thinking-cancel').addEventListener('click', () => {
+    if (!confirm('診断を中断しますか？（回答は保存されません）')) return;
+    state.thinkingQuiz = null;
+    thinkingQuizEl.classList.add('hidden');
+    thinkingIntro.classList.remove('hidden');
+  });
+
+  function renderThinkingQuestion() {
+    const { idx, answers } = state.thinkingQuiz;
+    const q = THINKING_QUESTIONS[idx];
+    const dim = THINKING_DIMENSIONS.find(d => d.key === q.dim);
+    thinkingQEl.innerHTML = `
+      <div class="q-dim" style="color:${dim.color}">${escapeHtml(dim.label)}</div>
+      <div class="q-text">${escapeHtml(q.text)}</div>`;
+    thinkingFill.style.width = `${((idx + 1) / THINKING_QUESTIONS.length) * 100}%`;
+    thinkingText.textContent = `${idx + 1} / ${THINKING_QUESTIONS.length}`;
+    document.querySelectorAll('.thinking-choice').forEach(b => {
+      b.classList.toggle('selected', Number(b.dataset.val) === answers[idx]);
+    });
+    document.getElementById('thinking-back').disabled = idx === 0;
+  }
+
+  function finishThinkingQuiz() {
+    const scores = computeScores(state.thinkingQuiz.answers, THINKING_QUESTIONS, THINKING_DIMENSIONS);
+    const record = { id: 'th_' + uid(), date: new Date().toISOString(), answers: state.thinkingQuiz.answers.slice(), scores, notes: '', aiCommentary: '' };
+    state.thinkingAssessments.unshift(record);
+    save(THINKING_KEY, state.thinkingAssessments);
+    if (typeof window.contributeToTwin === 'function') window.contributeToTwin('micron', { quizType: 'thinking', scores: scores });
+    state.thinkingQuiz = null;
+    thinkingQuizEl.classList.add('hidden');
+    thinkingIntro.classList.remove('hidden');
+    showThinkingResult(record);
+    renderThinkingHistory();
+  }
+
+  function showThinkingResult(record) {
+    thinkingResult.classList.remove('hidden');
+    const scores = record.scores;
+    const sorted = THINKING_DIMENSIONS.slice().sort((a, b) => scores[b.key] - scores[a.key]);
+    const high = sorted[0], low = sorted[sorted.length - 1];
+    const avg = Math.round(THINKING_DIMENSIONS.reduce((s, d) => s + scores[d.key], 0) / THINKING_DIMENSIONS.length);
+    thinkingResult.innerHTML = `
+      <div class="result-card">
+        <div class="result-head"><h3>思考スタイル診断結果</h3><span class="muted">${escapeHtml(formatDate(record.date))}</span></div>
+        <div class="result-grid">
+          ${renderRadarSvg(scores, THINKING_DIMENSIONS)}
+          <div class="result-scores">
+            ${THINKING_DIMENSIONS.map(d => `
+              <div class="score-row">
+                <span class="score-label" style="color:${d.color}">${escapeHtml(d.label)}</span>
+                <div class="score-bar-wrap"><div class="score-bar" style="width:${scores[d.key]}%;background:${d.color}"></div></div>
+                <span class="score-val">${scores[d.key]}</span>
+              </div>
+            `).join('')}
+            <div class="score-summary">
+              <div>平均: <b>${avg}</b></div>
+              <div>最高: <b style="color:${high.color}">${escapeHtml(high.label)} (${scores[high.key]})</b></div>
+              <div>最低: <b style="color:${low.color}">${escapeHtml(low.label)} (${scores[low.key]})</b></div>
+            </div>
+          </div>
+        </div>
+        <div class="result-interpret">${escapeHtml(interpretThinking(scores, high, low, avg))}</div>
+        <div class="actions">
+          <button id="thinking-ai-comment">AIに詳しく解説してもらう</button>
+          <button id="thinking-retry">もう一度受ける</button>
+        </div>
+        <div id="thinking-ai-output" class="ai-output" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
+      </div>
+    `;
+    document.getElementById('thinking-retry').addEventListener('click', () => document.getElementById('thinking-start').click());
+    document.getElementById('thinking-ai-comment').addEventListener('click', () => runThinkingAICommentary(record));
+  }
+
+  function interpretThinking(scores, high, low, avg) {
+    const desc = {
+      logical:    '論理型: 因果関係・証明を重視する。構造化された思考が強み。',
+      intuitive:  '直感型: パターン認識・素早い判断が得意。',
+      creative:   '創造型: 既成概念を超えた発想が強み。',
+      systematic: '体系型: 情報整理・プロセス設計が得意。',
+      holistic:   '全体型: 大局観・文脈把握が強み。',
+    };
+    const parts = [`平均 ${avg}。支配的スタイル: ${desc[high.key] || high.key}`];
+    if (scores[high.key] - scores[low.key] >= 30) parts.push(`${low.label} との差が大きい。補完的な思考を意識的に取り入れると良い。`);
+    return parts.join(' ');
+  }
+
+  async function runThinkingAICommentary(record) {
+    const btn = document.getElementById('thinking-ai-comment');
+    if (!btn) return;
+    btn.classList.add('loading');
+    try {
+      const scoreStr = THINKING_DIMENSIONS.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join(', ');
+      const text = await callClaude(
+        'あなたは認知スタイル・思考パターンの専門家です。診断結果を見て、思考スタイルの特徴を解説してください。',
+        `思考スタイル診断の結果（0-100スケール）:\n${scoreStr}\n\nこの結果について、思考の強み・弱み・活かし方・補完すべき点を含む詳しい解説をお願いします。`
+      );
+      record.aiCommentary = text;
+      save(THINKING_KEY, state.thinkingAssessments);
+      const out = document.getElementById('thinking-ai-output');
+      if (out) { out.textContent = text; out.style.display = ''; }
+    } catch (err) {
+      flash('AI解説に失敗しました: ' + err.message, 'error');
+    } finally {
+      btn.classList.remove('loading');
+    }
+  }
+
+  // ---------- History renders ----------
+  function renderSocialHistory() {
+    const el = document.getElementById('social-history');
+    if (!el) return;
+    if (!state.socialAssessments.length) { el.innerHTML = '<p class="muted">まだ診断履歴がありません。</p>'; return; }
+    el.innerHTML = state.socialAssessments.map((r, i) => {
+      const sorted = SOCIAL_DIMENSIONS.slice().sort((a, b) => r.scores[b.key] - r.scores[a.key]);
+      const high = sorted[0];
+      return `
+        <div class="history-item">
+          <div class="history-head">
+            <span class="history-date">${escapeHtml(formatDate(r.date))}</span>
+            <span class="history-badge" style="background:${high.color}20;color:${high.color}">${escapeHtml(high.label)} 最高</span>
+            <button class="icon-btn delete-btn" data-type="social" data-id="${escapeAttr(r.id)}" title="削除">×</button>
+          </div>
+          <div class="mini-scores">
+            ${SOCIAL_DIMENSIONS.map(d => `<span style="color:${d.color}">${escapeHtml(d.label.slice(0,2))}:${r.scores[d.key]}</span>`).join(' ')}
+          </div>
+          ${r.notes ? `<div class="history-notes">${escapeHtml(r.notes)}</div>` : ''}
+        </div>
+      `;
     }).join('');
-    ul.querySelectorAll('.ka-view').forEach(b => {
-      b.addEventListener('click', () => {
-        const r = state.kolbAssessments.find(x => x.id === b.dataset.id);
-        if (r) showKolbResult(r);
+    el.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirm('この記録を削除しますか？')) return;
+        const id = btn.dataset.id;
+        state.socialAssessments = state.socialAssessments.filter(r => r.id !== id);
+        save(SOCIAL_KEY, state.socialAssessments);
+        renderSocialHistory();
       });
     });
-    ul.querySelectorAll('.ka-del').forEach(b => {
-      b.addEventListener('click', () => {
-        if (!confirm('この診断履歴を削除しますか？')) return;
-        state.kolbAssessments = state.kolbAssessments.filter(x => x.id !== b.dataset.id);
+  }
+
+  function renderEffortHistory() {
+    const el = document.getElementById('effort-history');
+    if (!el) return;
+    if (!state.effortAssessments.length) { el.innerHTML = '<p class="muted">まだ診断履歴がありません。</p>'; return; }
+    el.innerHTML = state.effortAssessments.map(r => {
+      const sorted = EFFORT_DIMENSIONS.slice().sort((a, b) => r.scores[b.key] - r.scores[a.key]);
+      const high = sorted[0];
+      return `
+        <div class="history-item">
+          <div class="history-head">
+            <span class="history-date">${escapeHtml(formatDate(r.date))}</span>
+            <span class="history-badge" style="background:${high.color}20;color:${high.color}">${escapeHtml(high.label)} 最高</span>
+            <button class="icon-btn delete-btn" data-type="effort" data-id="${escapeAttr(r.id)}" title="削除">×</button>
+          </div>
+          <div class="mini-scores">
+            ${EFFORT_DIMENSIONS.map(d => `<span style="color:${d.color}">${escapeHtml(d.label.slice(0,2))}:${r.scores[d.key]}</span>`).join(' ')}
+          </div>
+        </div>
+      `;
+    }).join('');
+    el.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirm('この記録を削除しますか？')) return;
+        state.effortAssessments = state.effortAssessments.filter(r => r.id !== btn.dataset.id);
+        save(EFFORT_KEY, state.effortAssessments);
+        renderEffortHistory();
+      });
+    });
+  }
+
+  function renderKolbHistory() {
+    const el = document.getElementById('kolb-history');
+    if (!el) return;
+    if (!state.kolbAssessments.length) { el.innerHTML = '<p class="muted">まだ診断履歴がありません。</p>'; return; }
+    el.innerHTML = state.kolbAssessments.map(r => {
+      const sorted = KOLB_DIMENSIONS.slice().sort((a, b) => r.scores[b.key] - r.scores[a.key]);
+      const high = sorted[0];
+      return `
+        <div class="history-item">
+          <div class="history-head">
+            <span class="history-date">${escapeHtml(formatDate(r.date))}</span>
+            <span class="history-badge" style="background:${high.color}20;color:${high.color}">${escapeHtml(high.label)} 優位</span>
+            <button class="icon-btn delete-btn" data-id="${escapeAttr(r.id)}" title="削除">×</button>
+          </div>
+          <div class="mini-scores">
+            ${KOLB_DIMENSIONS.map(d => `<span style="color:${d.color}">${escapeHtml(d.label.slice(0,2))}:${r.scores[d.key]}</span>`).join(' ')}
+          </div>
+        </div>
+      `;
+    }).join('');
+    el.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirm('この記録を削除しますか？')) return;
+        state.kolbAssessments = state.kolbAssessments.filter(r => r.id !== btn.dataset.id);
         save(KOLB_KEY, state.kolbAssessments);
         renderKolbHistory();
       });
     });
   }
 
-  // ---------- Values assessment ----------
-  bindAssessment({
-    prefix: 'values',
-    key: VALUES_KEY,
-    dims: VALUES_DIMENSIONS,
-    questions: VALUES_QUESTIONS,
-    list: () => state.valuesAssessments,
-    setList: (v) => { state.valuesAssessments = v; },
-    quizState: () => state.valuesQuiz,
-    setQuizState: (v) => { state.valuesQuiz = v; },
-    qLabelSuffix: 'を大切にする',
-    profileFn: (high, second, low, balanced) => balanced
-      ? { name: `バランス型（${high.label}寄り）`, color: high.color }
-      : { name: `${high.label}・${second.label}型`, color: high.color },
-    adviceFn: (top) => ({
-      autonomy:    'あなたは「自分で決める自由」を最重視。組織や関係で束縛が強い場面ではエネルギーが奪われやすいので、決定権が確保できる環境設計が効きます。',
-      achievement: 'あなたは「成果」が原動力。手応えのない状態が続くと枯れやすいので、小さくても結果が見える指標を週次で持つと持続します。',
-      relation:    'あなたは「人との繋がり」が中心。一方で「相手のため」と「自分のため」の境目が曖昧になりやすいので、線引きを意識すると関係が長持ちします。',
-      stability:   'あなたは「予測可能性」が安心の源。変化のストレスが大きいので、変化を避けるのではなく、小さなステップに分解して試すと適応コストが下がります。',
-      growth:      'あなたは「成長・刺激」が燃料。同じことの繰り返しで失速しやすいので、3ヶ月ごとに学習対象を意識的に変える運用が合います。',
-    })[top] || '',
-    aiSystem: 'あなたは価値観研究に詳しいコーチです。「大切にしているもの」のプロファイルを他の診断と統合して、本人が大事にしているものと現在の生き方のズレを優しく指摘します。',
-    aiUser: (payload, scores) => [
-      '以下は価値観の5次元スコア（0〜100）です。',
-      '何を大切にしているかのプロファイル、価値観間の葛藤の可能性（例: 自律↑ × 関係↑ → 自立と繋がりの両立緊張）、',
-      '他の診断スコアと突き合わせて見える「価値観と行動のズレ」、',
-      '今週試せる小さな一致回復アクションを示してください（500字程度）。',
-      '',
-      '## 価値観スコア',
-      payload,
-      '',
-      buildCrossReferences('values'),
-    ].join('\n'),
-  });
-
-  // ---------- Thinking-style assessment ----------
-  bindAssessment({
-    prefix: 'thinking',
-    key: THINKING_KEY,
-    dims: THINKING_DIMENSIONS,
-    questions: THINKING_QUESTIONS,
-    list: () => state.thinkingAssessments,
-    setList: (v) => { state.thinkingAssessments = v; },
-    quizState: () => state.thinkingQuiz,
-    setQuizState: (v) => { state.thinkingQuiz = v; },
-    qLabelSuffix: '思考',
-    profileFn: (high, second, low, balanced) => balanced
-      ? { name: `バランス型（${high.label}寄り）`, color: high.color }
-      : { name: `${high.label}・${second.label}型`, color: high.color },
-    adviceFn: (top) => ({
-      logical:    '論理が強い。一方で感情データを軽視しがちなので、相手の感情を「データ」として扱う訓練を入れると関係性が滑らかになります。',
-      intuitive:  '直感が強い。説明責任が必要な場面で詰まりやすいので、後追いで「なぜそう感じたか」を言語化する習慣を持つと直感が磨かれます。',
-      creative:   '創造性が強い。発散しすぎて収束できないことがあるので、アイデアを出した翌日に「捨てる作業」を入れると形になります。',
-      systematic: '体系的思考が強い。完璧な整理を求めて動き出しが遅れがちなので、「7割で動かす」を許可してあげると速度が出ます。',
-      holistic:   '全体把握が強い。細部の詰めが甘くなりがちなので、重要な場面では誰かに「ディテール担当」をお願いする運用が効きます。',
-    })[top] || '',
-    aiSystem: 'あなたは認知スタイル研究に詳しいコーチです。思考スタイルを他の診断と統合し、強みの活かし方と盲点を日本語で解説します。',
-    aiUser: (payload, scores) => [
-      '以下は思考スタイルの5次元スコア（0〜100）です。',
-      'プロファイルの特徴、組み合わせから見える得意・盲点、',
-      '他の診断スコアと突き合わせた相乗効果や衝突、',
-      '今週試せる小さなアクションを示してください（500字程度）。',
-      '',
-      '## 思考スタイルスコア',
-      payload,
-      '',
-      buildCrossReferences('thinking'),
-    ].join('\n'),
-  });
-
-  // Generic assessment binder used by Values and Thinking
-  function bindAssessment(cfg) {
-    const { prefix, key, dims, questions } = cfg;
-    const introEl = document.getElementById(`${prefix}-intro`);
-    const quizEl = document.getElementById(`${prefix}-quiz`);
-    const resultEl = document.getElementById(`${prefix}-result`);
-    const questionEl = document.getElementById(`${prefix}-question`);
-    const progressFill = document.getElementById(`${prefix}-progress-fill`);
-    const progressText = document.getElementById(`${prefix}-progress-text`);
-
-    document.getElementById(`${prefix}-start`).addEventListener('click', () => {
-
-      cfg.setQuizState({ idx: 0, answers: new Array(questions.length).fill(null) });
-      introEl.classList.add('hidden');
-      resultEl.classList.add('hidden');
-      quizEl.classList.remove('hidden');
-      drawQ();
-    });
-
-    document.querySelectorAll(`.${prefix}-choice`).forEach(btn => {
-      btn.addEventListener('click', () => {
-        const q = cfg.quizState();
-        if (!q) return;
-        q.answers[q.idx] = Number(btn.dataset.val);
-        if (q.idx < questions.length - 1) { q.idx++; drawQ(); }
-        else { finish(); }
-      });
-    });
-
-    document.getElementById(`${prefix}-back`).addEventListener('click', () => {
-      const q = cfg.quizState();
-      if (!q || q.idx === 0) return;
-      q.idx--;
-      drawQ();
-    });
-
-    document.getElementById(`${prefix}-cancel`).addEventListener('click', () => {
-      if (!confirm('診断を中断しますか？（回答は保存されません）')) return;
-      cfg.setQuizState(null);
-      quizEl.classList.add('hidden');
-      introEl.classList.remove('hidden');
-    });
-
-    function drawQ() {
-      const { idx, answers } = cfg.quizState();
-      const q = questions[idx];
-      const dim = dims.find(d => d.key === q.dim);
-      questionEl.innerHTML = `
-        <div class="q-dim" style="color:${dim.color}">${escapeHtml(dim.label)}${escapeHtml(cfg.qLabelSuffix || '')}</div>
-        <div class="q-text">${escapeHtml(q.text)}</div>`;
-      progressFill.style.width = `${((idx + 1) / questions.length) * 100}%`;
-      progressText.textContent = `${idx + 1} / ${questions.length}`;
-      document.querySelectorAll(`.${prefix}-choice`).forEach(b => {
-        b.classList.toggle('selected', Number(b.dataset.val) === answers[idx]);
-      });
-      document.getElementById(`${prefix}-back`).disabled = idx === 0;
-    }
-
-    function finish() {
-      const q = cfg.quizState();
-      const scores = computeDimensionScores(q.answers, questions, dims);
-      const record = {
-        id: `${prefix.slice(0, 1)}a_` + uid(),
-
-        date: new Date().toISOString(),
-        answers: q.answers.slice(),
-        scores,
-        notes: '',
-        aiCommentary: '',
-      };
-      cfg.setList([record, ...cfg.list()]);
-      save(key, cfg.list());
-      if (typeof window.contributeToTwin === 'function') window.contributeToTwin('micron', { quizType: cfg.prefix, scores: scores });
-      cfg.setQuizState(null);
-      quizEl.classList.add('hidden');
-      introEl.classList.remove('hidden');
-      showResult(record);
-      drawHistory();
-    }
-
-    function showResult(record) {
-      resultEl.classList.remove('hidden');
-      const scores = record.scores;
-      const sorted = dims.slice().sort((a, b) => scores[b.key] - scores[a.key]);
-      const high = sorted[0], second = sorted[1], low = sorted[sorted.length - 1];
-      const avg = Math.round(dims.reduce((s, d) => s + scores[d.key], 0) / dims.length);
-      const balanced = (scores[high.key] - scores[low.key]) <= 15;
-      const profile = cfg.profileFn(high, second, low, balanced);
-      const advice = cfg.adviceFn(high.key);
-
-      resultEl.innerHTML = `
-        <div class="result-card">
-          <div class="result-head">
-            <h3>${escapeHtml(prefix === 'values' ? '大切にしているもの' : '考え方のクセ')}: <span style="color:${profile.color}">${escapeHtml(profile.name)}</span></h3>
-            <span class="muted">${escapeHtml(formatDate(record.date))}</span>
+  function renderValuesHistory() {
+    const el = document.getElementById('values-history');
+    if (!el) return;
+    if (!state.valuesAssessments.length) { el.innerHTML = '<p class="muted">まだ診断履歴がありません。</p>'; return; }
+    el.innerHTML = state.valuesAssessments.map(r => {
+      const sorted = VALUES_DIMENSIONS.slice().sort((a, b) => r.scores[b.key] - r.scores[a.key]);
+      const high = sorted[0];
+      return `
+        <div class="history-item">
+          <div class="history-head">
+            <span class="history-date">${escapeHtml(formatDate(r.date))}</span>
+            <span class="history-badge" style="background:${high.color}20;color:${high.color}">${escapeHtml(high.label)} 優位</span>
+            <button class="icon-btn delete-btn" data-id="${escapeAttr(r.id)}" title="削除">×</button>
           </div>
-          <div class="result-grid">
-            ${renderRadarSvg(scores, dims)}
-            <div class="result-scores">
-              ${dims.map(d => `
-                <div class="score-row">
-                  <span class="score-label" style="color:${d.color}">${escapeHtml(d.label)}</span>
-                  <div class="score-bar-wrap"><div class="score-bar" style="width:${scores[d.key]}%;background:${d.color}"></div></div>
-                  <span class="score-val">${scores[d.key]}</span>
-                </div>
-              `).join('')}
-              <div class="score-summary">
-                <div>平均: <b>${avg}</b></div>
-                <div>最高: <b style="color:${high.color}">${escapeHtml(high.label)} (${scores[high.key]})</b></div>
-                <div>最低: <b style="color:${low.color}">${escapeHtml(low.label)} (${scores[low.key]})</b></div>
-              </div>
-            </div>
+          <div class="mini-scores">
+            ${VALUES_DIMENSIONS.map(d => `<span style="color:${d.color}">${escapeHtml(d.label.slice(0,2))}:${r.scores[d.key]}</span>`).join(' ')}
           </div>
-          <div class="result-interpret">${escapeHtml(advice)}</div>
-          <div class="actions">
-            <button class="ai-btn" data-id="${record.id}">AIに詳しく解説してもらう（他の診断との関連も）</button>
-            <button class="retry-btn">もう一度受ける</button>
-          </div>
-          <div class="ai-output ai-out" data-id="${record.id}" style="${record.aiCommentary ? '' : 'display:none'}">${escapeHtml(record.aiCommentary || '')}</div>
         </div>
       `;
-      resultEl.querySelector('.retry-btn').addEventListener('click', () => {
-        document.getElementById(`${prefix}-start`).click();
+    }).join('');
+    el.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirm('この記録を削除しますか？')) return;
+        state.valuesAssessments = state.valuesAssessments.filter(r => r.id !== btn.dataset.id);
+        save(VALUES_KEY, state.valuesAssessments);
+        renderValuesHistory();
       });
-      resultEl.querySelector('.ai-btn').addEventListener('click', () => runAI(record));
-    }
-
-    async function runAI(record) {
-      if (!state.settings.apiKey) {
-        flash('設定タブでAPIキーを登録してください', 'error');
-        return;
-      }
-      const out = resultEl.querySelector('.ai-out');
-      const btn = resultEl.querySelector('.ai-btn');
-      out.style.display = 'block';
-      out.textContent = '分析中...';
-      if (btn) btn.classList.add('loading');
-      const payload = dims.map(d => `${d.label}(${d.description}): ${record.scores[d.key]}`).join('\n');
-      try {
-        const text = await callClaude(cfg.aiSystem, cfg.aiUser(payload, record.scores));
-        out.textContent = text;
-        record.aiCommentary = text;
-        save(key, cfg.list());
-      } catch (err) {
-        out.textContent = 'エラー: ' + err.message;
-        flash('AI呼び出しに失敗しました', 'error');
-      } finally {
-        if (btn) btn.classList.remove('loading');
-      }
-    }
-
-    function drawHistory() {
-      const ul = document.getElementById(`${prefix}-history`);
-      if (!ul) return;
-      const list = cfg.list().slice();
-      if (!list.length) {
-        ul.innerHTML = '<li class="muted">該当する履歴はありません。</li>';
-        return;
-      }
-      ul.innerHTML = list.map(r => {
-        const top = dims.slice().sort((a, b) => r.scores[b.key] - r.scores[a.key])[0];
-        const bars = dims.map(d => `
-          <span class="mini-bar" title="${escapeAttr(d.label)}: ${r.scores[d.key]}">
-            <span class="mini-bar-fill" style="height:${r.scores[d.key]}%;background:${d.color}"></span>
-          </span>`).join('');
-        return `<li data-id="${r.id}">
-          <div class="h-meta">${formatDate(r.date)} · 最高: <b style="color:${top.color}">${escapeHtml(top.label)}</b></div>
-          <div class="mini-bars">${bars}</div>
-          <div class="actions" style="margin-top:6px">
-            <button class="hview" data-id="${r.id}">結果を表示</button>
-            <button class="hdel danger" data-id="${r.id}">削除</button>
-          </div>
-        </li>`;
-      }).join('');
-      ul.querySelectorAll('.hview').forEach(b => {
-        b.addEventListener('click', () => {
-          const r = cfg.list().find(x => x.id === b.dataset.id);
-          if (r) showResult(r);
-        });
-      });
-      ul.querySelectorAll('.hdel').forEach(b => {
-        b.addEventListener('click', () => {
-          if (!confirm('この診断履歴を削除しますか？')) return;
-          cfg.setList(cfg.list().filter(x => x.id !== b.dataset.id));
-          save(key, cfg.list());
-          drawHistory();
-        });
-      });
-    }
-
-    // expose history renderer
-    cfg.renderHistory = drawHistory;
-    if (prefix === 'values') window.__renderValuesHistory = drawHistory;
-    if (prefix === 'thinking') window.__renderThinkingHistory = drawHistory;
+    });
   }
 
-  function renderValuesHistory() { window.__renderValuesHistory && window.__renderValuesHistory(); }
-  function renderThinkingHistory() { window.__renderThinkingHistory && window.__renderThinkingHistory(); }
+  function renderThinkingHistory() {
+    const el = document.getElementById('thinking-history');
+    if (!el) return;
+    if (!state.thinkingAssessments.length) { el.innerHTML = '<p class="muted">まだ診断履歴がありません。</p>'; return; }
+    el.innerHTML = state.thinkingAssessments.map(r => {
+      const sorted = THINKING_DIMENSIONS.slice().sort((a, b) => r.scores[b.key] - r.scores[a.key]);
+      const high = sorted[0];
+      return `
+        <div class="history-item">
+          <div class="history-head">
+            <span class="history-date">${escapeHtml(formatDate(r.date))}</span>
+            <span class="history-badge" style="background:${high.color}20;color:${high.color}">${escapeHtml(high.label)} 優位</span>
+            <button class="icon-btn delete-btn" data-id="${escapeAttr(r.id)}" title="削除">×</button>
+          </div>
+          <div class="mini-scores">
+            ${THINKING_DIMENSIONS.map(d => `<span style="color:${d.color}">${escapeHtml(d.label.slice(0,2))}:${r.scores[d.key]}</span>`).join(' ')}
+          </div>
+        </div>
+      `;
+    }).join('');
+    el.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirm('この記録を削除しますか？')) return;
+        state.thinkingAssessments = state.thinkingAssessments.filter(r => r.id !== btn.dataset.id);
+        save(THINKING_KEY, state.thinkingAssessments);
+        renderThinkingHistory();
+      });
+    });
+  }
 
   // ---------- Johari Window ----------
-  function getAllJohariTraits(draft = state.johariDraft) {
-    const extra = new Set([...(draft.extraSelf || []), ...(draft.extraOthers || [])]);
-    return [...JOHARI_TRAITS, ...extra];
-  }
-
-  function computeJohariWindows(session) {
-    const self = new Set(session.selfTraits || []);
-    const others = new Set(session.othersTraits || []);
-    const all = new Set([
-      ...JOHARI_TRAITS,
-      ...(session.extraSelf || []),
-      ...(session.extraOthers || []),
-    ]);
-    const open = [], blind = [], hidden = [], unknown = [];
-    for (const t of all) {
-      if (self.has(t) && others.has(t)) open.push(t);
-      else if (!self.has(t) && others.has(t)) blind.push(t);
-      else if (self.has(t) && !others.has(t)) hidden.push(t);
-      else unknown.push(t);
-    }
-    return { open, blind, hidden, unknown };
-  }
-
   function renderJohari() {
-    const selfWrap = document.getElementById('johari-self-traits');
-    const othersWrap = document.getElementById('johari-others-traits');
-    const draft = state.johariDraft;
-    const allTraits = getAllJohariTraits(draft);
-    const renderTrait = (which) => {
-      const wrap = which === 'self' ? selfWrap : othersWrap;
-      const set = new Set(which === 'self' ? draft.selfTraits : draft.othersTraits);
-      const extras = new Set(which === 'self' ? draft.extraSelf : draft.extraOthers);
-      wrap.innerHTML = allTraits.map(t => {
-        const on = set.has(t);
-        const isExtra = extras.has(t);
-        return `<button class="trait-chip ${on ? 'on' : ''} ${isExtra ? 'extra' : ''}" data-which="${which}" data-trait="${escapeAttr(t)}">${escapeHtml(t)}${isExtra ? ` <span class="x">×</span>` : ''}</button>`;
-      }).join('');
-      wrap.querySelectorAll('.trait-chip').forEach(b => {
-        b.addEventListener('click', e => {
-          const t = b.dataset.trait;
-          const list = which === 'self' ? draft.selfTraits : draft.othersTraits;
-          const i = list.indexOf(t);
-          if (i >= 0) list.splice(i, 1); else list.push(t);
-          renderJohari();
-        });
-        const x = b.querySelector('.x');
-        if (x) {
-          x.addEventListener('click', e => {
-            e.stopPropagation();
-            if (!confirm(`カスタムトレイト「${t}」を削除しますか？`)) return;
-            const exList = which === 'self' ? draft.extraSelf : draft.extraOthers;
-            const sel = which === 'self' ? draft.selfTraits : draft.othersTraits;
-            exList.splice(exList.indexOf(t), 1);
-            const si = sel.indexOf(t);
-            if (si >= 0) sel.splice(si, 1);
-            renderJohari();
-          });
+    renderJohariDraft();
+    renderJohariHistory();
+  }
+
+  function renderJohariDraft() {
+    const draftEl = document.getElementById('johari-draft');
+    if (!draftEl) return;
+    const d = state.johariDraft;
+    draftEl.innerHTML = `
+      <div class="johari-section">
+        <h4>自分が選ぶ特性（自己認識）</h4>
+        <div class="trait-grid" id="self-traits">
+          ${JOHARI_TRAITS.map(t => `
+            <button class="trait-btn ${d.selfTraits.includes(t) ? 'selected' : ''}" data-trait="${escapeAttr(t)}" data-target="self">${escapeHtml(t)}</button>
+          `).join('')}
+        </div>
+        <div class="extra-traits">
+          <input type="text" id="extra-self-input" placeholder="その他の特性を入力…" class="trait-input">
+          <button id="add-extra-self">追加</button>
+        </div>
+        ${d.extraSelf.length ? `<div class="extra-list">${d.extraSelf.map(t => `<span class="extra-tag">${escapeHtml(t)} <button class="remove-extra" data-target="self" data-trait="${escapeAttr(t)}">×</button></span>`).join('')}</div>` : ''}
+      </div>
+      <div class="johari-section">
+        <h4>他者が選んだ特性（他者評価）</h4>
+        <div class="trait-grid" id="others-traits">
+          ${JOHARI_TRAITS.map(t => `
+            <button class="trait-btn ${d.othersTraits.includes(t) ? 'selected' : ''}" data-trait="${escapeAttr(t)}" data-target="others">${escapeHtml(t)}</button>
+          `).join('')}
+        </div>
+        <div class="extra-traits">
+          <input type="text" id="extra-others-input" placeholder="その他の特性を入力…" class="trait-input">
+          <button id="add-extra-others">追加</button>
+        </div>
+        ${d.extraOthers.length ? `<div class="extra-list">${d.extraOthers.map(t => `<span class="extra-tag">${escapeHtml(t)} <button class="remove-extra" data-target="others" data-trait="${escapeAttr(t)}">×</button></span>`).join('')}</div>` : ''}
+      </div>
+      <div class="johari-actions">
+        <button id="johari-save">${state.johariEditingId ? '更新する' : '記録する'}</button>
+        ${state.johariEditingId ? '<button id="johari-cancel-edit">キャンセル</button>' : ''}
+      </div>
+    `;
+
+    draftEl.querySelectorAll('.trait-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.target;
+        const trait = btn.dataset.trait;
+        const list = target === 'self' ? d.selfTraits : d.othersTraits;
+        const idx = list.indexOf(trait);
+        if (idx === -1) list.push(trait); else list.splice(idx, 1);
+        renderJohariDraft();
+      });
+    });
+
+    document.getElementById('add-extra-self').addEventListener('click', () => {
+      const input = document.getElementById('extra-self-input');
+      const val = input.value.trim();
+      if (val && !d.extraSelf.includes(val)) { d.extraSelf.push(val); renderJohariDraft(); }
+    });
+    document.getElementById('add-extra-others').addEventListener('click', () => {
+      const input = document.getElementById('extra-others-input');
+      const val = input.value.trim();
+      if (val && !d.extraOthers.includes(val)) { d.extraOthers.push(val); renderJohariDraft(); }
+    });
+
+    draftEl.querySelectorAll('.remove-extra').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.target;
+        const trait = btn.dataset.trait;
+        if (target === 'self') d.extraSelf = d.extraSelf.filter(t => t !== trait);
+        else d.extraOthers = d.extraOthers.filter(t => t !== trait);
+        renderJohariDraft();
+      });
+    });
+
+    document.getElementById('johari-save').addEventListener('click', () => {
+      const self = [...d.selfTraits, ...d.extraSelf];
+      const others = [...d.othersTraits, ...d.extraOthers];
+      if (!self.length && !others.length) { flash('特性を選択してください', 'error'); return; }
+      if (state.johariEditingId) {
+        const idx = state.johariSessions.findIndex(s => s.id === state.johariEditingId);
+        if (idx !== -1) {
+          state.johariSessions[idx] = { ...state.johariSessions[idx], selfTraits: self, othersTraits: others, date: new Date().toISOString() };
         }
-      });
-    };
-    renderTrait('self');
-    renderTrait('others');
-
-    if (state.johariEditingId) {
-      const s = state.johariSessions.find(x => x.id === state.johariEditingId);
-      if (s) {
-        document.getElementById('johari-scope').value = s.scope || '';
-        document.getElementById('johari-notes').value = s.notes || '';
+        state.johariEditingId = null;
+      } else {
+        state.johariSessions.unshift({ id: 'jh_' + uid(), date: new Date().toISOString(), selfTraits: self, othersTraits: others });
       }
-    }
-
-    renderJohariHistory();
-  }
-
-  document.getElementById('johari-self-add-btn').addEventListener('click', () => addJohariTrait('self'));
-  document.getElementById('johari-others-add-btn').addEventListener('click', () => addJohariTrait('others'));
-  document.getElementById('johari-self-add').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addJohariTrait('self'); } });
-  document.getElementById('johari-others-add').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addJohariTrait('others'); } });
-
-  function addJohariTrait(which) {
-    const inp = document.getElementById(which === 'self' ? 'johari-self-add' : 'johari-others-add');
-    const t = inp.value.trim();
-    if (!t) return;
-    const draft = state.johariDraft;
-    const exList = which === 'self' ? draft.extraSelf : draft.extraOthers;
-    if (!JOHARI_TRAITS.includes(t) && !exList.includes(t)) exList.push(t);
-    const sel = which === 'self' ? draft.selfTraits : draft.othersTraits;
-    if (!sel.includes(t)) sel.push(t);
-    inp.value = '';
-    renderJohari();
-  }
-
-  document.getElementById('johari-reset').addEventListener('click', () => {
-    if (!confirm('入力中の内容をクリアしますか？')) return;
-    state.johariDraft = { selfTraits: [], othersTraits: [], extraSelf: [], extraOthers: [] };
-    state.johariEditingId = null;
-    document.getElementById('johari-scope').value = '';
-    document.getElementById('johari-notes').value = '';
-    document.getElementById('johari-result').classList.add('hidden');
-    renderJohari();
-  });
-
-  document.getElementById('johari-save').addEventListener('click', () => {
-
-    const draft = state.johariDraft;
-    if (!draft.selfTraits.length && !draft.othersTraits.length) {
-      alert('少なくとも片方のリストを選んでください。');
-      return;
-    }
-    const existing = state.johariEditingId
-      ? state.johariSessions.find(x => x.id === state.johariEditingId)
-      : null;
-    const session = {
-      id: state.johariEditingId || 'jo_' + uid(),
-
-      date: new Date().toISOString(),
-      scope: document.getElementById('johari-scope').value.trim() || '全体',
-      notes: document.getElementById('johari-notes').value.trim(),
-      selfTraits: draft.selfTraits.slice(),
-      othersTraits: draft.othersTraits.slice(),
-      extraSelf: draft.extraSelf.slice(),
-      extraOthers: draft.extraOthers.slice(),
-      aiCommentary: existing ? existing.aiCommentary || '' : '',
-      updatedAt: new Date().toISOString(),
-    };
-    if (state.johariEditingId) {
-      state.johariSessions = state.johariSessions.map(s => s.id === state.johariEditingId ? session : s);
-    } else {
-      state.johariSessions.unshift(session);
-    }
-    save(JOHARI_KEY, state.johariSessions);
-    if (typeof window.contributeToTwin === 'function') { var _w = computeJohariWindows(session); window.contributeToTwin('micron', { quizType: 'johari', open: _w.open.length, blind: _w.blind.length, hidden: _w.hidden.length }); }
-    state.johariEditingId = session.id;
-    showJohariResult(session);
-    renderJohariHistory();
-    flash('保存しました');
-  });
-
-  function showJohariResult(session) {
-    const resEl = document.getElementById('johari-result');
-    resEl.classList.remove('hidden');
-    const w = computeJohariWindows(session);
-    const total = w.open.length + w.blind.length + w.hidden.length;
-    const totalAll = total + w.unknown.length;
-    const pct = (n) => totalAll ? Math.round((n / totalAll) * 100) : 0;
-    const interpret = interpretJohari(w);
-
-    resEl.innerHTML = `
-      <div class="result-card">
-        <div class="result-head">
-          <h3>自分と他者の見え方: ${escapeHtml(session.scope || '全体')}</h3>
-          <span class="muted">${escapeHtml(formatDate(session.date))}</span>
-        </div>
-        <div class="johari-grid">
-          <div class="johari-quad q-open">
-            <div class="quad-head"><b>開放</b><span class="muted">${w.open.length}（${pct(w.open.length)}%）</span></div>
-            <div class="quad-traits">${w.open.map(t => `<span class="trait-chip on small">${escapeHtml(t)}</span>`).join('') || '<span class="muted">なし</span>'}</div>
-          </div>
-          <div class="johari-quad q-blind">
-            <div class="quad-head"><b>盲点</b><span class="muted">${w.blind.length}（${pct(w.blind.length)}%）</span></div>
-            <div class="quad-traits">${w.blind.map(t => `<span class="trait-chip blind small">${escapeHtml(t)}</span>`).join('') || '<span class="muted">なし</span>'}</div>
-          </div>
-          <div class="johari-quad q-hidden">
-            <div class="quad-head"><b>秘密</b><span class="muted">${w.hidden.length}（${pct(w.hidden.length)}%）</span></div>
-            <div class="quad-traits">${w.hidden.map(t => `<span class="trait-chip hidden-trait small">${escapeHtml(t)}</span>`).join('') || '<span class="muted">なし</span>'}</div>
-          </div>
-          <div class="johari-quad q-unknown">
-            <div class="quad-head"><b>未知の余地</b><span class="muted">${w.unknown.length}</span></div>
-            <div class="quad-traits muted">${w.unknown.length}個のトレイトがどちらの側でも選ばれていません。新しい挑戦・自己探求で気づきが増えます。</div>
-          </div>
-        </div>
-        <div class="result-interpret">${escapeHtml(interpret)}</div>
-        <div class="actions">
-          <button id="johari-ai-comment">AIに詳しく解説してもらう（他の診断との関連も）</button>
-          <button id="johari-edit">この内容を編集する</button>
-        </div>
-        <div id="johari-ai-output" class="ai-output" style="${session.aiCommentary ? '' : 'display:none'}">${escapeHtml(session.aiCommentary || '')}</div>
-      </div>`;
-
-    document.getElementById('johari-edit').addEventListener('click', () => {
-      state.johariEditingId = session.id;
-      state.johariDraft = {
-        selfTraits: session.selfTraits.slice(),
-        othersTraits: session.othersTraits.slice(),
-        extraSelf: (session.extraSelf || []).slice(),
-        extraOthers: (session.extraOthers || []).slice(),
-      };
-      document.getElementById('johari-scope').value = session.scope || '';
-      document.getElementById('johari-notes').value = session.notes || '';
-      renderJohari();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-    document.getElementById('johari-ai-comment').addEventListener('click', () => runJohariAICommentary(session));
-  }
-
-  function interpretJohari(w) {
-    const total = w.open.length + w.blind.length + w.hidden.length;
-    if (!total) return '自己選択も他者からの選択もまだありません。';
-    const parts = [];
-    const ratio = (n) => total ? Math.round((n / total) * 100) : 0;
-    if (w.open.length >= w.blind.length && w.open.length >= w.hidden.length) {
-      parts.push('開放の窓が一番大きく、関係の地盤が安定しています。');
-    } else if (w.blind.length > w.open.length && w.blind.length > w.hidden.length) {
-      parts.push('盲点が大きい状態です。フィードバックを取り入れる場面が多いと、開放の窓が一気に広がります。');
-    } else if (w.hidden.length > w.open.length && w.hidden.length > w.blind.length) {
-      parts.push('秘密が大きい状態です。安全な相手に少しずつ開示するだけで、開放の窓は広がります。');
-    }
-    if (w.blind.length && w.hidden.length === 0) parts.push('開示は十分。盲点に向き合うのが次の一手です。');
-    if (w.hidden.length && w.blind.length === 0) parts.push('フィードバックは取り入れている。安全な開示が次の一手です。');
-    if (w.unknown.length > total * 2) parts.push('未知の余地が大きいので、新しい挑戦・対話で発見できる可能性が広いです。');
-    return parts.join(' ');
-  }
-
-  async function runJohariAICommentary(session) {
-    if (!state.settings.apiKey) {
-      flash('設定タブでAPIキーを登録してください', 'error');
-      return;
-    }
-    const out = document.getElementById('johari-ai-output');
-    const btn = document.getElementById('johari-ai-comment');
-    out.style.display = 'block';
-    out.textContent = '分析中...';
-    if (btn) btn.classList.add('loading');
-    const w = computeJohariWindows(session);
-    const payload = [
-      `対象: ${session.scope || '全体'}`,
-      `開放（自分も他者も認識）: ${w.open.join(', ') || 'なし'}`,
-      `盲点（他者だけが認識）: ${w.blind.join(', ') || 'なし'}`,
-      `秘密（自分だけが認識）: ${w.hidden.join(', ') || 'なし'}`,
-      `未知（どちらも未選択）: ${w.unknown.length}個`,
-    ].join('\n');
-    const system = 'あなたはジョハリの窓モデルを使ったコーチングに詳しい心理カウンセラーです。本人の自己認識と他者からの見え方のズレを統合的に読み解き、次の一歩を優しく日本語で示します。';
-    const user = [
-      '以下は「自分から見た自分」と「他者から見た自分」の集計です（ジョハリの窓モデル）。',
-      '4つの窓のバランスから読み取れる「他者との関係の現在地」を一文でまとめ、',
-      '盲点・秘密のトレイトに具体的に触れながら、開放の窓を広げるための小さな実験を1つ提案してください。',
-      '他の診断スコアがあれば、整合・矛盾を指摘してください（500字程度）。',
-      '',
-      payload,
-      '',
-      buildCrossReferences('johari'),
-    ].join('\n');
-    try {
-      const text = await callClaude(system, user);
-      out.textContent = text;
-      session.aiCommentary = text;
+      state.johariDraft = { selfTraits: [], othersTraits: [], extraSelf: [], extraOthers: [] };
       save(JOHARI_KEY, state.johariSessions);
-    } catch (err) {
-      out.textContent = 'エラー: ' + err.message;
-      flash('AI呼び出しに失敗しました', 'error');
-    } finally {
-      if (btn) btn.classList.remove('loading');
-    }
-  }
-
-  // ---------- Summary (comprehensive) analysis ----------
-  function summaryDiagnostics() {
-    return [
-      { key: 'social',   label: '人との関わり方',     dims: SOCIAL_DIMENSIONS,   list: state.socialAssessments },
-      { key: 'effort',   label: '努力スタイル',       dims: EFFORT_DIMENSIONS,   list: state.effortAssessments },
-      { key: 'kolb',     label: '学び方のタイプ',     dims: KOLB_DIMENSIONS,     list: state.kolbAssessments },
-      { key: 'values',   label: '大切にしているもの', dims: VALUES_DIMENSIONS,   list: state.valuesAssessments },
-      { key: 'thinking', label: '考え方のクセ',       dims: THINKING_DIMENSIONS, list: state.thinkingAssessments },
-    ];
-  }
-
-  // Latest record for a specific person; if no person selected, return global latest.
-  function renderSummary() {
-    const snap = document.getElementById('summary-snapshot');
-    if (!snap) return;
-    const cards = [];
-    for (const d of summaryDiagnostics()) {
-      const latest = d.list[0];
-      if (!latest) {
-        cards.push(`<div class="snap-card empty"><div class="snap-label">${escapeHtml(d.label)}</div><div class="snap-empty">未診断</div></div>`);
-        continue;
-      }
-      const top = d.dims.slice().sort((a, b) => latest.scores[b.key] - latest.scores[a.key])[0];
-      const avg = Math.round(d.dims.reduce((s, x) => s + latest.scores[x.key], 0) / d.dims.length);
-      const bars = d.dims.map(x => `
-        <span class="snap-bar" title="${escapeAttr(x.label)}: ${latest.scores[x.key]}">
-          <span class="snap-bar-fill" style="height:${latest.scores[x.key]}%;background:${x.color}"></span>
-        </span>`).join('');
-      cards.push(`<div class="snap-card">
-        <div class="snap-label">${escapeHtml(d.label)}</div>
-        <div class="snap-bars">${bars}</div>
-        <div class="snap-meta muted">平均 ${avg} · 最高 <b style="color:${top.color}">${escapeHtml(top.label)}</b></div>
-      </div>`);
-    }
-    const johari = state.johariSessions[0];
-    if (johari) {
-      const w = computeJohariWindows(johari);
-      cards.push(`<div class="snap-card">
-        <div class="snap-label">自分と他者の見え方</div>
-        <div class="snap-meta">開放 ${w.open.length} / 盲点 ${w.blind.length} / 秘密 ${w.hidden.length}</div>
-        <div class="muted" style="font-size:11px">${escapeHtml(johari.scope || '全体')}</div>
-      </div>`);
-    } else {
-      cards.push(`<div class="snap-card empty"><div class="snap-label">自分と他者の見え方</div><div class="snap-empty">未診断</div></div>`);
-    }
-    snap.innerHTML = cards.join('');
-    renderSummaryHistory();
-  }
-
-  document.getElementById('summary-run').addEventListener('click', runSummary);
-  document.getElementById('summary-copy').addEventListener('click', () => {
-    const t = document.getElementById('summary-output').textContent;
-    if (!t) return;
-    navigator.clipboard.writeText(t).then(() => flash('コピーしました'));
-  });
-
-  async function runSummary() {
-    if (!state.settings.apiKey) {
-      flash('設定タブでAPIキーを登録してください', 'error');
-      return;
-    }
-    const out = document.getElementById('summary-output');
-    const status = document.getElementById('summary-status');
-    out.textContent = '';
-
-    const payloadParts = [];
-    const snapshot = { diagnostics: {} };
-
-    for (const d of summaryDiagnostics()) {
-      const latest = d.list[0];
-      if (!latest) {
-        payloadParts.push(`## ${d.label}\n（未診断）`);
-        snapshot.diagnostics[d.key] = null;
-        continue;
-      }
-      const dims = d.dims.map(x => `${x.label}: ${latest.scores[x.key]}`).join(' / ');
-      payloadParts.push(`## ${d.label}（${formatDate(latest.date)}）\n${dims}`);
-      snapshot.diagnostics[d.key] = { scores: latest.scores, date: latest.date };
-    }
-    const johari = state.johariSessions[0];
-    if (johari) {
-      const w = computeJohariWindows(johari);
-      payloadParts.push(`## 自分と他者の見え方（${johari.scope || '全体'} / ${formatDate(johari.date)}）
-開放（自他共通）: ${w.open.join(', ') || 'なし'}
-盲点（他者だけ）: ${w.blind.join(', ') || 'なし'}
-秘密（自分だけ）: ${w.hidden.join(', ') || 'なし'}
-未知の余地: ${w.unknown.length}個`);
-      snapshot.diagnostics.johari = { open: w.open, blind: w.blind, hidden: w.hidden, unknownCount: w.unknown.length, scope: johari.scope, date: johari.date };
-    } else {
-      payloadParts.push('## 自分と他者の見え方\n（未診断）');
-      snapshot.diagnostics.johari = null;
-    }
-
-    const system = [
-      'あなたは心理学・コーチング・経験学習理論に通じた、思慮深い分析パートナーです。',
-      '複数の自己診断結果を統合し、一人の人物像として丁寧に読み解きます。',
-      '断定や決めつけを避け、本人が次の一歩を選べる形で日本語で回答します。',
-    ].join('\n');
-
-    const userPrompt = [
-      '以下は自分自身の診断データです。これらを統合的に分析してください。',
-      '',
-      '出力には以下を含めてください（マークダウンの見出しで区切る）:',
-      '## 1. 人物プロファイル（200字程度の物語的な要約）',
-      '## 2. 各診断から見える強み（箇条書き、根拠引用）',
-      '## 3. 構造的な「ねじれ」（複数の診断が共通して指している葛藤）',
-      '## 4. 今週から試せる小さな一歩（1〜2個、具体的に）',
-      '',
-      '全体で700〜1000字。安直な励ましは避け、データに即して書いてください。',
-      '',
-      payloadParts.join('\n\n'),
-    ].join('\n');
-
-    const runBtn = document.getElementById('summary-run');
-    runBtn.disabled = true;
-    runBtn.classList.add('loading');
-    status.textContent = '統合分析中...';
-    try {
-      const text = await callClaude(system, userPrompt);
-      out.textContent = text;
-      const record = {
-        id: 'sum_' + uid(),
-        date: new Date().toISOString(),
-        snapshot,
-        output: text,
-        notes: '',
-      };
-      state.summaryAnalyses.unshift(record);
-      state.summaryAnalyses = state.summaryAnalyses.slice(0, 50);
-      save(SUMMARY_KEY, state.summaryAnalyses);
-      status.textContent = `完了 (${formatDate(record.date)})`;
-      renderSummaryHistory();
-    } catch (err) {
-      status.textContent = 'エラー: ' + err.message;
-      flash('AI呼び出しに失敗しました', 'error');
-    } finally {
-      runBtn.disabled = false;
-      runBtn.classList.remove('loading');
-    }
-  }
-
-  function renderSummaryHistory() {
-    const ul = document.getElementById('summary-history');
-    if (!ul) return;
-    const items = state.summaryAnalyses.slice();
-    if (!items.length) {
-      ul.innerHTML = '<li class="muted">まだレポートはありません。</li>';
-      return;
-    }
-    ul.innerHTML = items.map(r => `
-      <li data-id="${r.id}">
-        <div class="h-meta">${formatDate(r.date)}</div>
-        <div class="h-preview">${escapeHtml(r.output).slice(0, 200)}…</div>
-        <div class="actions" style="margin-top:6px">
-          <button class="sum-view" data-id="${r.id}">結果を表示</button>
-          <button class="sum-del danger" data-id="${r.id}">削除</button>
-        </div>
-      </li>
-    `).join('');
-    ul.querySelectorAll('.sum-view').forEach(b => {
-      b.addEventListener('click', () => {
-        const r = state.summaryAnalyses.find(x => x.id === b.dataset.id);
-        if (!r) return;
-        document.getElementById('summary-output').textContent = r.output;
-        document.getElementById('summary-status').textContent = `履歴を表示中 (${formatDate(r.date)})`;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
+      renderJohari();
+      flash('ジョハリの窓を記録しました');
     });
-    ul.querySelectorAll('.sum-del').forEach(b => {
-      b.addEventListener('click', () => {
-        if (!confirm('この履歴を削除しますか？')) return;
-        state.summaryAnalyses = state.summaryAnalyses.filter(x => x.id !== b.dataset.id);
-        save(SUMMARY_KEY, state.summaryAnalyses);
-        renderSummaryHistory();
-      });
+
+    const cancelBtn = document.getElementById('johari-cancel-edit');
+    if (cancelBtn) cancelBtn.addEventListener('click', () => {
+      state.johariEditingId = null;
+      state.johariDraft = { selfTraits: [], othersTraits: [], extraSelf: [], extraOthers: [] };
+      renderJohariDraft();
     });
   }
 
   function renderJohariHistory() {
-    const ul = document.getElementById('johari-history');
-    if (!ul) return;
-    const items = state.johariSessions.slice();
-    if (!items.length) {
-      ul.innerHTML = '<li class="muted">該当する履歴はありません。</li>';
-      return;
-    }
-    ul.innerHTML = items.map(s => {
-      const w = computeJohariWindows(s);
-      return `<li data-id="${s.id}" class="${state.johariEditingId === s.id ? 'active' : ''}">
-        <div class="h-meta">${escapeHtml(s.scope || '全体')} · ${formatDate(s.date)}</div>
-        <div class="muted" style="font-size:11px;margin-top:2px">開放 ${w.open.length} / 盲点 ${w.blind.length} / 秘密 ${w.hidden.length}</div>
-        <div class="actions" style="margin-top:6px">
-          <button class="jo-view" data-id="${s.id}">結果を表示</button>
-          <button class="jo-del danger" data-id="${s.id}">削除</button>
+    const el = document.getElementById('johari-history');
+    if (!el) return;
+    if (!state.johariSessions.length) { el.innerHTML = '<p class="muted">まだ記録がありません。</p>'; return; }
+    el.innerHTML = state.johariSessions.map(s => {
+      const self = new Set(s.selfTraits);
+      const others = new Set(s.othersTraits);
+      const open = s.selfTraits.filter(t => others.has(t));
+      const blind = s.othersTraits.filter(t => !self.has(t));
+      const facade = s.selfTraits.filter(t => !others.has(t));
+      return `
+        <div class="history-item johari-item">
+          <div class="history-head">
+            <span class="history-date">${escapeHtml(formatDate(s.date))}</span>
+            <div class="johari-item-actions">
+              <button class="icon-btn edit-johari" data-id="${escapeAttr(s.id)}">✎</button>
+              <button class="icon-btn delete-btn" data-id="${escapeAttr(s.id)}" title="削除">×</button>
+            </div>
+          </div>
+          <div class="johari-mini-grid">
+            <div class="johari-cell open"><b>開放領域</b><br>${open.map(t => escapeHtml(t)).join('、') || '—'}</div>
+            <div class="johari-cell blind"><b>盲点領域</b><br>${blind.map(t => escapeHtml(t)).join('、') || '—'}</div>
+            <div class="johari-cell facade"><b>秘密領域</b><br>${facade.map(t => escapeHtml(t)).join('、') || '—'}</div>
+            <div class="johari-cell unknown"><b>未知領域</b><br><span class="muted">選ばれていない特性</span></div>
+          </div>
         </div>
-      </li>`;
+      `;
     }).join('');
-    ul.querySelectorAll('.jo-view').forEach(b => {
-      b.addEventListener('click', () => {
-        const s = state.johariSessions.find(x => x.id === b.dataset.id);
-        if (s) showJohariResult(s);
+
+    el.querySelectorAll('.edit-johari').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const s = state.johariSessions.find(x => x.id === btn.dataset.id);
+        if (!s) return;
+        state.johariEditingId = s.id;
+        state.johariDraft = {
+          selfTraits: s.selfTraits.filter(t => JOHARI_TRAITS.includes(t)),
+          othersTraits: s.othersTraits.filter(t => JOHARI_TRAITS.includes(t)),
+          extraSelf: s.selfTraits.filter(t => !JOHARI_TRAITS.includes(t)),
+          extraOthers: s.othersTraits.filter(t => !JOHARI_TRAITS.includes(t)),
+        };
+        renderJohariDraft();
+        document.getElementById('johari-draft').scrollIntoView({ behavior: 'smooth' });
       });
     });
-    ul.querySelectorAll('.jo-del').forEach(b => {
-      b.addEventListener('click', () => {
-        if (!confirm('この履歴を削除しますか？')) return;
-        state.johariSessions = state.johariSessions.filter(x => x.id !== b.dataset.id);
-        if (state.johariEditingId === b.dataset.id) state.johariEditingId = null;
+
+    el.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirm('この記録を削除しますか？')) return;
+        state.johariSessions = state.johariSessions.filter(s => s.id !== btn.dataset.id);
         save(JOHARI_KEY, state.johariSessions);
         renderJohariHistory();
       });
     });
   }
 
+  // ---------- Summary ----------
+  function renderSummary() {
+    const el = document.getElementById('summary-content');
+    if (!el) return;
+    const hasAny = state.socialAssessments.length || state.effortAssessments.length ||
+                   state.kolbAssessments.length || state.valuesAssessments.length ||
+                   state.thinkingAssessments.length || state.johariSessions.length;
+    if (!hasAny) {
+      el.innerHTML = '<p class="muted">まだ診断データがありません。各診断を受けるとここに集計が表示されます。</p>';
+      return;
+    }
+    const sections = [];
+    if (state.socialAssessments.length) {
+      const latest = state.socialAssessments[0];
+      sections.push(`<div class="summary-section"><h4>ソーシャルスキル（最新）</h4>${renderMiniScores(latest.scores, SOCIAL_DIMENSIONS)}</div>`);
+    }
+    if (state.effortAssessments.length) {
+      const latest = state.effortAssessments[0];
+      sections.push(`<div class="summary-section"><h4>努力プロファイル（最新）</h4>${renderMiniScores(latest.scores, EFFORT_DIMENSIONS)}</div>`);
+    }
+    if (state.kolbAssessments.length) {
+      const latest = state.kolbAssessments[0];
+      sections.push(`<div class="summary-section"><h4>学習スタイル（最新）</h4>${renderMiniScores(latest.scores, KOLB_DIMENSIONS)}</div>`);
+    }
+    if (state.valuesAssessments.length) {
+      const latest = state.valuesAssessments[0];
+      sections.push(`<div class="summary-section"><h4>価値観プロファイル（最新）</h4>${renderMiniScores(latest.scores, VALUES_DIMENSIONS)}</div>`);
+    }
+    if (state.thinkingAssessments.length) {
+      const latest = state.thinkingAssessments[0];
+      sections.push(`<div class="summary-section"><h4>思考スタイル（最新）</h4>${renderMiniScores(latest.scores, THINKING_DIMENSIONS)}</div>`);
+    }
+    if (state.johariSessions.length) {
+      const latest = state.johariSessions[0];
+      const self = new Set(latest.selfTraits);
+      const others = new Set(latest.othersTraits);
+      const open = latest.selfTraits.filter(t => others.has(t));
+      sections.push(`<div class="summary-section"><h4>ジョハリの窓（最新）</h4><p>開放領域: ${open.map(t => escapeHtml(t)).join('、') || '—'}</p></div>`);
+    }
+    el.innerHTML = sections.join('') + `
+      <div class="summary-actions">
+        <button id="summary-ai-btn">AIに総合分析してもらう</button>
+      </div>
+      <div id="summary-ai-output" class="ai-output" style="display:none"></div>
+      ${state.summaryAnalyses.length ? `
+        <div class="summary-history">
+          <h4>過去のAI分析</h4>
+          ${state.summaryAnalyses.map(a => `
+            <div class="history-item">
+              <div class="history-head">
+                <span class="history-date">${escapeHtml(formatDate(a.date))}</span>
+                <button class="icon-btn delete-btn" data-id="${escapeAttr(a.id)}" title="削除">×</button>
+              </div>
+              <div class="summary-ai-text">${escapeHtml(a.text)}</div>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+    `;
+    document.getElementById('summary-ai-btn').addEventListener('click', runSummaryAI);
+    el.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirm('この分析を削除しますか？')) return;
+        state.summaryAnalyses = state.summaryAnalyses.filter(a => a.id !== btn.dataset.id);
+        save(SUMMARY_KEY, state.summaryAnalyses);
+        renderSummary();
+      });
+    });
+  }
+
+  function renderMiniScores(scores, dims) {
+    return `<div class="mini-score-grid">${dims.map(d => `
+      <div class="mini-score-item">
+        <span class="mini-label" style="color:${d.color}">${escapeHtml(d.label)}</span>
+        <div class="score-bar-wrap"><div class="score-bar" style="width:${scores[d.key]}%;background:${d.color}"></div></div>
+        <span class="mini-val">${scores[d.key]}</span>
+      </div>
+    `).join('')}</div>`;
+  }
+
+  async function runSummaryAI() {
+    const btn = document.getElementById('summary-ai-btn');
+    if (!btn) return;
+    btn.classList.add('loading');
+    try {
+      const parts = [];
+      if (state.socialAssessments.length) {
+        const s = state.socialAssessments[0].scores;
+        parts.push('【ソーシャルスキル】' + SOCIAL_DIMENSIONS.map(d => `${d.label}:${s[d.key]}`).join(', '));
+      }
+      if (state.effortAssessments.length) {
+        const s = state.effortAssessments[0].scores;
+        parts.push('【努力プロファイル】' + EFFORT_DIMENSIONS.map(d => `${d.label}:${s[d.key]}`).join(', '));
+      }
+      if (state.kolbAssessments.length) {
+        const s = state.kolbAssessments[0].scores;
+        parts.push('【学習スタイル】' + KOLB_DIMENSIONS.map(d => `${d.label}:${s[d.key]}`).join(', '));
+      }
+      if (state.valuesAssessments.length) {
+        const s = state.valuesAssessments[0].scores;
+        parts.push('【価値観】' + VALUES_DIMENSIONS.map(d => `${d.label}:${s[d.key]}`).join(', '));
+      }
+      if (state.thinkingAssessments.length) {
+        const s = state.thinkingAssessments[0].scores;
+        parts.push('【思考スタイル】' + THINKING_DIMENSIONS.map(d => `${d.label}:${s[d.key]}`).join(', '));
+      }
+      if (state.johariSessions.length) {
+        const j = state.johariSessions[0];
+        const self = new Set(j.selfTraits);
+        const others = new Set(j.othersTraits);
+        const open = j.selfTraits.filter(t => others.has(t));
+        parts.push('【ジョハリ開放領域】' + (open.join('、') || 'なし'));
+      }
+      const text = await callClaude(
+        'あなたは自己分析・人材開発の専門家です。複数の診断結果を統合して、その人の総合的なプロファイルと成長への提言を日本語で提供してください。',
+        `以下の診断結果を統合的に分析してください:\n\n${parts.join('\n')}\n\n強み・課題・相互作用・成長のための具体的な提言をお願いします。`
+      );
+      const record = { id: 'sm_' + uid(), date: new Date().toISOString(), text };
+      state.summaryAnalyses.unshift(record);
+      save(SUMMARY_KEY, state.summaryAnalyses);
+      const out = document.getElementById('summary-ai-output');
+      if (out) { out.textContent = text; out.style.display = ''; }
+    } catch (err) {
+      flash('AI分析に失敗しました: ' + err.message, 'error');
+    } finally {
+      btn.classList.remove('loading');
+    }
+  }
+
+  // ---------- Init ----------
   renderSocialHistory();
   renderEffortHistory();
   renderKolbHistory();
