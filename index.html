@@ -401,10 +401,10 @@
 
     <section id="tab-summary" class="panel">
       <h2>総合レポート</h2>
-      <p class="muted">受けた6つの診断の最新スコアをすべて束ねて、一人の人物像としてAIに読み解いてもらいます。強み・葛藤・次の一歩まで、レポートとして履歴に残ります。</p>
+      <p class="muted">受けた診断のスコアを<b>三層モデル（信念層 / 認知行動層 / 表現層）</b>で構造化し、層間の「ねじれ」を自動検出してAIが統合的に読み解きます。</p>
 
-      <h3>含まれる最新スコア</h3>
-      <div id="summary-snapshot" class="summary-snapshot"></div>
+      <h3>含まれる最新スコア（層別）</h3>
+      <div id="summary-snapshot" class="summary-snapshot-wrap"></div>
 
       <div class="actions">
         <button id="summary-run" class="primary">AIでレポートを作成</button>
@@ -413,6 +413,8 @@
 
       <div id="summary-status" class="muted"></div>
       <article id="summary-output" class="ai-output"></article>
+
+      <p class="muted disclaimer">⚠ これは医療診断・人事評価・司法判断には使えません。自己理解のための「現在のスナップショット」であり、変化可能なものとして受け取ってください。違和感のある解釈は鵜呑みにせず、自分の感覚と照らし合わせてください。</p>
 
       <h3>レポート履歴</h3>
       <ul id="summary-history" class="social-history"></ul>

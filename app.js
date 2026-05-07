@@ -1742,6 +1742,78 @@
   }
 
   // ---------- Summary (comprehensive) analysis ----------
+  // 三層モデル: 各診断がどの層に属するか (THEORY.md §4)
+  const LAYER_MAP = {
+    values:   { layer: 1, label: '信念層',     name: '大切にしているもの (価値観)' },
+    thinking: { layer: 2, label: '認知行動層', name: '考え方のクセ (思考スタイル)' },
+    kolb:     { layer: 2, label: '認知行動層', name: '学び方のタイプ (Kolb)' },
+    social:   { layer: 3, label: '表現層',     name: '人との関わり方' },
+    effort:   { layer: 3, label: '表現層',     name: '努力スタイル' },
+    johari:   { layer: 'meta', label: 'メタ視点', name: '自分と他者の見え方' },
+  };
+
+  // ねじれパターン (THEORY.md §6.2)
+  const TENSION_PATTERNS = [
+    {
+      id: 'value-action-autonomy',
+      label: '価値観⇄行動の不一致（自律）',
+      check: (s) => (s.values?.autonomy ?? 0) >= 70 && (s.social?.assertion ?? 100) <= 40,
+      hint: '「自律」を大切にしているが、自己主張力が低め。意見を抑え込みやすい状況や信念がある可能性。',
+    },
+    {
+      id: 'value-action-relation',
+      label: '価値観⇄行動の不一致（関係）',
+      check: (s) => (s.values?.relation ?? 0) >= 70 && (s.social?.cooperation ?? 100) <= 40,
+      hint: '「関係」を大切にしているが、協調性のスコアが低め。表面的な距離があるか、求める関係性の質が違う可能性。',
+    },
+    {
+      id: 'cognition-action',
+      label: '認知⇄行動の不一致（計画と実行）',
+      check: (s) => (s.thinking?.logical ?? 0) >= 70 && (s.effort?.design ?? 100) <= 40,
+      hint: '論理的思考は強いが、努力の設計が弱め。考えることと、計画に落として実行することの間にギャップがある可能性。',
+    },
+    {
+      id: 'motive-persistence',
+      label: '動機⇄持続の不一致',
+      check: (s) => (s.values?.growth ?? 0) >= 70 && (s.effort?.endurance ?? 100) <= 40,
+      hint: '「成長」を求めているが、努力の持続が弱め。新しいことへ次々と移って積み上がりにくいパターンの可能性。',
+    },
+    {
+      id: 'learning-choice',
+      label: '学び⇄選択の不一致',
+      check: (s) => (s.kolb?.why ?? 0) >= 70 && (s.effort?.choice ?? 100) <= 40,
+      hint: '「なぜ」を求めるタイプだが、何に努力するかの選択は弱め。意味を求めながら方向が定まっていない可能性。',
+    },
+    {
+      id: 'self-other-gap-blind',
+      label: '自他認識ギャップ（盲点）',
+      check: (s) => {
+        if (!s.johari) return false;
+        const total = s.johari.openCount + s.johari.blindCount + s.johari.hiddenCount;
+        if (!total) return false;
+        return s.johari.blindCount / total >= 0.3;
+      },
+      hint: '他者から見えているが自分では気づいていない部分が多め。フィードバックを取り入れる余地が大きい。',
+    },
+    {
+      id: 'self-other-gap-hidden',
+      label: '自他認識ギャップ（秘密）',
+      check: (s) => {
+        if (!s.johari) return false;
+        const total = s.johari.openCount + s.johari.blindCount + s.johari.hiddenCount;
+        if (!total) return false;
+        return s.johari.hiddenCount / total >= 0.3;
+      },
+      hint: '自分は知っているが他者には見せていない部分が多め。安全な相手への適度な開示で関係が深まる余地。',
+    },
+  ];
+
+  function detectTensions(scoreMap) {
+    return TENSION_PATTERNS
+      .filter(p => p.check(scoreMap))
+      .map(p => ({ id: p.id, label: p.label, hint: p.hint }));
+  }
+
   function summaryDiagnostics() {
     return [
       { key: 'social',   label: '人との関わり方',     dims: SOCIAL_DIMENSIONS,   list: state.socialAssessments },
@@ -1756,37 +1828,71 @@
   function renderSummary() {
     const snap = document.getElementById('summary-snapshot');
     if (!snap) return;
-    const cards = [];
+
+    // 三層モデルでグループ化
+    const byLayer = { 1: [], 2: [], 3: [], meta: [] };
+    const scoreMap = {};
+
     for (const d of summaryDiagnostics()) {
       const latest = d.list[0];
+      const meta = LAYER_MAP[d.key];
+      let card;
       if (!latest) {
-        cards.push(`<div class="snap-card empty"><div class="snap-label">${escapeHtml(d.label)}</div><div class="snap-empty">未診断</div></div>`);
-        continue;
+        card = `<div class="snap-card empty"><div class="snap-label">${escapeHtml(d.label)}</div><div class="snap-empty">未診断</div></div>`;
+      } else {
+        scoreMap[d.key] = latest.scores;
+        const top = d.dims.slice().sort((a, b) => latest.scores[b.key] - latest.scores[a.key])[0];
+        const avg = Math.round(d.dims.reduce((s, x) => s + latest.scores[x.key], 0) / d.dims.length);
+        const bars = d.dims.map(x => `
+          <span class="snap-bar" title="${escapeAttr(x.label)}: ${latest.scores[x.key]}">
+            <span class="snap-bar-fill" style="height:${latest.scores[x.key]}%;background:${x.color}"></span>
+          </span>`).join('');
+        card = `<div class="snap-card">
+          <div class="snap-label">${escapeHtml(d.label)}</div>
+          <div class="snap-bars">${bars}</div>
+          <div class="snap-meta muted">平均 ${avg} · 最高 <b style="color:${top.color}">${escapeHtml(top.label)}</b></div>
+        </div>`;
       }
-      const top = d.dims.slice().sort((a, b) => latest.scores[b.key] - latest.scores[a.key])[0];
-      const avg = Math.round(d.dims.reduce((s, x) => s + latest.scores[x.key], 0) / d.dims.length);
-      const bars = d.dims.map(x => `
-        <span class="snap-bar" title="${escapeAttr(x.label)}: ${latest.scores[x.key]}">
-          <span class="snap-bar-fill" style="height:${latest.scores[x.key]}%;background:${x.color}"></span>
-        </span>`).join('');
-      cards.push(`<div class="snap-card">
-        <div class="snap-label">${escapeHtml(d.label)}</div>
-        <div class="snap-bars">${bars}</div>
-        <div class="snap-meta muted">平均 ${avg} · 最高 <b style="color:${top.color}">${escapeHtml(top.label)}</b></div>
-      </div>`);
+      byLayer[meta.layer].push(card);
     }
+
     const johari = state.johariSessions[0];
     if (johari) {
       const w = computeJohariWindows(johari);
-      cards.push(`<div class="snap-card">
+      scoreMap.johari = {
+        openCount: w.open.length, blindCount: w.blind.length,
+        hiddenCount: w.hidden.length, unknownCount: w.unknown.length,
+      };
+      byLayer.meta.push(`<div class="snap-card">
         <div class="snap-label">自分と他者の見え方</div>
         <div class="snap-meta">開放 ${w.open.length} / 盲点 ${w.blind.length} / 秘密 ${w.hidden.length}</div>
         <div class="muted" style="font-size:11px">${escapeHtml(johari.scope || '全体')}</div>
       </div>`);
     } else {
-      cards.push(`<div class="snap-card empty"><div class="snap-label">自分と他者の見え方</div><div class="snap-empty">未診断</div></div>`);
+      byLayer.meta.push(`<div class="snap-card empty"><div class="snap-label">自分と他者の見え方</div><div class="snap-empty">未診断</div></div>`);
     }
-    snap.innerHTML = cards.join('');
+
+    const tensions = detectTensions(scoreMap);
+    const tensionsHtml = tensions.length
+      ? `<div class="tensions-box">
+          <div class="tensions-head">⚠ 検出された構造的ねじれ (${tensions.length}件)</div>
+          <ul class="tensions-list">${tensions.map(t => `<li><b>${escapeHtml(t.label)}</b>: <span class="muted">${escapeHtml(t.hint)}</span></li>`).join('')}</ul>
+        </div>`
+      : `<div class="tensions-box empty"><div class="muted">自動検出された顕著なねじれはありません。各診断スコアの組み合わせから機械的に判定しています。</div></div>`;
+
+    const layerBlock = (n, name, desc) => `
+      <div class="layer-block">
+        <div class="layer-head"><span class="layer-num">層${n === 'meta' ? 'M' : n}</span> <b>${escapeHtml(name)}</b> <span class="muted">— ${escapeHtml(desc)}</span></div>
+        <div class="summary-snapshot">${byLayer[n].join('')}</div>
+      </div>`;
+
+    snap.innerHTML = [
+      layerBlock(1, '信念層', '何を大切にしているか — 動機の根'),
+      layerBlock(2, '認知行動層', 'どう情報を処理するか — 認知の処理'),
+      layerBlock(3, '表現層', 'どう振る舞うか／見えるか — 行動と他者からの観察'),
+      layerBlock('meta', 'メタ視点', '自分と他者の認識の対応関係'),
+      tensionsHtml,
+    ].join('');
     renderSummaryHistory();
   }
 
@@ -1806,53 +1912,103 @@
     const status = document.getElementById('summary-status');
     out.textContent = '';
 
-    const payloadParts = [];
+    // 三層モデルに従ってスコアを構造化（THEORY.md §4）
+    const scoreMap = {};
+    const layered = { 1: [], 2: [], 3: [], meta: [] };
     const snapshot = { diagnostics: {} };
 
     for (const d of summaryDiagnostics()) {
       const latest = d.list[0];
+      const meta = LAYER_MAP[d.key];
       if (!latest) {
-        payloadParts.push(`## ${d.label}\n（未診断）`);
+        layered[meta.layer].push(`### ${meta.name}\n（未診断）`);
         snapshot.diagnostics[d.key] = null;
         continue;
       }
-      const dims = d.dims.map(x => `${x.label}: ${latest.scores[x.key]}`).join(' / ');
-      payloadParts.push(`## ${d.label}（${formatDate(latest.date)}）\n${dims}`);
+      scoreMap[d.key] = latest.scores;
+      const dims = d.dims.map(x => `${x.label}=${latest.scores[x.key]}`).join(' / ');
+      layered[meta.layer].push(`### ${meta.name}（${formatDate(latest.date).slice(0,10)}）\n${dims}`);
       snapshot.diagnostics[d.key] = { scores: latest.scores, date: latest.date };
     }
     const johari = state.johariSessions[0];
     if (johari) {
       const w = computeJohariWindows(johari);
-      payloadParts.push(`## 自分と他者の見え方（${johari.scope || '全体'} / ${formatDate(johari.date)}）
+      scoreMap.johari = {
+        openCount: w.open.length,
+        blindCount: w.blind.length,
+        hiddenCount: w.hidden.length,
+        unknownCount: w.unknown.length,
+      };
+      layered.meta.push(`### 自分と他者の見え方（${johari.scope || '全体'} / ${formatDate(johari.date).slice(0,10)}）
 開放（自他共通）: ${w.open.join(', ') || 'なし'}
 盲点（他者だけ）: ${w.blind.join(', ') || 'なし'}
 秘密（自分だけ）: ${w.hidden.join(', ') || 'なし'}
 未知の余地: ${w.unknown.length}個`);
       snapshot.diagnostics.johari = { open: w.open, blind: w.blind, hidden: w.hidden, unknownCount: w.unknown.length, scope: johari.scope, date: johari.date };
     } else {
-      payloadParts.push('## 自分と他者の見え方\n（未診断）');
+      layered.meta.push(`### 自分と他者の見え方\n（未診断）`);
       snapshot.diagnostics.johari = null;
     }
 
+    // ねじれ検出（THEORY.md §6.2）
+    const tensions = detectTensions(scoreMap);
+    snapshot.tensions = tensions;
+
+    const tensionsText = tensions.length
+      ? tensions.map(t => `- **${t.label}**: ${t.hint}`).join('\n')
+      : '（自動検出された顕著なねじれはありません）';
+
+    const layerSection = (n, name) =>
+      layered[n].length ? `## [第${n === 'meta' ? 'メタ' : n}層] ${name}\n\n${layered[n].join('\n\n')}` : '';
+
     const system = [
-      'あなたは心理学・コーチング・経験学習理論に通じた、思慮深い分析パートナーです。',
-      '複数の自己診断結果を統合し、一人の人物像として丁寧に読み解きます。',
-      '断定や決めつけを避け、本人が次の一歩を選べる形で日本語で回答します。',
+      'あなたは Prism の三層自己理解モデルを用いる分析パートナーです。',
+      '以下の三層構造で利用者を読み解いてください:',
+      '- 第1層 信念層: 大切にしているもの (価値観)',
+      '- 第2層 認知行動層: 考え方のクセ + 学び方のタイプ',
+      '- 第3層 表現層: 人との関わり方 + 努力スタイル',
+      '- メタ視点: 自分と他者の見え方 (ジョハリの窓)',
+      '',
+      '断定や決めつけを避け、データに即した具体的な記述を心がけてください。',
+      'バーナム効果（一般的な記述で当たって見せる）は禁止。スコアや項目を明示的に引用してください。',
+      'これは医療診断や人事評価ではなく、自己理解のためのスナップショットであることを忘れないでください。',
     ].join('\n');
 
     const userPrompt = [
-      '以下は自分自身の診断データです。これらを統合的に分析してください。',
+      '以下は自分自身の診断データです。三層モデルに沿って統合的に分析してください。',
       '',
-      '出力には以下を含めてください（マークダウンの見出しで区切る）:',
-      '## 1. 人物プロファイル（200字程度の物語的な要約）',
-      '## 2. 各診断から見える強み（箇条書き、根拠引用）',
-      '## 3. 構造的な「ねじれ」（複数の診断が共通して指している葛藤）',
-      '## 4. 今週から試せる小さな一歩（1〜2個、具体的に）',
+      '## 求める出力の構成（マークダウン見出しを必ず付ける、800〜1200字）',
       '',
-      '全体で700〜1000字。安直な励ましは避け、データに即して書いてください。',
+      '### 1. 信念層プロファイル',
+      '価値観の主導性と内的整合性。スコア値を1つは引用すること。',
       '',
-      payloadParts.join('\n\n'),
-    ].join('\n');
+      '### 2. 認知行動層プロファイル',
+      '思考スタイルと学び方の組み合わせ。',
+      '',
+      '### 3. 表現層プロファイル',
+      '関わり方と努力スタイル、ジョハリから見える対外的な姿。',
+      '',
+      '### 4. 層間整合性 (トップダウン / ボトムアップ)',
+      '価値観 → 認知 → 行動 の流れが滑らかか。あるいは矛盾があるか。',
+      '',
+      '### 5. 構造的なねじれ',
+      '下に示す「自動検出されたねじれ」を引用しながら、構造的に何が起きているかを言語化してください。',
+      '',
+      '### 6. 次の一歩',
+      '今週から試せる小さなアクションを1〜2個。具体的で実行可能なもの。',
+      '',
+      '---',
+      '',
+      '# データ',
+      '',
+      layerSection(1, '信念層'),
+      layerSection(2, '認知行動層'),
+      layerSection(3, '表現層'),
+      layerSection('meta', 'メタ視点 (自他認識)'),
+      '',
+      '## 自動検出されたねじれパターン',
+      tensionsText,
+    ].filter(Boolean).join('\n');
 
     const runBtn = document.getElementById('summary-run');
     runBtn.disabled = true;
