@@ -1,3 +1,9 @@
-() => {
+(() => {
   const SETTINGS_KEY = 'nayami-settings-v1';
   const SOCIAL_KEY = 'nayami-social-v1';
+  const EFFORT_KEY = 'nayami-effort-v1';
+  const KOLB_KEY = 'nayami-kolb-v1';
+  const VALUES_KEY = 'nayami-values-v1';
+  const THINKING_KEY = 'nayami-thinking-v1';
+  const JOHARI_KEY = 'nayami-johari-v1';
+  const SUMMARY_KEY = 'nayami-summary-v1';
